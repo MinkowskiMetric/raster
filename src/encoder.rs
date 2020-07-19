@@ -1,6 +1,12 @@
-use crate::{pixel::{Pixel, RgbaPixel}, surface::Surface};
+use crate::{
+    pixel::{Pixel, RgbaPixel},
+    surface::Surface,
+};
 
-pub trait Encoder<P> where P: Pixel {
+pub trait Encoder<P>
+where
+    P: Pixel,
+{
     fn encode(self, image: &impl Surface<P>) -> Vec<u8>;
 }
 
@@ -8,7 +14,7 @@ pub struct BmpEncoder();
 
 impl BmpEncoder {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
 
     fn bmp_size_in_bytes(width: usize, height: usize) -> usize {
@@ -27,11 +33,11 @@ impl BmpEncoder {
         ret[2..6].copy_from_slice(&(Self::bmp_size_in_bytes(width, height) as u32).to_le_bytes());
         ret[6..10].copy_from_slice(&0u32.to_le_bytes());
         ret[10..14].copy_from_slice(&54u32.to_le_bytes());
-        
+
         ret
     }
 
-    fn generate_bitmap_info_header(width: usize, height: usize) ->  [u8; 40] {
+    fn generate_bitmap_info_header(width: usize, height: usize) -> [u8; 40] {
         let mut ret = [0u8; 40];
 
         ret[0..4].copy_from_slice(&40u32.to_le_bytes());
@@ -50,19 +56,25 @@ impl BmpEncoder {
     }
 }
 
-impl<P> Encoder<P> for BmpEncoder where P: Pixel + Into<RgbaPixel> {
+impl<P> Encoder<P> for BmpEncoder
+where
+    P: Pixel + Into<RgbaPixel>,
+{
     fn encode(self, image: &impl Surface<P>) -> Vec<u8> {
         let (width, height) = image.dimensions();
 
         let mut ret = vec![0u8; Self::bmp_size_in_bytes(width, height)];
 
         ret[0..14].copy_from_slice(&Self::generate_bitmap_file_header(width, height));
-        ret[14..54].copy_from_slice(&Self::generate_bitmap_info_header(width,  height));
+        ret[14..54].copy_from_slice(&Self::generate_bitmap_info_header(width, height));
 
-        ret[54..].chunks_mut(3).zip(image.pixels()).fold({}, |_, (dst, src)| {
-            let src: RgbaPixel = src.clone().into();
-            dst.copy_from_slice(&src.channels()[0..3]);
-        });
+        ret[54..]
+            .chunks_mut(3)
+            .zip(image.pixels())
+            .fold({}, |_, (dst, src)| {
+                let src: RgbaPixel = src.clone().into();
+                dst.copy_from_slice(&src.channels()[0..3]);
+            });
 
         ret
     }
@@ -71,12 +83,15 @@ impl<P> Encoder<P> for BmpEncoder where P: Pixel + Into<RgbaPixel> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::surface::{filled_image, VecImageBuffer};
+    use crate::{
+        rgba,
+        surface::{filled_image, SurfaceMut, VecImageBuffer},
+    };
 
     fn test_image() -> Option<VecImageBuffer<RgbaPixel>> {
-        if let Some(mut img) = filled_image(10, 10, RgbaPixel::new(10, 10, 10, 10)) {
+        if let Some(mut img) = filled_image(10, 10, rgba!(10, 10, 10, 10)) {
             for i in 0..10 {
-                img.put_pixel(i, i, RgbaPixel::new(255,255,255,255));
+                img.put_pixel(i, i, rgba!(255, 255, 255, 255));
             }
             Some(img)
         } else {

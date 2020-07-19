@@ -1,6 +1,6 @@
-use crate::scene::{Shape, AlignedBoundingBox};
 use crate::pixel::RgbaPixel;
 use crate::ray_scanner::Ray;
+use crate::scene::{AlignedBoundingBox, Shape};
 use cgmath::prelude::*;
 
 pub struct Sphere {
@@ -16,7 +16,10 @@ impl Sphere {
             center,
             radius,
             color,
-            bounding_box: AlignedBoundingBox::from_center_and_size(center, cgmath::vec3(radius * 2.0, radius * 2.0, radius * 2.0)),
+            bounding_box: AlignedBoundingBox::from_center_and_size(
+                center,
+                cgmath::vec3(radius * 2.0, radius * 2.0, radius * 2.0),
+            ),
         }
     }
 }
@@ -32,7 +35,7 @@ impl Shape for Sphere {
 
     fn intersect(&self, ray: &Ray) -> Option<f32> {
         let l = self.center - ray.origin;
-        let tca  = l.dot(ray.direction);
+        let tca = l.dot(ray.direction);
         if tca < 0.0 {
             None
         } else {
@@ -44,7 +47,7 @@ impl Shape for Sphere {
                 let thc = (radius2 - d2).sqrt();
                 let t0 = tca - thc;
                 let t1 = tca + thc;
-                
+
                 if t0 < 0.0 {
                     Some(t1)
                 } else {

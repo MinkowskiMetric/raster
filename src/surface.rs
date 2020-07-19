@@ -1,15 +1,19 @@
+use crate::pixel::Pixel;
+use num::traits::Zero;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Range};
 use std::slice::{Chunks, ChunksMut};
-use num::traits::Zero;
-use crate::pixel::Pixel;
 
-pub struct Pixels<'a, P: Pixel + 'a> where P::Subpixel: 'a,
+pub struct Pixels<'a, P: Pixel + 'a>
+where
+    P::Subpixel: 'a,
 {
     chunks: Chunks<'a, P::Subpixel>,
 }
 
-impl<'a, P: Pixel + 'a> Iterator for Pixels<'a, P> where P::Subpixel: 'a,
+impl<'a, P: Pixel + 'a> Iterator for Pixels<'a, P>
+where
+    P::Subpixel: 'a,
 {
     type Item = &'a P;
 
@@ -18,26 +22,34 @@ impl<'a, P: Pixel + 'a> Iterator for Pixels<'a, P> where P::Subpixel: 'a,
     }
 }
 
-impl<'a, P: Pixel + 'a> ExactSizeIterator for Pixels<'a, P> where P::Subpixel: 'a,
+impl<'a, P: Pixel + 'a> ExactSizeIterator for Pixels<'a, P>
+where
+    P::Subpixel: 'a,
 {
     fn len(&self) -> usize {
         self.chunks.len()
     }
 }
 
-impl<'a, P: Pixel + 'a> DoubleEndedIterator for Pixels<'a, P> where P::Subpixel: 'a,
+impl<'a, P: Pixel + 'a> DoubleEndedIterator for Pixels<'a, P>
+where
+    P::Subpixel: 'a,
 {
     fn next_back(&mut self) -> Option<&'a P> {
         self.chunks.next_back().map(|v| <P as Pixel>::from_slice(v))
     }
 }
 
-pub struct PixelsMut<'a, P: Pixel + 'a> where P::Subpixel: 'a,
+pub struct PixelsMut<'a, P: Pixel + 'a>
+where
+    P::Subpixel: 'a,
 {
     chunks: ChunksMut<'a, P::Subpixel>,
 }
 
-impl<'a, P: Pixel + 'a> Iterator for PixelsMut<'a, P> where P::Subpixel: 'a,
+impl<'a, P: Pixel + 'a> Iterator for PixelsMut<'a, P>
+where
+    P::Subpixel: 'a,
 {
     type Item = &'a mut P;
 
@@ -46,38 +58,49 @@ impl<'a, P: Pixel + 'a> Iterator for PixelsMut<'a, P> where P::Subpixel: 'a,
     }
 }
 
-impl<'a, P: Pixel + 'a> ExactSizeIterator for PixelsMut<'a, P> where P::Subpixel: 'a,
+impl<'a, P: Pixel + 'a> ExactSizeIterator for PixelsMut<'a, P>
+where
+    P::Subpixel: 'a,
 {
     fn len(&self) -> usize {
         self.chunks.len()
     }
 }
 
-impl<'a, P: Pixel + 'a> DoubleEndedIterator for PixelsMut<'a, P> where P::Subpixel: 'a,
+impl<'a, P: Pixel + 'a> DoubleEndedIterator for PixelsMut<'a, P>
+where
+    P::Subpixel: 'a,
 {
     fn next_back(&mut self) -> Option<&'a mut P> {
-        self.chunks.next_back().map(|v| <P as Pixel>::from_slice_mut(v))
+        self.chunks
+            .next_back()
+            .map(|v| <P as Pixel>::from_slice_mut(v))
     }
 }
 
-pub struct Rows<'a, P: Pixel + 'a> 
-where P::Subpixel: 'a,
+pub struct Rows<'a, P: Pixel + 'a>
+where
+    P::Subpixel: 'a,
 {
     chunks: Chunks<'a, P::Subpixel>,
 }
 
 impl<'a, P: Pixel + 'a> Iterator for Rows<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     type Item = Pixels<'a, P>;
 
     fn next(&mut self) -> Option<Pixels<'a, P>> {
-        self.chunks.next().map(|row| Pixels { chunks: row.chunks(<P as Pixel>::CHANNEL_COUNT as usize) })
+        self.chunks.next().map(|row| Pixels {
+            chunks: row.chunks(<P as Pixel>::CHANNEL_COUNT as usize),
+        })
     }
 }
 
 impl<'a, P: Pixel + 'a> ExactSizeIterator for Rows<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     fn len(&self) -> usize {
         self.chunks.len()
@@ -85,32 +108,40 @@ where P::Subpixel: 'a,
 }
 
 impl<'a, P: Pixel + 'a> DoubleEndedIterator for Rows<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     #[inline(always)]
     fn next_back(&mut self) -> Option<Pixels<'a, P>> {
-        self.chunks.next_back().map(|row| Pixels { chunks: row.chunks(<P as Pixel>::CHANNEL_COUNT as usize) })
+        self.chunks.next_back().map(|row| Pixels {
+            chunks: row.chunks(<P as Pixel>::CHANNEL_COUNT as usize),
+        })
     }
 }
 
-pub struct RowsMut<'a, P: Pixel + 'a> 
-where P::Subpixel: 'a,
+pub struct RowsMut<'a, P: Pixel + 'a>
+where
+    P::Subpixel: 'a,
 {
     chunks: ChunksMut<'a, P::Subpixel>,
 }
 
 impl<'a, P: Pixel + 'a> Iterator for RowsMut<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     type Item = PixelsMut<'a, P>;
 
     fn next(&mut self) -> Option<PixelsMut<'a, P>> {
-        self.chunks.next().map(|row| PixelsMut { chunks: row.chunks_mut(<P as Pixel>::CHANNEL_COUNT as usize) })
+        self.chunks.next().map(|row| PixelsMut {
+            chunks: row.chunks_mut(<P as Pixel>::CHANNEL_COUNT as usize),
+        })
     }
 }
 
 impl<'a, P: Pixel + 'a> ExactSizeIterator for RowsMut<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     fn len(&self) -> usize {
         self.chunks.len()
@@ -118,16 +149,20 @@ where P::Subpixel: 'a,
 }
 
 impl<'a, P: Pixel + 'a> DoubleEndedIterator for RowsMut<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     #[inline(always)]
     fn next_back(&mut self) -> Option<PixelsMut<'a, P>> {
-        self.chunks.next_back().map(|row| PixelsMut { chunks: row.chunks_mut(<P as Pixel>::CHANNEL_COUNT as usize) })
+        self.chunks.next_back().map(|row| PixelsMut {
+            chunks: row.chunks_mut(<P as Pixel>::CHANNEL_COUNT as usize),
+        })
     }
 }
 
 pub struct EnumeratePixels<'a, P: Pixel + 'a>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     pixels: Pixels<'a, P>,
     x: usize,
@@ -136,7 +171,8 @@ where P::Subpixel: 'a,
 }
 
 impl<'a, P: Pixel + 'a> Iterator for EnumeratePixels<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     type Item = (usize, usize, &'a P);
 
@@ -152,7 +188,8 @@ where P::Subpixel: 'a,
 }
 
 impl<'a, P: Pixel + 'a> ExactSizeIterator for EnumeratePixels<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     fn len(&self) -> usize {
         self.pixels.len()
@@ -160,7 +197,8 @@ where P::Subpixel: 'a,
 }
 
 pub struct EnumeratePixelsMut<'a, P: Pixel + 'a>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     pixels: PixelsMut<'a, P>,
     x: usize,
@@ -169,7 +207,8 @@ where P::Subpixel: 'a,
 }
 
 impl<'a, P: Pixel + 'a> Iterator for EnumeratePixelsMut<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     type Item = (usize, usize, &'a mut P);
 
@@ -185,7 +224,8 @@ where P::Subpixel: 'a,
 }
 
 impl<'a, P: Pixel + 'a> ExactSizeIterator for EnumeratePixelsMut<'a, P>
-where P::Subpixel: 'a,
+where
+    P::Subpixel: 'a,
 {
     fn len(&self) -> usize {
         self.pixels.len()
@@ -263,7 +303,7 @@ where
     fn pixel_range_unchecked(&self, x: usize, y: usize) -> Range<usize> {
         let channel_count = P::CHANNEL_COUNT;
         let min_index = ((y * self.width) + x) * channel_count;
-        min_index..min_index+channel_count
+        min_index..min_index + channel_count
     }
 }
 
@@ -293,15 +333,24 @@ where
     }
 
     fn pixels(&self) -> Pixels<P> {
-        Pixels { chunks: self.data.chunks(<P as Pixel>::CHANNEL_COUNT as usize) }
+        Pixels {
+            chunks: self.data.chunks(<P as Pixel>::CHANNEL_COUNT as usize),
+        }
     }
 
     fn enumerate_pixels(&self) -> EnumeratePixels<P> {
-        EnumeratePixels { pixels: self.pixels(), x: 0, y: 0, width: self.width }
+        EnumeratePixels {
+            pixels: self.pixels(),
+            x: 0,
+            y: 0,
+            width: self.width,
+        }
     }
 
     fn rows(&self) -> Rows<P> {
-        Rows { chunks: self.data.chunks(<P as Pixel>::CHANNEL_COUNT * self.width), }
+        Rows {
+            chunks: self.data.chunks(<P as Pixel>::CHANNEL_COUNT * self.width),
+        }
     }
 }
 
@@ -323,16 +372,27 @@ where
     }
 
     fn pixels_mut(&mut self) -> PixelsMut<P> {
-        PixelsMut { chunks: self.data.chunks_mut(<P as Pixel>::CHANNEL_COUNT as usize) }
+        PixelsMut {
+            chunks: self.data.chunks_mut(<P as Pixel>::CHANNEL_COUNT as usize),
+        }
     }
 
     fn rows_mut(&mut self) -> RowsMut<P> {
-        RowsMut { chunks: self.data.chunks_mut(<P as Pixel>::CHANNEL_COUNT * self.width), }
+        RowsMut {
+            chunks: self
+                .data
+                .chunks_mut(<P as Pixel>::CHANNEL_COUNT * self.width),
+        }
     }
 
     fn enumerate_pixels_mut(&mut self) -> EnumeratePixelsMut<P> {
         let width = self.width;
-        EnumeratePixelsMut { pixels: self.pixels_mut(), x: 0, y: 0, width }
+        EnumeratePixelsMut {
+            pixels: self.pixels_mut(),
+            x: 0,
+            y: 0,
+            width,
+        }
     }
 
     fn clear(&mut self, fill_color: P) {
@@ -345,8 +405,9 @@ where
 pub type VecImageBuffer<P> = ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>;
 
 fn sized_image<P: Pixel>(width: usize, height: usize) -> Option<VecImageBuffer<P>> {
-    VecImageBuffer::<P>::image_buffer_len(width, height)
-        .and_then(|bytes| VecImageBuffer::<P>::from_raw(width, height, vec![P::Subpixel::zero(); bytes]) )
+    VecImageBuffer::<P>::image_buffer_len(width, height).and_then(|bytes| {
+        VecImageBuffer::<P>::from_raw(width, height, vec![P::Subpixel::zero(); bytes])
+    })
 }
 
 pub fn filled_image<P: Pixel>(width: usize, height: usize, fill: P) -> Option<VecImageBuffer<P>> {
@@ -361,11 +422,11 @@ pub fn filled_image<P: Pixel>(width: usize, height: usize, fill: P) -> Option<Ve
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::pixel::RgbaPixel;
+    use crate::rgba;
 
     #[test]
     fn create_filled_buffer() {
-        let color = RgbaPixel::new(1,2,3,4);
+        let color = rgba!(1, 2, 3, 4);
         let buffer = filled_image(10, 10, color.clone()).unwrap();
 
         assert_eq!(10, buffer.width());

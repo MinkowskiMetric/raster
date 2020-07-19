@@ -43,14 +43,21 @@ impl Pixel for RgbaPixel {
 macro_rules! rgb {
     ($r:expr, $g:expr, $b:expr) => {
         $crate::pixel::RgbaPixel([$b, $g, $r, 255])
-    }
+    };
+}
+
+#[macro_export]
+macro_rules! rgba {
+    ($r:expr,  $g:expr, $b:expr, $a:expr) => {
+        $crate::pixel::RgbaPixel([$b, $g, $r, $a])
+    };
 }
 
 macro_rules! rgb_constant {
     ($name:ident, $r:expr, $g:expr, $b:expr) => {
         #[allow(dead_code)]
         pub const $name: RgbaPixel = rgb!($r, $g, $b);
-    }
+    };
 }
 
 impl RgbaPixel {
