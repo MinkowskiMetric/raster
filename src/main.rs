@@ -31,7 +31,7 @@ fn main() {
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.0, 51.0, -5.0),
             50.0,
-            color::Color::GREEN,
+            color::Color::YELLOW,
         )),
     ];
     let scene = scene::Scene::new(camera, shapes);

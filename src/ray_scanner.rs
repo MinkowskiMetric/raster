@@ -77,8 +77,10 @@ pub fn trace(ray: &Ray, scene: &Scene) -> Color {
             let test_ray = Ray::new(hit_point, test_direction);
             let projected_color = trace(&test_ray, &scene);
             let projected_color = cgmath::vec3(projected_color.get_r(), projected_color.get_g(), projected_color.get_b());
+            let object_color = cgmath::vec3(shape.color().get_r(), shape.color().get_g(), shape.color().get_b());
+            let object_color = cgmath::vec3(projected_color.x * object_color.x, projected_color.y * object_color.y, projected_color.z * object_color.z);
 
-            (0.5 * projected_color).try_into().unwrap()
+            (0.5 * object_color).try_into().unwrap()
         })
         .unwrap_or_else(|| {
             let unit_direction = ray.direction;
