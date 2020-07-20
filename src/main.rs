@@ -1,4 +1,5 @@
 mod camera;
+mod color;
 mod ray_scanner;
 mod scene;
 mod sphere;
@@ -20,12 +21,12 @@ fn main() {
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(-1.0, -1.0, 0.0),
             1.0,
-            RgbaPixel::RED,
+            color::Color::RED,
         )),
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.0, 0.0, -5.0),
             1.0,
-            RgbaPixel::GREEN,
+            color::Color::GREEN,
         )),
     ];
     let scene = scene::Scene::new(camera, shapes);

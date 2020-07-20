@@ -1,7 +1,6 @@
 use crate::camera::Camera;
+use crate::color::Color;
 use crate::ray_scanner::Ray;
-
-use image::RgbaPixel;
 
 pub struct AlignedBoundingBox {
     bounds: [cgmath::Vector3<f32>; 2],
@@ -48,7 +47,7 @@ impl AlignedBoundingBox {
 pub trait Shape {
     fn bounding_box(&self) -> &AlignedBoundingBox;
     fn intersect(&self, ray: &Ray) -> Option<f32>;
-    fn color(&self) -> RgbaPixel;
+    fn color(&self) -> Color;
 }
 
 pub struct Scene {

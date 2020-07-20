@@ -1,18 +1,17 @@
+use crate::color::Color;
 use crate::ray_scanner::Ray;
 use crate::scene::{AlignedBoundingBox, Shape};
 use cgmath::prelude::*;
 
-use image::RgbaPixel;
-
 pub struct Sphere {
     center: cgmath::Vector3<f32>,
     radius: f32,
-    color: RgbaPixel,
+    color: Color,
     bounding_box: AlignedBoundingBox,
 }
 
 impl Sphere {
-    pub fn new(center: cgmath::Vector3<f32>, radius: f32, color: RgbaPixel) -> Self {
+    pub fn new(center: cgmath::Vector3<f32>, radius: f32, color: Color) -> Self {
         Self {
             center,
             radius,
@@ -30,7 +29,7 @@ impl Shape for Sphere {
         &self.bounding_box
     }
 
-    fn color(&self) -> RgbaPixel {
+    fn color(&self) -> Color {
         self.color
     }
 

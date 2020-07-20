@@ -1,6 +1,7 @@
+use crate::color::Color;
 use crate::scene::Scene;
 
-use image::{Pixel, RgbaPixel, SurfaceMut};
+use image::{Pixel, SurfaceMut};
 
 pub struct Ray {
     pub origin: cgmath::Vector3<f32>,
@@ -27,17 +28,18 @@ impl Ray {
     }
 }
 
-pub fn scan<P: Pixel + From<RgbaPixel>>(image: &mut impl SurfaceMut<P>, scene: &Scene) {
+pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scene) {
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         let direction = scene.camera().pixel_to_viewport(x, y);
 
         *pixel = trace(Ray::new(scene.camera().position(), direction), scene)
-            .unwrap_or(RgbaPixel::WHITE)
+            .unwrap_or(Color::WHITE)
+            .gamma(2.0)
             .into();
     }
 }
 
-pub fn trace(ray: Ray, scene: &Scene) -> Option<RgbaPixel> {
+pub fn trace(ray: Ray, scene: &Scene) -> Option<Color> {
     scene
         .intersect_shapes(&ray)
         .into_iter()

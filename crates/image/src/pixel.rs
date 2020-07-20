@@ -42,14 +42,14 @@ impl Pixel for RgbaPixel {
 #[macro_export]
 macro_rules! rgb {
     ($r:expr, $g:expr, $b:expr) => {
-        $crate::pixel::RgbaPixel([$b, $g, $r, 255])
+        $crate::RgbaPixel([$b, $g, $r, 255])
     };
 }
 
 #[macro_export]
 macro_rules! rgba {
     ($r:expr,  $g:expr, $b:expr, $a:expr) => {
-        $crate::pixel::RgbaPixel([$b, $g, $r, $a])
+        $crate::RgbaPixel([$b, $g, $r, $a])
     };
 }
 
@@ -69,4 +69,20 @@ impl RgbaPixel {
     rgb_constant!(MAGENTA, 255, 0, 255);
     rgb_constant!(CYAN, 0, 255, 255);
     rgb_constant!(WHITE, 255, 255, 255);
+
+    pub fn get_r(&self) -> u8 {
+        self.0[2]
+    }
+
+    pub fn get_g(&self) -> u8 {
+        self.0[1]
+    }
+
+    pub fn get_b(&self) -> u8 {
+        self.0[0]
+    }
+
+    pub fn get_a(&self) -> u8 {
+        self.0[3]
+    }
 }
