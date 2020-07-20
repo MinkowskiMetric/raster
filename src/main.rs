@@ -10,11 +10,11 @@ use image::prelude::*;
 use image::{filled_image, BmpEncoder, RgbaPixel};
 
 fn main() {
-    let mut surf = filled_image(320, 240, RgbaPixel::BLACK).unwrap();
+    let mut surf = filled_image(1920, 1080, RgbaPixel::BLACK).unwrap();
     let camera = camera::Camera::new(
         cgmath::vec3(0.0, 0.0, -20.0),
-        320,
-        240,
+        surf.width(),
+        surf.height(),
         cgmath::Deg(30.0).into(),
     );
     let shapes: Vec<Box<dyn crate::scene::Shape>> = vec![

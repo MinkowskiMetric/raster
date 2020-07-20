@@ -11,4 +11,5 @@ pub use writer::ImageWriter;
 
 pub mod prelude {
     pub use crate::writer::ImageWriter;
+    pub use crate::surface::{Surface, SurfaceMut};
 }
