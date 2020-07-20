@@ -47,6 +47,13 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "image"
+version = "0.1.0"
+dependencies = [
+ "num 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -222,6 +229,7 @@ name = "raster"
 version = "0.1.0"
 dependencies = [
  "cgmath 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "image 0.1.0",
  "num 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

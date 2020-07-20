@@ -1,8 +1,6 @@
-use crate::{
-    pixel::{Pixel, RgbaPixel},
-    scene::Scene,
-    surface::SurfaceMut,
-};
+use crate::scene::Scene;
+
+use image::{Pixel, RgbaPixel, SurfaceMut};
 
 pub struct Ray {
     pub origin: cgmath::Vector3<f32>,

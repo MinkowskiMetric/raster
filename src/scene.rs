@@ -1,6 +1,7 @@
 use crate::camera::Camera;
-use crate::pixel::RgbaPixel;
 use crate::ray_scanner::Ray;
+
+use image::RgbaPixel;
 
 pub struct AlignedBoundingBox {
     bounds: [cgmath::Vector3<f32>; 2],

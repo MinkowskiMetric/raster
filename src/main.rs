@@ -1,19 +1,15 @@
 mod camera;
-mod encoder;
-#[macro_use]
-mod pixel;
 mod ray_scanner;
 mod scene;
 mod sphere;
-mod surface;
-mod writer;
 extern crate cgmath;
 extern crate num;
 
-use crate::writer::ImageWriter;
+use image::prelude::*;
+use image::{filled_image, BmpEncoder, RgbaPixel};
 
 fn main() {
-    let mut surf = surface::filled_image(320, 240, pixel::RgbaPixel::BLACK).unwrap();
+    let mut surf = filled_image(320, 240, RgbaPixel::BLACK).unwrap();
     let camera = camera::Camera::new(
         cgmath::vec3(0.0, 0.0, -20.0),
         320,
@@ -24,17 +20,17 @@ fn main() {
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(-1.0, -1.0, 0.0),
             1.0,
-            crate::pixel::RgbaPixel::RED,
+            RgbaPixel::RED,
         )),
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.0, 0.0, -5.0),
             1.0,
-            crate::pixel::RgbaPixel::GREEN,
+            RgbaPixel::GREEN,
         )),
     ];
     let scene = scene::Scene::new(camera, shapes);
     ray_scanner::scan(&mut surf, &scene);
-    encoder::BmpEncoder::new()
+    BmpEncoder::new()
         .write_image_to_file(&surf, "/Volumes/Unix/src/hello.bmp")
         .unwrap();
 }

@@ -1,7 +1,8 @@
-use crate::pixel::RgbaPixel;
 use crate::ray_scanner::Ray;
 use crate::scene::{AlignedBoundingBox, Shape};
 use cgmath::prelude::*;
+
+use image::RgbaPixel;
 
 pub struct Sphere {
     center: cgmath::Vector3<f32>,
