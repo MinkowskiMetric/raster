@@ -49,25 +49,29 @@ impl Material for Lambertian {
     }
 }
 
-pub struct Metal(Color);
+pub struct Metal(Color, f32);
 
 impl Metal {
-    pub fn new(color: Color) -> Self {
-        Metal(color)
+    pub fn new(color: Color, fuzz: f32) -> Self {
+        Metal(color, if fuzz < 1.0 { fuzz } else { 1.0 })
     }
 
     pub fn color(&self) -> &Color {
         &self.0
     }
+
+    pub fn fuzz(&self) -> f32 {
+        self.1
+    }
 }
 
 impl Material for Metal {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
-        let reflected = reflect(ray_in.direction.normalize(), hit_record.surface_normal);
+        let reflected = reflect(ray_in.direction.normalize(), hit_record.surface_normal) + self.fuzz() * random_in_unit_sphere();
         if reflected.dot(hit_record.surface_normal) > 0.0 {
             Some(ScatterResult {
                 attenuation: cgmath::Vector4::from(*self.color()).truncate(),
-                scattered: Ray::new(hit_record.hit_point, reflected),
+                scattered: Ray::new(hit_record.hit_point, reflected.normalize()),
             })
         } else {
             None

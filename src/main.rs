@@ -42,9 +42,9 @@ fn main() {
             cgmath::vec3(0.0, 0.0, 0.0),
             1.0,
             Box::new(material::Metal::new(attenuate_color(
-                color::Color::GREEN,
-                0.5,
-            ))),
+                color::Color::WHITE,
+                0.8,
+            ), 0.3)),
         )),
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.0, 51.0, 0.0),
