@@ -56,4 +56,8 @@ impl Shape for Sphere {
             }
         }
     }
+
+    fn normal_at(&self, point: &cgmath::Vector3<f32>) -> cgmath::Vector3<f32> {
+        (point - self.center) / self.radius
+    }
 }

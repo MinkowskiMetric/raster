@@ -48,6 +48,7 @@ pub trait Shape {
     fn bounding_box(&self) -> &AlignedBoundingBox;
     fn intersect(&self, ray: &Ray) -> Option<f32>;
     fn color(&self) -> Color;
+    fn normal_at(&self, point: &cgmath::Vector3<f32>) -> cgmath::Vector3<f32>;
 }
 
 pub struct Scene {

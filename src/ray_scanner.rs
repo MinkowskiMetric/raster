@@ -1,7 +1,9 @@
 use crate::color::Color;
-use crate::scene::Scene;
+use crate::scene::{Scene, Shape};
 
 use image::{Pixel, SurfaceMut};
+
+use std::convert::TryInto;
 
 pub struct Ray {
     pub origin: cgmath::Vector3<f32>,
@@ -31,19 +33,31 @@ impl Ray {
 pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scene) {
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         let direction = scene.camera().pixel_to_viewport(x, y);
+        let ray = Ray::new(scene.camera().position(), direction);
 
-        *pixel = trace(Ray::new(scene.camera().position(), direction), scene)
-            .unwrap_or(Color::WHITE)
+        *pixel = trace(&ray, scene)
+            .unwrap_or_else(|| {
+                let unit_direction = ray.direction;
+                let t = 0.5 * (unit_direction.y + 1.0);
+                (((1.0 - t) * cgmath::vec3(1.0, 1.0, 1.0)) + (t * cgmath::vec3(0.5, 0.7, 1.0))).try_into().unwrap()
+            })
             .gamma(2.0)
             .into();
     }
 }
 
-pub fn trace(ray: Ray, scene: &Scene) -> Option<Color> {
+pub fn trace(ray: &Ray, scene: &Scene) -> Option<Color> {
     scene
         .intersect_shapes(&ray)
         .into_iter()
         .filter_map(|shape| shape.intersect(&ray).map(|distance| (shape, distance)))
         .min_by(|(_, xd), (_, yd)| xd.partial_cmp(yd).unwrap_or(std::cmp::Ordering::Equal))
-        .map(|(shape, _)| shape.color())
+        .map(|(shape, distance)| color(&ray, &scene, shape, distance))
+}
+
+fn color(ray: &Ray, _scene: &Scene, shape: &Box<dyn Shape>, distance: f32) -> Color {
+    let hit_point = ray.origin + (ray.direction * distance);
+    let normal = shape.normal_at(&hit_point);
+
+    (0.5 * (normal + cgmath::vec3(1.0, 1.0, 1.0))).try_into().unwrap()
 }

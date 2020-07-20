@@ -1,4 +1,5 @@
 use image::{rgba, RgbaPixel};
+use std::convert::{Infallible, TryFrom};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Color([f32; 4]);
@@ -62,5 +63,37 @@ impl From<Color> for RgbaPixel {
             (p.get_b() * 255.0) as u8,
             (p.get_a() * 255.0) as u8
         )
+    }
+}
+
+impl From<Color> for cgmath::Vector4<f32> {
+    fn from(p: Color) -> Self {
+        cgmath::vec4(p.0[0], p.0[1], p.0[2], p.0[3])
+    }
+}
+
+fn check_channel(channel: f32) -> Result<f32, Infallible> {
+    if channel >= 0.0 && channel <= 1.0 {
+        Ok(channel)
+    } else if channel > 1.0 {
+        Ok(1.0)
+    } else {
+        Ok(0.0)
+    }
+}
+
+impl TryFrom<cgmath::Vector4<f32>> for Color {
+    type Error = Infallible;
+
+    fn try_from(p: cgmath::Vector4<f32>) -> Result<Self, Self::Error> {
+        Ok(Color([check_channel(p.x)?, check_channel(p.y)?, check_channel(p.z)?, check_channel(p.w)?]))
+    }
+}
+
+impl TryFrom<cgmath::Vector3<f32>> for Color {
+    type Error = Infallible;
+
+    fn try_from(p: cgmath::Vector3<f32>) -> Result<Self, Self::Error> {
+        Ok(Color([check_channel(p.x)?, check_channel(p.y)?, check_channel(p.z)?, 1.0]))
     }
 }
