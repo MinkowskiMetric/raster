@@ -28,6 +28,11 @@ fn main() {
             1.0,
             color::Color::GREEN,
         )),
+        Box::new(crate::sphere::Sphere::new(
+            cgmath::vec3(0.0, 51.0, -5.0),
+            50.0,
+            color::Color::GREEN,
+        )),
     ];
     let scene = scene::Scene::new(camera, shapes);
     ray_scanner::scan(&mut surf, &scene);

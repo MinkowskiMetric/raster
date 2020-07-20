@@ -30,10 +30,7 @@ impl Camera {
         }
     }
 
-    pub fn pixel_to_viewport(&self, x: usize, y: usize) -> cgmath::Vector3<f32> {
-        let x = x as f32;
-        let y = y as f32;
-
+    pub fn pixel_to_viewport(&self, x: f32, y: f32) -> cgmath::Vector3<f32> {
         let vx =
             (2_f32 * ((x + 0.5_f32) * self.inv_width) - 1_f32) * self.angle * self.aspect_ratio;
         let vy = (1_f32 - 2_f32 * ((y + 0.5_f32) * self.inv_height)) * self.angle;

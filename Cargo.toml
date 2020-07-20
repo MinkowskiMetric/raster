@@ -10,3 +10,4 @@ edition = "2018"
 "num" = "*"
 "cgmath" = "*"
 "image" = { path = "./crates/image" }
+"rand" = "*"
