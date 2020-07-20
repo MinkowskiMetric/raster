@@ -1,5 +1,5 @@
 use crate::camera::Camera;
-use crate::color::Color;
+use crate::material::Material;
 use crate::ray_scanner::Ray;
 
 pub struct AlignedBoundingBox {
@@ -44,11 +44,16 @@ impl AlignedBoundingBox {
     }
 }
 
+pub struct HitResult<'a> {
+    pub distance: f32,
+    pub hit_point: cgmath::Vector3<f32>,
+    pub surface_normal: cgmath::Vector3<f32>,
+    pub material: &'a Box<dyn Material>,
+}
+
 pub trait Shape {
     fn bounding_box(&self) -> &AlignedBoundingBox;
-    fn intersect(&self, ray: &Ray) -> Option<f32>;
-    fn color(&self) -> Color;
-    fn normal_at(&self, point: &cgmath::Vector3<f32>) -> cgmath::Vector3<f32>;
+    fn intersect<'a>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitResult<'a>>;
 }
 
 pub struct Scene {

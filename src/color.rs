@@ -86,7 +86,12 @@ impl TryFrom<cgmath::Vector4<f32>> for Color {
     type Error = Infallible;
 
     fn try_from(p: cgmath::Vector4<f32>) -> Result<Self, Self::Error> {
-        Ok(Color([check_channel(p.x)?, check_channel(p.y)?, check_channel(p.z)?, check_channel(p.w)?]))
+        Ok(Color([
+            check_channel(p.x)?,
+            check_channel(p.y)?,
+            check_channel(p.z)?,
+            check_channel(p.w)?,
+        ]))
     }
 }
 
@@ -94,6 +99,11 @@ impl TryFrom<cgmath::Vector3<f32>> for Color {
     type Error = Infallible;
 
     fn try_from(p: cgmath::Vector3<f32>) -> Result<Self, Self::Error> {
-        Ok(Color([check_channel(p.x)?, check_channel(p.y)?, check_channel(p.z)?, 1.0]))
+        Ok(Color([
+            check_channel(p.x)?,
+            check_channel(p.y)?,
+            check_channel(p.z)?,
+            1.0,
+        ]))
     }
 }
