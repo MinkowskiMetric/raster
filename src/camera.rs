@@ -1,65 +1,57 @@
 use crate::ray_scanner::Ray;
+use crate::utils::*;
 use cgmath::prelude::*;
 
 pub struct Camera {
-    /*position: cgmath::Vector3<f32>,
-    inv_width: f32,
-    inv_height: f32,
-    aspect_ratio: f32,
-    angle: f32,*/
-    origin: cgmath::Vector3<f32>,
-    lower_left_corner: cgmath::Vector3<f32>,
+    origin: cgmath::Point3<f32>,
+    lower_left_corner: cgmath::Point3<f32>,
     horizontal: cgmath::Vector3<f32>,
     vertical: cgmath::Vector3<f32>,
+    u: cgmath::Vector3<f32>,
+    v: cgmath::Vector3<f32>,
+    lens_radius: f32,
 }
 
 impl Camera {
     pub fn new(
-        /*position: cgmath::Vector3<f32>,
-        width: usize,
-        height: usize,
-        fov: cgmath::Rad<f32>,*/
+        lookfrom: cgmath::Point3<f32>,
+        lookat: cgmath::Point3<f32>,
+        vup: cgmath::Vector3<f32>,
+        fov: cgmath::Rad<f32>,
+        aspect_ratio: f32,
+        aperture: f32,
+        focus_dist: f32,
     ) -> Self {
-        let aspect_ratio = 16.0 / 9.0;
-        let viewport_height = 2.0;
+        let h = (fov / 2.0).tan();
+        let viewport_height = 2.0 * h;
         let viewport_width = aspect_ratio * viewport_height;
-        let focal_length = 1.0;
 
-        let origin = cgmath::vec3(0.0, 0.0, 0.0);
-        let horizontal = cgmath::vec3(viewport_width, 0.0, 0.0);
-        let vertical = cgmath::vec3(0.0, viewport_height, 0.0);
-        let lower_left_corner = origin - horizontal / 2.0 - vertical / 2.0 - cgmath::vec3(0.0, 0.0, focal_length);
+        let w = (lookfrom - lookat).normalize();
+        let u = vup.cross(w).normalize();
+        let v = w.cross(u);
+
+        let origin = lookfrom;
+        let horizontal = focus_dist * viewport_width * u;
+        let vertical = focus_dist * viewport_height * v;
+        let lower_left_corner = origin - horizontal / 2.0 - vertical / 2.0 - focus_dist * w;
 
         Self {
             origin,
             horizontal,
             vertical,
             lower_left_corner,
+            u,
+            v,
+            lens_radius: aperture / 2.0,
         }
-
-        /*let inv_width = 1.0_f32 / (width as f32);
-        let inv_height = 1.0_f32 / (height as f32);
-        let aspect_ratio = inv_height / inv_width;
-
-        let angle = (fov / 2.0).tan();
-
-        Self {
-            position,
-            inv_width,
-            inv_height,
-            aspect_ratio,
-            angle,
-        }*/
     }
 
-    pub fn make_ray(&self, u: f32, v: f32) -> Ray {
-        let direction = self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin;
-        Ray::new(self.origin, direction.normalize())
-        /*let vx =
-            (2_f32 * ((x + 0.5_f32) * self.inv_width) - 1_f32) * self.angle * self.aspect_ratio;
-        let vy = (1_f32 - 2_f32 * ((y + 0.5_f32) * self.inv_height)) * self.angle;
+    pub fn make_ray(&self, s: f32, t: f32) -> Ray {
+        let rd = self.lens_radius * random_in_unit_disk();
+        let offset = self.u * rd.x + self.v * rd.y;
 
-        let ray_direction = cgmath::vec3(vx, vy, 1.0_f32);
-        ray_direction.normalize()*/
+        let direction =
+            self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset;
+        Ray::new((self.origin + offset).to_vec(), direction.normalize())
     }
 }

@@ -2,48 +2,6 @@ use crate::camera::Camera;
 use crate::material::Material;
 use crate::ray_scanner::Ray;
 
-pub struct AlignedBoundingBox {
-    bounds: [cgmath::Vector3<f32>; 2],
-}
-
-impl AlignedBoundingBox {
-    pub fn from_center_and_size(center: cgmath::Vector3<f32>, size: cgmath::Vector3<f32>) -> Self {
-        // Ensure that vmax - vmin is always positive or zero
-        let half_size = cgmath::vec3(size.x.abs() / 2.0, size.y.abs() / 2.0, size.z.abs() / 2.0);
-
-        AlignedBoundingBox {
-            bounds: [center - half_size, center + half_size],
-        }
-    }
-
-    pub fn intersects(&self, ray: &Ray) -> bool {
-        let mut tmin = (self.bounds[ray.sign[0]].x - ray.origin.x) * ray.inv_direction.x;
-        let mut tmax = (self.bounds[1 - ray.sign[0]].x - ray.origin.x) * ray.inv_direction.x;
-        let tymin = (self.bounds[ray.sign[1]].y - ray.origin.y) * ray.inv_direction.y;
-        let tymax = (self.bounds[1 - ray.sign[1]].y - ray.origin.y) * ray.inv_direction.y;
-
-        if (tmin > tymax) || (tymin > tmax) {
-            false
-        } else {
-            if tymin > tmin {
-                tmin = tymin;
-            }
-            if tymax < tmax {
-                tmax = tymax;
-            }
-
-            let tzmin = (self.bounds[ray.sign[2]].z - ray.origin.z) * ray.inv_direction.z;
-            let tzmax = (self.bounds[1 - ray.sign[2]].z - ray.origin.z) * ray.inv_direction.z;
-
-            if (tmin > tzmax) || (tzmin > tmax) {
-                false
-            } else {
-                true
-            }
-        }
-    }
-}
-
 pub struct HitResult<'a> {
     pub distance: f32,
     pub hit_point: cgmath::Vector3<f32>,
@@ -53,7 +11,6 @@ pub struct HitResult<'a> {
 }
 
 pub trait Shape {
-    fn bounding_box(&self) -> &AlignedBoundingBox;
     fn intersect<'a>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitResult<'a>>;
 }
 
@@ -77,7 +34,7 @@ impl Scene {
         &self.shapes
     }
 
-    pub fn intersect_shapes<'a>(&'a self, ray: &'a Ray) -> impl Iterator<Item = &'a Box<dyn Shape>> {
+    pub fn get_shapes<'a>(&'a self, _ray: &'a Ray) -> impl Iterator<Item = &'a Box<dyn Shape>> {
         self.shapes().iter()
     }
 }

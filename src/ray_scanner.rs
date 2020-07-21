@@ -1,12 +1,12 @@
 use crate::color::Color;
 use crate::scene::Scene;
+use crate::utils::*;
 
 use image::{Pixel, SurfaceMut};
 
 use std::convert::TryInto;
 
 use cgmath::prelude::*;
-use rand::prelude::*;
 
 pub struct Ray {
     pub origin: cgmath::Vector3<f32>,
@@ -40,12 +40,13 @@ pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scen
     let (image_width, image_height) = (image_width as f32, image_height as f32);
 
     for (x, y, pixel) in image.enumerate_pixels_mut() {
+        println!("({}, {})", x, y);
         let colv = (0..SAMPLE_COUNT)
             .into_iter()
             .map(|_s| {
                 (
-                    (x as f32) - 0.5 + random::<f32>(),
-                    (y as f32) - 0.5 + random::<f32>(),
+                    (x as f32) + random_in_range(-0.5, 0.5),
+                    (y as f32) - random_in_range(-0.5, 0.5),
                 )
             })
             .map(|(x, y)| {
@@ -65,8 +66,7 @@ const MAX_DEPTH: usize = 50;
 
 pub fn trace(ray: &Ray, scene: &Scene, depth: usize) -> Color {
     scene
-        .intersect_shapes(&ray)
-        .into_iter()
+        .get_shapes(&ray)
         .filter_map(|shape| {
             shape
                 .intersect(&ray, 0.001, std::f32::INFINITY)

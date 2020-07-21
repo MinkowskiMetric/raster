@@ -1,24 +1,19 @@
 use crate::color::Color;
 use crate::ray_scanner::Ray;
 use crate::scene::HitResult;
+use crate::utils::*;
 
 use cgmath::prelude::*;
-use rand::prelude::*;
-
-fn random_in_unit_sphere() -> cgmath::Vector3<f32> {
-    loop {
-        let p = cgmath::vec3(random::<f32>(), random::<f32>(), random::<f32>());
-        if p.magnitude() < 1.0 {
-            return p;
-        }
-    }
-}
 
 fn reflect(v: cgmath::Vector3<f32>, n: cgmath::Vector3<f32>) -> cgmath::Vector3<f32> {
     return v - (2.0 * v.dot(n) * n);
 }
 
-fn refract(v: cgmath::Vector3<f32>, n: cgmath::Vector3<f32>, etai_over_etat: f32) -> cgmath::Vector3<f32> {
+fn refract(
+    v: cgmath::Vector3<f32>,
+    n: cgmath::Vector3<f32>,
+    etai_over_etat: f32,
+) -> cgmath::Vector3<f32> {
     let cos_theta = (-v).dot(n);
     let r_out_perp = etai_over_etat * (v + cos_theta * n);
     let r_out_parallel = -(1.0 - r_out_perp.magnitude2()).abs().sqrt() * n;
@@ -81,7 +76,8 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
-        let reflected = reflect(ray_in.direction.normalize(), hit_record.surface_normal) + self.fuzz() * random_in_unit_sphere();
+        let reflected = reflect(ray_in.direction.normalize(), hit_record.surface_normal)
+            + self.fuzz() * random_in_unit_sphere();
         if reflected.dot(hit_record.surface_normal) > 0.0 {
             Some(ScatterResult {
                 attenuation: cgmath::Vector4::from(*self.color()).truncate(),
@@ -107,21 +103,30 @@ impl Dielectric {
 
 impl Material for Dielectric {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
-        let etai_over_etat = if hit_record.front_face { 1.0 / self.refractive_index() } else { self.refractive_index() };
+        let etai_over_etat = if hit_record.front_face {
+            1.0 / self.refractive_index()
+        } else {
+            self.refractive_index()
+        };
         let unit_ray_direction = ray_in.direction.normalize();
 
         let cos_theta = -unit_ray_direction.dot(hit_record.surface_normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
-        if etai_over_etat * sin_theta > 1.0 ||
-           random::<f32>() < schlick(cos_theta, etai_over_etat) {
+        if etai_over_etat * sin_theta > 1.0
+            || random_in_range(0.0, 1.0) < schlick(cos_theta, etai_over_etat)
+        {
             let reflected = reflect(unit_ray_direction, hit_record.surface_normal);
-            
+
             Some(ScatterResult {
                 attenuation: cgmath::vec3(1.0, 1.0, 1.0),
                 scattered: Ray::new(hit_record.hit_point, reflected),
             })
         } else {
-            let refracted = refract(unit_ray_direction, hit_record.surface_normal, etai_over_etat);
+            let refracted = refract(
+                unit_ray_direction,
+                hit_record.surface_normal,
+                etai_over_etat,
+            );
 
             Some(ScatterResult {
                 attenuation: cgmath::vec3(1.0, 1.0, 1.0),
