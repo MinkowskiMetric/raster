@@ -55,7 +55,7 @@ pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scen
                 let (u, v) = (x / image_width, y / image_height);
                 let ray = scene.camera().make_ray(u, v);
 
-                cgmath::Vector4::from(trace(&ray, scene, 0))
+                cgmath::Vector4::from(trace(&ray, scene))
             })
             .fold(cgmath::vec4(0.0, 0.0, 0.0, 0.0), |sum, v| sum + v);
         let colv = colv / (SAMPLE_COUNT as f32);
@@ -72,25 +72,21 @@ fn assign_swap<T>(target: &mut T, value: T) -> T {
     swap_value
 }
 
-struct FixedSizeAttenuationStack {
-    size: usize,
-    data: Box<[Option<ScatterResult>]>,
+struct FixedSizeAttenuationStack<'a> {
+    data: &'a mut [Option<ScatterResult>],
     top: usize,
 }
 
-impl FixedSizeAttenuationStack {
-    pub fn new(size: usize) -> Self {
-        let data = vec![Option::None;size];
-
+impl<'a> FixedSizeAttenuationStack<'a> {
+    pub fn new(data: &'a mut [Option<ScatterResult>]) -> Self {
         FixedSizeAttenuationStack {
-            size: size,
-            data: data.into_boxed_slice(),
+            data,
             top: 0,
         }
     }
 
     pub fn push(&mut self, scatter_result: ScatterResult) {
-        debug_assert!(self.top < self.size);
+        debug_assert!(self.top < self.data.len());
         debug_assert!(self.data[self.top].is_none());
 
         self.data[self.top] = Some(scatter_result);
@@ -143,10 +139,9 @@ fn single_trace(ray: &Ray, scene: &Scene) -> Option<ScatterResult> {
     })
 }
 
-pub fn trace(ray: &Ray, scene: &Scene, depth: usize) -> Color {
-    assert!(depth == 0);
-
-    let mut attenuation_stack = FixedSizeAttenuationStack::new(MAX_DEPTH);
+pub fn trace(ray: &Ray, scene: &Scene) -> Color {
+    let mut attenuation_stack_data = [None;MAX_DEPTH];
+    let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
     attenuation_stack.push(ScatterResult { 
         attenuation: cgmath::vec3(1.0, 1.0, 1.0).try_into().unwrap(),
         scattered: *ray,
