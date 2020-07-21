@@ -50,7 +50,7 @@ impl Lambertian {
 
 impl Material for Lambertian {
     fn scatter(&self, _ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
-        let target = hit_record.hit_point + hit_record.surface_normal + random_in_unit_sphere();
+        let target = hit_record.hit_point + hit_record.surface_normal + random_unit_vector();
         Some(ScatterResult {
             attenuation: cgmath::Vector4::from(*self.color()).truncate(),
             scattered: Ray::new(hit_record.hit_point, target - hit_record.hit_point),

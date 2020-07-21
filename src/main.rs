@@ -9,13 +9,12 @@ extern crate cgmath;
 extern crate num;
 use cgmath::prelude::*;
 
+use crate::utils::*;
+
 use std::convert::TryInto;
 
 use image::prelude::*;
 use image::{filled_image, BmpEncoder, RgbaPixel};
-
-const WIDTH: usize = 1920;
-const HEIGHT: usize = 1080;
 
 fn attenuate_color(color: color::Color, attenuation: f32) -> color::Color {
     (cgmath::Vector4::from(color).truncate() * attenuation)
@@ -23,10 +22,79 @@ fn attenuate_color(color: color::Color, attenuation: f32) -> color::Color {
         .unwrap()
 }
 
-fn main() {
-    let mut surf = filled_image(WIDTH, HEIGHT, RgbaPixel::BLACK).unwrap();
-    let aspect_ratio = (WIDTH as f32) / (HEIGHT as f32);
+#[allow(dead_code)]
+fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
+    let mut shapes: Vec<Box<dyn crate::scene::Shape>> = Vec::new();
 
+    shapes.push(
+        Box::new(crate::sphere::Sphere::new(
+            cgmath::vec3(0.0, -1000.0, 0.0),
+            1000.0,
+            Box::new(material::Lambertian::new(cgmath::vec3(0.5, 0.5, 0.5).try_into().unwrap())),
+        ))
+    );
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = random_in_range(0.0, 1.0);
+            let center = cgmath::vec3((a as f32) + 0.9 * random_in_range(0.0, 1.0), 0.2, (b as f32) + 0.9 * random_in_range(0.0, 1.0));
+
+            if (center - cgmath::vec3(4.0, 0.2, 0.0)).magnitude() > 0.9 {
+                let material: Box<dyn material::Material> = if choose_mat < 0.8 {
+                    Box::new(material::Lambertian::new(random_color_in_range(0.0, 1.0)))
+                } else if choose_mat < 0.95 {
+                    let albedo = random_color_in_range(0.5, 1.0);
+                    let fuzz = random_in_range(0.0, 1.0);
+                    Box::new(material::Metal::new(albedo, fuzz))
+                } else {
+                    Box::new(material::Dielectric::new(1.5))
+                };
+
+                shapes.push(Box::new(crate::sphere::Sphere::new(center, 0.2, material)));
+            }
+        }
+    }
+
+    shapes.push(Box::new(crate::sphere::Sphere::new(
+        cgmath::vec3(0.0, 1.0, 0.0),
+        1.0,
+        Box::new(material::Dielectric::new(1.5)),
+    )));
+
+    shapes.push(Box::new(crate::sphere::Sphere::new(
+        cgmath::vec3(-4.0, 1.0, 0.0),
+        1.0,
+        Box::new(material::Lambertian::new(cgmath::vec3(0.4, 0.2, 0.1).try_into().unwrap())),
+    )));
+
+    shapes.push(Box::new(crate::sphere::Sphere::new(
+        cgmath::vec3(3.0, 1.0, 0.0),
+        1.0,
+        Box::new(material::Metal::new(cgmath::vec3(0.7, 0.6, 0.5).try_into().unwrap(), 0.0)),
+    )));
+
+    let aspect_ratio = (width as f32) / (height as f32);
+    let lookfrom = cgmath::Point3::new(13.0, 2.0, 3.0);
+    let lookat = cgmath::Point3::new(0.0, 0.0, 0.0);
+    let vup = cgmath::vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = 10.0;
+    let aperture = 0.1;
+    let camera = camera::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        cgmath::Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    scene::Scene::new(camera, shapes)
+}
+
+#[allow(dead_code)]
+fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
+    let aspect_ratio = (width as f32) / (height as f32);
     let lookfrom = cgmath::Point3::new(-5.0, 2.0, 1.0);
     let lookat = cgmath::Point3::new(0.0, 0.0, -3.0);
     let vup = cgmath::vec3(0.0, 1.0, 0.0);
@@ -77,7 +145,15 @@ fn main() {
             ))),
         )),
     ];
-    let scene = scene::Scene::new(camera, shapes);
+    scene::Scene::new(camera, shapes)
+}
+
+fn main() {
+    const WIDTH: usize = 320;
+    const HEIGHT: usize = 240;
+
+    let mut surf = filled_image(WIDTH, HEIGHT, RgbaPixel::BLACK).unwrap();
+    let scene = random_scene(WIDTH, HEIGHT);
     ray_scanner::scan(&mut surf, &scene);
     BmpEncoder::new()
         .write_image_to_file(&surf, "/Volumes/Unix/src/hello.bmp")
