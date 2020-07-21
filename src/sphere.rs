@@ -39,11 +39,14 @@ impl Shape for Sphere {
             let temp = (-b - discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
                 let hit_point = ray.origin + (temp * ray.direction);
-                let surface_normal = (hit_point - self.center) / self.radius;
+                let outward_normal = (hit_point - self.center) / self.radius;
+                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let surface_normal = if front_face { outward_normal } else { -outward_normal };
                 return Some(HitResult {
                     distance: temp,
                     hit_point,
                     surface_normal,
+                    front_face,
                     material: &self.material,
                 });
             }
@@ -51,11 +54,14 @@ impl Shape for Sphere {
             let temp = (-b + discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
                 let hit_point = ray.origin + (temp * ray.direction);
-                let surface_normal = (hit_point - self.center) / self.radius;
+                let outward_normal = (hit_point - self.center) / self.radius;
+                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let surface_normal = if front_face { outward_normal } else { -outward_normal };
                 return Some(HitResult {
                     distance: temp,
                     hit_point,
                     surface_normal,
+                    front_face,
                     material: &self.material,
                 });
             }

@@ -33,18 +33,15 @@ fn main() {
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(-1.0, -1.0, -2.0),
             1.0,
-            Box::new(material::Lambertian::new(attenuate_color(
-                color::Color::RED,
-                0.5,
-            ))),
+            Box::new(material::Dielectric::new(1.5)),
         )),
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.0, 0.0, 0.0),
             1.0,
             Box::new(material::Metal::new(attenuate_color(
-                color::Color::WHITE,
+                color::Color::MAGENTA,
                 0.8,
-            ), 0.3)),
+            ), 0.2)),
         )),
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.0, 51.0, 0.0),
