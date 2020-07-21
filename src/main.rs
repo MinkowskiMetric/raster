@@ -24,19 +24,19 @@ fn attenuate_color(color: color::Color, attenuation: f32) -> color::Color {
 fn main() {
     let mut surf = filled_image(WIDTH, HEIGHT, RgbaPixel::BLACK).unwrap();
     let camera = camera::Camera::new(
-        cgmath::vec3(0.0, 0.0, -20.0),
+        /*cgmath::vec3(0.0, 0.0, -20.0),
         surf.width(),
         surf.height(),
-        cgmath::Deg(30.0).into(),
+        cgmath::Deg(30.0).into(),*/
     );
     let shapes: Vec<Box<dyn crate::scene::Shape>> = vec![
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(-1.0, -1.0, -2.0),
+            cgmath::vec3(-0.5, 0.0, -3.0),
             1.0,
             Box::new(material::Dielectric::new(1.5)),
         )),
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(0.0, 0.0, 0.0),
+            cgmath::vec3(0.5, 0.0, -5.0),
             1.0,
             Box::new(material::Metal::new(attenuate_color(
                 color::Color::MAGENTA,
@@ -44,7 +44,7 @@ fn main() {
             ), 0.2)),
         )),
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(0.0, 51.0, 0.0),
+            cgmath::vec3(0.0, -51.0, -5.0),
             50.0,
             Box::new(material::Lambertian::new(attenuate_color(
                 color::Color::YELLOW,

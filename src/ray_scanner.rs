@@ -36,6 +36,9 @@ impl Ray {
 const SAMPLE_COUNT: usize = 100;
 
 pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scene) {
+    let (image_width, image_height) = image.dimensions();
+    let (image_width, image_height) = (image_width as f32, image_height as f32);
+
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         let colv = (0..SAMPLE_COUNT)
             .into_iter()
@@ -46,8 +49,8 @@ pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scen
                 )
             })
             .map(|(x, y)| {
-                let direction = scene.camera().pixel_to_viewport(x, y);
-                let ray = Ray::new(scene.camera().position(), direction);
+                let (u, v) = (x / image_width, y / image_height);
+                let ray = scene.camera().make_ray(u, v);
 
                 cgmath::Vector4::from(trace(&ray, scene, 0))
             })
