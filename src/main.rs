@@ -36,12 +36,25 @@ fn main() {
             Box::new(material::Dielectric::new(1.5)),
         )),
         Box::new(crate::sphere::Sphere::new(
+            cgmath::vec3(-0.5, 0.0, -3.0),
+            -0.99,
+            Box::new(material::Dielectric::new(1.5)),
+        )),
+        Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.5, 0.0, -5.0),
             1.0,
             Box::new(material::Metal::new(attenuate_color(
                 color::Color::MAGENTA,
                 0.8,
             ), 0.2)),
+        )),
+        Box::new(crate::sphere::Sphere::new(
+            cgmath::vec3(-0.5, 0.0, -5.0),
+            1.0,
+            Box::new(material::Metal::new(attenuate_color(
+                color::Color::WHITE,
+                0.8,
+            ), 0.0)),
         )),
         Box::new(crate::sphere::Sphere::new(
             cgmath::vec3(0.0, -51.0, -5.0),
