@@ -77,10 +77,7 @@ impl Scene {
         &self.shapes
     }
 
-    pub fn intersect_shapes(&self, ray: &Ray) -> Vec<&Box<dyn Shape>> {
-        self.shapes()
-            .iter()
-            .filter(|shape| shape.bounding_box().intersects(ray))
-            .collect()
+    pub fn intersect_shapes<'a>(&'a self, ray: &'a Ray) -> impl Iterator<Item = &'a Box<dyn Shape>> {
+        self.shapes().iter()
     }
 }
