@@ -27,6 +27,7 @@ fn schlick(cosine: f32, ref_idx: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ScatterResult {
     pub attenuation: cgmath::Vector3<f32>,
     pub scattered: Ray,

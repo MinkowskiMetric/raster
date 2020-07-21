@@ -11,3 +11,6 @@ edition = "2018"
 "cgmath" = "*"
 "image" = { path = "./crates/image" }
 "rand" = "*"
+
+[profile.release]
+debug = true
