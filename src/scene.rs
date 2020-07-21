@@ -4,7 +4,7 @@ use crate::ray_scanner::Ray;
 
 pub struct HitResult<'a> {
     pub distance: f32,
-    pub hit_point: cgmath::Vector3<f32>,
+    pub hit_point: cgmath::Point3<f32>,
     pub surface_normal: cgmath::Vector3<f32>,
     pub front_face: bool,
     pub material: &'a Box<dyn Material>,

@@ -52,6 +52,6 @@ impl Camera {
 
         let direction =
             self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset;
-        Ray::new((self.origin + offset).to_vec(), direction.normalize())
+        Ray::new(self.origin + offset, direction.normalize())
     }
 }

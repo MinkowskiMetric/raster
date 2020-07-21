@@ -28,7 +28,7 @@ fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
 
     shapes.push(
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(0.0, -1000.0, 0.0),
+            cgmath::Point3::new(0.0, -1000.0, 0.0),
             1000.0,
             Box::new(material::Lambertian::new(cgmath::vec3(0.5, 0.5, 0.5).try_into().unwrap())),
         ))
@@ -37,9 +37,9 @@ fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = random_in_range(0.0, 1.0);
-            let center = cgmath::vec3((a as f32) + 0.9 * random_in_range(0.0, 1.0), 0.2, (b as f32) + 0.9 * random_in_range(0.0, 1.0));
+            let center = cgmath::Point3::new((a as f32) + 0.9 * random_in_range(0.0, 1.0), 0.2, (b as f32) + 0.9 * random_in_range(0.0, 1.0));
 
-            if (center - cgmath::vec3(4.0, 0.2, 0.0)).magnitude() > 0.9 {
+            if (center - cgmath::Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
                 let material: Box<dyn material::Material> = if choose_mat < 0.8 {
                     Box::new(material::Lambertian::new(random_color_in_range(0.0, 1.0)))
                 } else if choose_mat < 0.95 {
@@ -56,19 +56,19 @@ fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
     }
 
     shapes.push(Box::new(crate::sphere::Sphere::new(
-        cgmath::vec3(0.0, 1.0, 0.0),
+        cgmath::Point3::new(0.0, 1.0, 0.0),
         1.0,
         Box::new(material::Dielectric::new(1.5)),
     )));
 
     shapes.push(Box::new(crate::sphere::Sphere::new(
-        cgmath::vec3(-4.0, 1.0, 0.0),
+        cgmath::Point3::new(-4.0, 1.0, 0.0),
         1.0,
         Box::new(material::Lambertian::new(cgmath::vec3(0.4, 0.2, 0.1).try_into().unwrap())),
     )));
 
     shapes.push(Box::new(crate::sphere::Sphere::new(
-        cgmath::vec3(3.0, 1.0, 0.0),
+        cgmath::Point3::new(3.0, 1.0, 0.0),
         1.0,
         Box::new(material::Metal::new(cgmath::vec3(0.7, 0.6, 0.5).try_into().unwrap(), 0.0)),
     )));
@@ -111,17 +111,17 @@ fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
     );
     let shapes: Vec<Box<dyn crate::scene::Shape>> = vec![
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(-0.5, 0.0, -3.0),
+            cgmath::Point3::new(-0.5, 0.0, -3.0),
             1.0,
             Box::new(material::Dielectric::new(1.5)),
         )),
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(-0.5, 0.0, -3.0),
+            cgmath::Point3::new(-0.5, 0.0, -3.0),
             -0.999,
             Box::new(material::Dielectric::new(1.5)),
         )),
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(0.5, 0.0, -5.0),
+            cgmath::Point3::new(0.5, 0.0, -5.0),
             1.0,
             Box::new(material::Metal::new(
                 attenuate_color(color::Color::MAGENTA, 0.8),
@@ -129,7 +129,7 @@ fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
             )),
         )),
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(-0.5, 0.0, -5.0),
+            cgmath::Point3::new(-0.5, 0.0, -5.0),
             1.0,
             Box::new(material::Metal::new(
                 attenuate_color(color::Color::WHITE, 0.8),
@@ -137,7 +137,7 @@ fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
             )),
         )),
         Box::new(crate::sphere::Sphere::new(
-            cgmath::vec3(0.0, -51.0, -5.0),
+            cgmath::Point3::new(0.0, -51.0, -5.0),
             50.0,
             Box::new(material::Lambertian::new(attenuate_color(
                 color::Color::YELLOW,
@@ -149,11 +149,11 @@ fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
 }
 
 fn main() {
-    const WIDTH: usize = 320;
-    const HEIGHT: usize = 240;
+    const WIDTH: usize = 1920;
+    const HEIGHT: usize = 1080;
 
     let mut surf = filled_image(WIDTH, HEIGHT, RgbaPixel::BLACK).unwrap();
-    let scene = random_scene(WIDTH, HEIGHT);
+    let scene = my_test_scene(WIDTH, HEIGHT);
     ray_scanner::scan(&mut surf, &scene);
     BmpEncoder::new()
         .write_image_to_file(&surf, "/Volumes/Unix/src/hello.bmp")

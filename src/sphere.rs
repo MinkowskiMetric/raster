@@ -4,13 +4,13 @@ use crate::scene::{HitResult, Shape};
 use cgmath::prelude::*;
 
 pub struct Sphere {
-    center: cgmath::Vector3<f32>,
+    center: cgmath::Point3<f32>,
     radius: f32,
     material: Box<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(center: cgmath::Vector3<f32>, radius: f32, material: Box<dyn Material>) -> Self {
+    pub fn new(center: cgmath::Point3<f32>, radius: f32, material: Box<dyn Material>) -> Self {
         Self {
             center,
             radius,

@@ -11,14 +11,14 @@ use cgmath::prelude::*;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Ray {
-    pub origin: cgmath::Vector3<f32>,
+    pub origin: cgmath::Point3<f32>,
     pub direction: cgmath::Vector3<f32>,
     pub inv_direction: cgmath::Vector3<f32>,
     pub sign: [usize; 3],
 }
 
 impl Ray {
-    pub fn new(origin: cgmath::Vector3<f32>, direction: cgmath::Vector3<f32>) -> Self {
+    pub fn new(origin: cgmath::Point3<f32>, direction: cgmath::Vector3<f32>) -> Self {
         let inv_direction = 1.0 / direction;
         let sign = [
             if inv_direction.x < 0.0 { 1 } else { 0 },
