@@ -1,26 +1,26 @@
+use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
-use cgmath::prelude::*;
 
 pub struct Camera {
-    origin: cgmath::Point3<f32>,
-    lower_left_corner: cgmath::Point3<f32>,
-    horizontal: cgmath::Vector3<f32>,
-    vertical: cgmath::Vector3<f32>,
-    u: cgmath::Vector3<f32>,
-    v: cgmath::Vector3<f32>,
-    lens_radius: f32,
+    origin: Point3,
+    lower_left_corner: Point3,
+    horizontal: Vector3,
+    vertical: Vector3,
+    u: Vector3,
+    v: Vector3,
+    lens_radius: FloatType,
 }
 
 impl Camera {
     pub fn new(
-        lookfrom: cgmath::Point3<f32>,
-        lookat: cgmath::Point3<f32>,
-        vup: cgmath::Vector3<f32>,
-        fov: cgmath::Rad<f32>,
-        aspect_ratio: f32,
-        aperture: f32,
-        focus_dist: f32,
+        lookfrom: Point3,
+        lookat: Point3,
+        vup: Vector3,
+        fov: Rad<FloatType>,
+        aspect_ratio: FloatType,
+        aperture: FloatType,
+        focus_dist: FloatType,
     ) -> Self {
         let h = (fov / 2.0).tan();
         let viewport_height = 2.0 * h;
@@ -46,7 +46,7 @@ impl Camera {
         }
     }
 
-    pub fn make_ray(&self, s: f32, t: f32) -> Ray {
+    pub fn make_ray(&self, s: FloatType, t: FloatType) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk();
         let offset = self.u * rd.x + self.v * rd.y;
 

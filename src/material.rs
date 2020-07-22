@@ -1,19 +1,14 @@
 use crate::color::Color;
+use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::scene::HitResult;
 use crate::utils::*;
 
-use cgmath::prelude::*;
-
-fn reflect(v: cgmath::Vector3<f32>, n: cgmath::Vector3<f32>) -> cgmath::Vector3<f32> {
+fn reflect(v: Vector3, n: Vector3) -> Vector3 {
     return v - (2.0 * v.dot(n) * n);
 }
 
-fn refract(
-    v: cgmath::Vector3<f32>,
-    n: cgmath::Vector3<f32>,
-    etai_over_etat: f32,
-) -> cgmath::Vector3<f32> {
+fn refract(v: Vector3, n: Vector3, etai_over_etat: FloatType) -> Vector3 {
     let cos_theta = (-v).dot(n);
     let r_out_perp = etai_over_etat * (v + cos_theta * n);
     let r_out_parallel = -(1.0 - r_out_perp.magnitude2()).abs().sqrt() * n;
@@ -21,7 +16,7 @@ fn refract(
     r_out_perp + r_out_parallel
 }
 
-fn schlick(cosine: f32, ref_idx: f32) -> f32 {
+fn schlick(cosine: FloatType, ref_idx: FloatType) -> FloatType {
     let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     let r0 = r0 * r0;
     r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
@@ -29,7 +24,7 @@ fn schlick(cosine: f32, ref_idx: f32) -> f32 {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ScatterResult {
-    pub attenuation: cgmath::Vector3<f32>,
+    pub attenuation: Vector3,
     pub scattered: Ray,
 }
 
@@ -59,10 +54,10 @@ impl Material for Lambertian {
     }
 }
 
-pub struct Metal(Color, f32);
+pub struct Metal(Color, FloatType);
 
 impl Metal {
-    pub fn new(color: Color, fuzz: f32) -> Self {
+    pub fn new(color: Color, fuzz: FloatType) -> Self {
         Metal(color, if fuzz < 1.0 { fuzz } else { 1.0 })
     }
 
@@ -70,7 +65,7 @@ impl Metal {
         &self.0
     }
 
-    pub fn fuzz(&self) -> f32 {
+    pub fn fuzz(&self) -> FloatType {
         self.1
     }
 }
@@ -90,14 +85,14 @@ impl Material for Metal {
     }
 }
 
-pub struct Dielectric(f32);
+pub struct Dielectric(FloatType);
 
 impl Dielectric {
-    pub fn new(ri: f32) -> Self {
+    pub fn new(ri: FloatType) -> Self {
         Self(ri)
     }
 
-    pub fn refractive_index(&self) -> f32 {
+    pub fn refractive_index(&self) -> FloatType {
         self.0
     }
 }
@@ -119,7 +114,7 @@ impl Material for Dielectric {
             let reflected = reflect(unit_ray_direction, hit_record.surface_normal);
 
             Some(ScatterResult {
-                attenuation: cgmath::vec3(1.0, 1.0, 1.0),
+                attenuation: vec3(1.0, 1.0, 1.0),
                 scattered: Ray::new(hit_record.hit_point, reflected),
             })
         } else {
@@ -130,7 +125,7 @@ impl Material for Dielectric {
             );
 
             Some(ScatterResult {
-                attenuation: cgmath::vec3(1.0, 1.0, 1.0),
+                attenuation: vec3(1.0, 1.0, 1.0),
                 scattered: Ray::new(hit_record.hit_point, refracted),
             })
         }

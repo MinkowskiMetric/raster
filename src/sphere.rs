@@ -1,16 +1,16 @@
 use crate::material::Material;
+use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::scene::{HitResult, Shape};
-use cgmath::prelude::*;
 
 pub struct Sphere {
-    center: cgmath::Point3<f32>,
-    radius: f32,
+    center: Point3,
+    radius: FloatType,
     material: Box<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(center: cgmath::Point3<f32>, radius: f32, material: Box<dyn Material>) -> Self {
+    pub fn new(center: Point3, radius: FloatType, material: Box<dyn Material>) -> Self {
         Self {
             center,
             radius,
@@ -20,7 +20,7 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    fn intersect(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitResult> {
+    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<HitResult> {
         let oc = ray.origin - self.center;
         let a = ray.direction.dot(ray.direction);
         let b = oc.dot(ray.direction);

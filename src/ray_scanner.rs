@@ -1,24 +1,23 @@
 use crate::color::Color;
+use crate::material::ScatterResult;
+use crate::math::*;
 use crate::scene::Scene;
 use crate::utils::*;
-use crate::material::ScatterResult;
 
 use image::{Pixel, SurfaceMut};
 
 use std::convert::TryInto;
 
-use cgmath::prelude::*;
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Ray {
-    pub origin: cgmath::Point3<f32>,
-    pub direction: cgmath::Vector3<f32>,
-    pub inv_direction: cgmath::Vector3<f32>,
+    pub origin: Point3,
+    pub direction: Vector3,
+    pub inv_direction: Vector3,
     pub sign: [usize; 3],
 }
 
 impl Ray {
-    pub fn new(origin: cgmath::Point3<f32>, direction: cgmath::Vector3<f32>) -> Self {
+    pub fn new(origin: Point3, direction: Vector3) -> Self {
         let inv_direction = 1.0 / direction;
         let sign = [
             if inv_direction.x < 0.0 { 1 } else { 0 },
@@ -39,7 +38,7 @@ const SAMPLE_COUNT: usize = 100;
 
 pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scene) {
     let (image_width, image_height) = image.dimensions();
-    let (image_width, image_height) = (image_width as f32, image_height as f32);
+    let (image_width, image_height) = (image_width as FloatType, image_height as FloatType);
 
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         println!("({}, {})", x, y);
@@ -47,8 +46,8 @@ pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scen
             .into_iter()
             .map(|_s| {
                 (
-                    (x as f32) + random_in_range(-0.5, 0.5),
-                    (y as f32) - random_in_range(-0.5, 0.5),
+                    (x as FloatType) + random_in_range(-0.5, 0.5),
+                    (y as FloatType) - random_in_range(-0.5, 0.5),
                 )
             })
             .map(|(x, y)| {
@@ -58,7 +57,7 @@ pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scen
                 cgmath::Vector4::from(trace(&ray, scene))
             })
             .fold(cgmath::vec4(0.0, 0.0, 0.0, 0.0), |sum, v| sum + v);
-        let colv = colv / (SAMPLE_COUNT as f32);
+        let colv = colv / (SAMPLE_COUNT as FloatType);
         let col: Color = colv.try_into().unwrap();
         *pixel = col.gamma(2.0).into();
     }
@@ -79,10 +78,7 @@ struct FixedSizeAttenuationStack<'a> {
 
 impl<'a> FixedSizeAttenuationStack<'a> {
     pub fn new(data: &'a mut [Option<ScatterResult>]) -> Self {
-        FixedSizeAttenuationStack {
-            data,
-            top: 0,
-        }
+        FixedSizeAttenuationStack { data, top: 0 }
     }
 
     pub fn push(&mut self, scatter_result: ScatterResult) {
@@ -105,8 +101,8 @@ impl<'a> FixedSizeAttenuationStack<'a> {
 
     pub fn last(&self) -> Option<&ScatterResult> {
         if self.top > 0 {
-            debug_assert!(self.data[self.top-1].is_some());
-            self.data[self.top-1].as_ref()
+            debug_assert!(self.data[self.top - 1].is_some());
+            self.data[self.top - 1].as_ref()
         } else {
             None
         }
@@ -123,27 +119,25 @@ impl<'a> FixedSizeAttenuationStack<'a> {
 
 fn single_trace(ray: &Ray, scene: &Scene) -> Option<ScatterResult> {
     scene
-    .get_shapes(&ray)
-    .filter_map(|shape| {
-        shape
-            .intersect(&ray, 0.001, std::f32::INFINITY)
-            .map(|distance| (shape, distance))
-    })
-    .min_by(|(_, xr), (_, yr)| {
-        xr.distance
-            .partial_cmp(&yr.distance)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    })
-    .and_then(|(_, hit_record)| {
-        hit_record.material.scatter(&ray, &hit_record)
-    })
+        .get_shapes(&ray)
+        .filter_map(|shape| {
+            shape
+                .intersect(&ray, 0.001, constants::INFINITY)
+                .map(|distance| (shape, distance))
+        })
+        .min_by(|(_, xr), (_, yr)| {
+            xr.distance
+                .partial_cmp(&yr.distance)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .and_then(|(_, hit_record)| hit_record.material.scatter(&ray, &hit_record))
 }
 
 pub fn trace(ray: &Ray, scene: &Scene) -> Color {
-    let mut attenuation_stack_data = [None;MAX_DEPTH];
+    let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
-    attenuation_stack.push(ScatterResult { 
-        attenuation: cgmath::vec3(1.0, 1.0, 1.0).try_into().unwrap(),
+    attenuation_stack.push(ScatterResult {
+        attenuation: vec3(1.0, 1.0, 1.0).try_into().unwrap(),
         scattered: *ray,
     });
 
@@ -160,7 +154,7 @@ pub fn trace(ray: &Ray, scene: &Scene) -> Color {
             } else {
                 let unit_direction = current_ray.direction;
                 let t = 0.5 * (1.0 - unit_direction.y);
-                (((1.0 - t) * cgmath::vec3(1.0, 1.0, 1.0)) + (t * cgmath::vec3(0.5, 0.7, 1.0)))
+                (((1.0 - t) * vec3(1.0, 1.0, 1.0)) + (t * vec3(0.5, 0.7, 1.0)))
                     .try_into()
                     .unwrap()
             };

@@ -1,17 +1,23 @@
 use crate::camera::Camera;
 use crate::material::Material;
+use crate::math::*;
 use crate::ray_scanner::Ray;
 
 pub struct HitResult<'a> {
-    pub distance: f32,
-    pub hit_point: cgmath::Point3<f32>,
-    pub surface_normal: cgmath::Vector3<f32>,
+    pub distance: FloatType,
+    pub hit_point: Point3,
+    pub surface_normal: Vector3,
     pub front_face: bool,
     pub material: &'a Box<dyn Material>,
 }
 
 pub trait Shape {
-    fn intersect<'a>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitResult<'a>>;
+    fn intersect<'a>(
+        &'a self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> Option<HitResult<'a>>;
 }
 
 pub struct Scene {
