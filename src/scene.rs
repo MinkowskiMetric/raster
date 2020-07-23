@@ -11,7 +11,11 @@ pub struct HitResult<'a> {
     pub material: &'a Box<dyn Material>,
 }
 
-pub trait Shape {
+pub trait ShapeClone {
+    fn box_clone(&self) -> Box<dyn Shape>;
+}
+
+pub trait Shape: Sync + Send + ShapeClone {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -20,6 +24,19 @@ pub trait Shape {
     ) -> Option<HitResult<'a>>;
 }
 
+impl<T: Shape + Clone + 'static> ShapeClone for T {
+    fn box_clone(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Shape> {
+    fn clone(&self) -> Self {
+        self.box_clone()
+    }
+}
+
+#[derive(Clone)]
 pub struct Scene {
     camera: Camera,
     shapes: Box<[Box<dyn Shape>]>,

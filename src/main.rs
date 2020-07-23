@@ -161,8 +161,8 @@ fn main() {
     const HEIGHT: usize = 1080;
 
     let mut surf = filled_image(WIDTH, HEIGHT, RgbaPixel::BLACK).unwrap();
-    let scene = my_test_scene(WIDTH, HEIGHT);
-    ray_scanner::scan(&mut surf, &scene);
+    let scene = random_scene(WIDTH, HEIGHT);
+    ray_scanner::scan(&mut surf, scene);
     BmpEncoder::new()
         .write_image_to_file(&surf, "/Volumes/Unix/src/hello.bmp")
         .unwrap();

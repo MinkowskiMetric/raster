@@ -3,6 +3,8 @@ use crate::material::ScatterResult;
 use crate::math::*;
 use crate::scene::Scene;
 use crate::utils::*;
+use std::slice::{Chunks, ChunksMut};
+use std::thread;
 
 use image::{Pixel, SurfaceMut};
 
@@ -34,33 +36,184 @@ impl Ray {
     }
 }
 
-const SAMPLE_COUNT: usize = 100;
+struct VectorImage {
+    width: usize,
+    height: usize,
+    data: Box<[cgmath::Vector4<FloatType>]>,
+}
 
-pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: &Scene) {
+struct Pixels<'a> {
+    chunks: Chunks<'a, cgmath::Vector4<FloatType>>,
+}
+
+impl<'a> Iterator for Pixels<'a> {
+    type Item = &'a cgmath::Vector4<FloatType>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.chunks.next().map(|slice| &slice[0])
+    }
+}
+
+struct PixelsMut<'a> {
+    chunks: ChunksMut<'a, cgmath::Vector4<FloatType>>,
+}
+
+impl<'a> Iterator for PixelsMut<'a> {
+    type Item = &'a mut cgmath::Vector4<FloatType>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.chunks.next().map(|slice| &mut slice[0])
+    }
+}
+
+struct EnumeratePixelsMut<'a> {
+    pixels: PixelsMut<'a>,
+    x: usize,
+    y: usize,
+    width: usize,
+}
+
+impl<'a> Iterator for EnumeratePixelsMut<'a> {
+    type Item = (usize, usize, &'a mut cgmath::Vector4<FloatType>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.x >= self.width {
+            self.x = 0;
+            self.y += 1;
+        }
+        let (x, y) = (self.x, self.y);
+        self.x += 1;
+        self.pixels.next().map(|p| (x, y, p))
+    }
+}
+
+impl VectorImage {
+    pub fn new(width: usize, height: usize) -> Self {
+        let data = vec![cgmath::vec4(0.0, 0.0, 0.0, 0.0); width * height];
+        Self {
+            width,
+            height,
+            data: data.into_boxed_slice(),
+        }
+    }
+
+    pub fn pixels(&self) -> Pixels {
+        Pixels {
+            chunks: self.data.chunks(1 as usize),
+        }
+    }
+
+    pub fn pixels_mut(&mut self) -> PixelsMut {
+        PixelsMut {
+            chunks: self.data.chunks_mut(1 as usize),
+        }
+    }
+
+    pub fn enumerate_pixels_mut(&mut self) -> EnumeratePixelsMut {
+        let width = self.width;
+        EnumeratePixelsMut {
+            pixels: self.pixels_mut(),
+            x: 0,
+            y: 0,
+            width,
+        }
+    }
+}
+
+impl std::ops::Add for VectorImage {
+    type Output = Self;
+
+    fn add(mut self, other: Self) -> Self {
+        self.pixels_mut()
+        .zip(other.pixels())
+        .fold({}, |_, (dst, src)| {
+            *dst = (*dst + *src)
+        });
+
+        self
+    }
+}
+
+trait MyFoldFirst {
+    type Result;
+
+    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(self, func: F) -> Option<Self::Result>;
+}
+
+impl<Item, Iter: Iterator<Item = Item>> MyFoldFirst for Iter {
+    type Result = Item;
+
+    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(mut self, func: F) -> Option<Self::Result> {
+        if let Some(mut working_value) = self.next() {
+            while let Some(next_value) = self.next() {
+                working_value = func(working_value, next_value);
+            }
+
+            Some(working_value)
+        } else {
+            None
+        }
+    }
+}
+
+pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: Scene) {
+    const THREAD_COUNT: usize = 8;
+    const SAMPLE_PER_THREAD_COUNT: usize = 16;
+
+    let start_time = std::time::Instant::now();
+
     let (image_width, image_height) = image.dimensions();
+
+    let vector_image = (0..THREAD_COUNT)
+                                         .into_iter()
+                                         .map(|a| {
+                                             let thread_scene = scene.clone();
+                                             thread::spawn(move || scan_batch(image_width, image_height, SAMPLE_PER_THREAD_COUNT, &thread_scene))
+                                         })
+                                         .collect::<Vec<_>>()
+                                         .into_iter()
+                                         .map(|jh| jh.join())
+                                         .my_fold_first(|a, b| {
+                                             if let Ok(a) = a {
+                                                 if let Ok(b) = b {
+                                                     Ok(a + b)
+                                                 } else {
+                                                     b
+                                                 }
+                                             } else {
+                                                 a
+                                             }
+                                         })
+                                         .unwrap().unwrap();
+                                         
+    vector_image.pixels()
+    .zip(image.pixels_mut())
+    .fold({}, |_, (src, dst)| {
+        let color = src / src.w;
+        let color: Color = color.try_into().unwrap();
+        *dst = color.gamma(2.0).into();
+    });
+
+    let elapsed = start_time.elapsed().as_secs_f64();
+    println!("Total runtime: {} seconds", elapsed);
+}
+
+fn scan_batch(image_width: usize, image_height: usize, pass_count: usize, scene: &Scene) -> VectorImage {
+    let mut image = VectorImage::new(image_width, image_height);
     let (image_width, image_height) = (image_width as FloatType, image_height as FloatType);
 
     for (x, y, pixel) in image.enumerate_pixels_mut() {
-        println!("({}, {})", x, y);
-        let colv = (0..SAMPLE_COUNT)
-            .into_iter()
-            .map(|_s| {
-                (
-                    (x as FloatType) + random_in_range(-0.5, 0.5),
-                    (y as FloatType) - random_in_range(-0.5, 0.5),
-                )
-            })
-            .map(|(x, y)| {
-                let (u, v) = (x / image_width, y / image_height);
-                let ray = scene.camera().make_ray(u, v);
+        *pixel = (0..pass_count).into_iter()
+        .map(|_s| {
+            let (u, v) = (((x as FloatType) + random_in_range(-0.5, 0.5)) / image_width, ((y as FloatType) + random_in_range(-0.5, 0.5)) / image_height);
+            let ray = scene.camera().make_ray(u, v);
 
-                cgmath::Vector4::from(trace(&ray, scene))
-            })
-            .fold(cgmath::vec4(0.0, 0.0, 0.0, 0.0), |sum, v| sum + v);
-        let colv = colv / (SAMPLE_COUNT as FloatType);
-        let col: Color = colv.try_into().unwrap();
-        *pixel = col.gamma(2.0).into();
+            cgmath::Vector4::from(trace(&ray, scene))
+        })
+        .fold(cgmath::vec4(0.0, 0.0, 0.0, 0.0), |sum, v| sum + v);
     }
+
+    image
 }
 
 const MAX_DEPTH: usize = 50;

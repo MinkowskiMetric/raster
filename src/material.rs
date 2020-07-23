@@ -28,10 +28,27 @@ pub struct ScatterResult {
     pub scattered: Ray,
 }
 
-pub trait Material {
+pub trait MaterialClone {
+    fn box_clone(&self) -> Box<dyn Material>;
+}
+
+pub trait Material: Sync + Send + MaterialClone {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult>;
 }
 
+impl<T: Material + Clone + 'static> MaterialClone for T {
+    fn box_clone(&self) -> Box<dyn Material> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Material> {
+    fn clone(&self) -> Self {
+        self.box_clone()
+    }
+}
+
+#[derive(Clone)]
 pub struct Lambertian(Color);
 
 impl Lambertian {
@@ -54,6 +71,7 @@ impl Material for Lambertian {
     }
 }
 
+#[derive(Clone)]
 pub struct Metal(Color, FloatType);
 
 impl Metal {
@@ -85,6 +103,7 @@ impl Material for Metal {
     }
 }
 
+#[derive(Clone)]
 pub struct Dielectric(FloatType);
 
 impl Dielectric {

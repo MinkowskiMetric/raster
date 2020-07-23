@@ -3,6 +3,7 @@ use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::scene::{HitResult, Shape};
 
+#[derive(Clone)]
 pub struct Sphere {
     center: Point3,
     radius: FloatType,
