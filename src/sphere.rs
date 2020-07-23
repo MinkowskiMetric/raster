@@ -1,7 +1,7 @@
+use crate::hittable::{HitResult, Hittable};
 use crate::material::Material;
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::scene::{HitResult, Shape};
 
 #[derive(Clone)]
 pub struct Sphere {
@@ -20,7 +20,7 @@ impl Sphere {
     }
 }
 
-impl Shape for Sphere {
+impl Hittable for Sphere {
     fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<HitResult> {
         let oc = ray.origin - self.center;
         let a = ray.direction.dot(ray.direction);

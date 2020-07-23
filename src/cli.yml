@@ -1,0 +1,30 @@
+name: raster
+version: "1.0"
+about: My raytracer
+author: Stewart <stewart.tootill@live.co.uk>
+
+# All Args must be defined in the 'args:' list where the name of the arg, is the
+# key to a Hash object
+args:
+    # The name of this argument, is 'opt' which will be used to access the value
+    # later in your Rust code
+    - width:
+        help: Width of image, defaults to 1920
+        short: w
+        long: width
+        takes_value: true
+    - height:
+        help: Height of image, defaults to 1080
+        short: h
+        long: height
+        takes_value: true
+    - scene:
+        help: Choose a scene to render (defaults to mine)
+        long: scene
+        takes_value: true
+        possible_values: [ mine, random ]
+    - output:
+        help: File to write to
+        required: true
+        index: 1
+        takes_value: true

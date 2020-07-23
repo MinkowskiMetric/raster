@@ -1,7 +1,7 @@
 use crate::color::Color;
+use crate::hittable::HitResult;
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::scene::HitResult;
 use crate::utils::*;
 
 fn reflect(v: Vector3, n: Vector3) -> Vector3 {

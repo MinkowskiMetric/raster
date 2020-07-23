@@ -11,6 +11,7 @@ edition = "2018"
 "cgmath" = "*"
 "image" = { path = "./crates/image" }
 "rand" = "*"
+"clap" = { version = "~2.27.0", features = ["yaml"] }
 
 [profile.release]
 debug = true

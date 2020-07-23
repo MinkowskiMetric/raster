@@ -1,5 +1,6 @@
 mod camera;
 mod color;
+mod hittable;
 mod material;
 mod math;
 mod ray_scanner;
@@ -9,10 +10,14 @@ mod utils;
 extern crate cgmath;
 extern crate num;
 
+#[macro_use]
+extern crate clap;
+use clap::App;
+
 use crate::math::*;
 use crate::utils::*;
 
-use std::convert::TryInto;
+use std::convert::{TryInto};
 
 use image::prelude::*;
 use image::{filled_image, BmpEncoder, RgbaPixel};
@@ -21,9 +26,8 @@ fn attenuate_color(color: color::Color, attenuation: FloatType) -> color::Color 
     color.attenuate(attenuation)
 }
 
-#[allow(dead_code)]
 fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
-    let mut shapes: Vec<Box<dyn crate::scene::Shape>> = Vec::new();
+    let mut shapes: Vec<Box<dyn hittable::Hittable>> = Vec::new();
 
     shapes.push(Box::new(crate::sphere::Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
@@ -100,7 +104,6 @@ fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
     scene::Scene::new(camera, shapes)
 }
 
-#[allow(dead_code)]
 fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
@@ -117,7 +120,7 @@ fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<Box<dyn crate::scene::Shape>> = vec![
+    let shapes: Vec<Box<dyn hittable::Hittable>> = vec![
         Box::new(crate::sphere::Sphere::new(
             Point3::new(-0.5, 0.0, -3.0),
             1.0,
@@ -157,13 +160,24 @@ fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
 }
 
 fn main() {
-    const WIDTH: usize = 1920;
-    const HEIGHT: usize = 1080;
+    let yaml = load_yaml!("cli.yml");
+    let matches = App::from_yaml(yaml).get_matches();
 
-    let mut surf = filled_image(WIDTH, HEIGHT, RgbaPixel::BLACK).unwrap();
-    let scene = random_scene(WIDTH, HEIGHT);
+    const DEFAULT_WIDTH: usize = 1920;
+    const DEFAULT_HEIGHT: usize = 1080;
+
+    let width = matches.value_of("width").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_WIDTH);
+    let height = matches.value_of("height").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_HEIGHT);
+    let output_file = matches.value_of("output").unwrap();
+
+    let scene = match matches.value_of("scene") {
+        Some("random") => random_scene(width, height),
+        _ => my_test_scene(width, height),
+    };
+
+    let mut surf = filled_image(width, height, RgbaPixel::BLACK).unwrap();
     ray_scanner::scan(&mut surf, scene);
-    BmpEncoder::new()
-        .write_image_to_file(&surf, "/Volumes/Unix/src/hello.bmp")
-        .unwrap();
+    if let Err(e) = BmpEncoder::new().write_image_to_file(&surf, output_file) {
+        println!("Failed to write output: {}", e);
+    }
 }
