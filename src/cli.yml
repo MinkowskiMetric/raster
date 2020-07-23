@@ -23,6 +23,14 @@ args:
         long: scene
         takes_value: true
         possible_values: [ mine, random ]
+    - threads:
+        help: Number of threads (defaults to 8)
+        long: threads
+        takes_value: true
+    - min-passes:
+        help: Minimum number of passes (defaults to 100)
+        long: min-passes
+        takes_value: true
     - output:
         help: File to write to
         required: true

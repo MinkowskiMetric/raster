@@ -159,15 +159,14 @@ impl<Item, Iter: Iterator<Item = Item>> MyFoldFirst for Iter {
     }
 }
 
-pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: Scene) {
-    const THREAD_COUNT: usize = 8;
-    const SAMPLE_PER_THREAD_COUNT: usize = 16;
-
+pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: Scene, thread_count: usize, min_passes: usize) {
+    let passes_per_thread = (min_passes + thread_count - 1) / thread_count;
+    
     let start_time = std::time::Instant::now();
 
     let (image_width, image_height) = image.dimensions();
 
-    let vector_image = (0..THREAD_COUNT)
+    let vector_image = (0..thread_count)
         .into_iter()
         .map(|_a| {
             let thread_scene = scene.clone();
@@ -175,7 +174,7 @@ pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: Scene
                 scan_batch(
                     image_width,
                     image_height,
-                    SAMPLE_PER_THREAD_COUNT,
+                    passes_per_thread,
                     &thread_scene,
                 )
             })

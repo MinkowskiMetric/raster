@@ -165,6 +165,8 @@ fn main() {
 
     const DEFAULT_WIDTH: usize = 1920;
     const DEFAULT_HEIGHT: usize = 1080;
+    const DEFAULT_MIN_PASSES: usize = 100;
+    const DEFAULT_THREADS: usize = 8;
 
     let width = matches
         .value_of("width")
@@ -175,14 +177,19 @@ fn main() {
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(DEFAULT_HEIGHT);
     let output_file = matches.value_of("output").unwrap();
+    let min_passes = matches.value_of("min-passes").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_MIN_PASSES);
+    let threads = matches.value_of("threads").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_THREADS);
 
-    let scene = match matches.value_of("scene") {
-        Some("random") => random_scene(width, height),
-        _ => my_test_scene(width, height),
+    let (scene, scene_name) = match matches.value_of("scene") {
+        Some("random") => (random_scene(width, height), "random"),
+        _ => (my_test_scene(width, height), "mine"),
     };
 
+    println!("Rendering scene \"{}\" at ({}, {})", scene_name, width, height);
+    println!("Using {} threads, with a minimum of {} passes per pixel", threads, min_passes);
+
     let mut surf = filled_image(width, height, RgbaPixel::BLACK).unwrap();
-    ray_scanner::scan(&mut surf, scene);
+    ray_scanner::scan(&mut surf, scene, threads, min_passes);
     if let Err(e) = BmpEncoder::new().write_image_to_file(&surf, output_file) {
         println!("Failed to write output: {}", e);
     }
