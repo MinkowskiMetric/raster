@@ -1,5 +1,6 @@
 use crate::camera::Camera;
-use crate::hittable::Hittable;
+use crate::hittable::{HitResult, Hittable};
+use crate::math::*;
 use crate::ray_scanner::Ray;
 
 #[derive(Clone)]
@@ -22,8 +23,22 @@ impl Scene {
     pub fn shapes(&self) -> &[Box<dyn Hittable>] {
         &self.shapes
     }
+}
 
-    pub fn get_shapes<'a>(&'a self, _ray: &'a Ray) -> impl Iterator<Item = &'a Box<dyn Hittable>> {
-        self.shapes().iter()
+impl Hittable for Scene {
+    fn intersect<'a>(
+        &'a self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> Option<HitResult<'a>> {
+        self.shapes()
+            .iter()
+            .filter_map(|shape| shape.intersect(&ray, t_min, t_max))
+            .min_by(|xr, yr| {
+                xr.distance
+                    .partial_cmp(&yr.distance)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 }

@@ -1,4 +1,5 @@
 use crate::color::Color;
+use crate::hittable::Hittable;
 use crate::material::ScatterResult;
 use crate::math::*;
 use crate::scene::Scene;
@@ -288,18 +289,8 @@ impl<'a> FixedSizeAttenuationStack<'a> {
 
 fn single_trace(ray: &Ray, scene: &Scene) -> Option<ScatterResult> {
     scene
-        .get_shapes(&ray)
-        .filter_map(|shape| {
-            shape
-                .intersect(&ray, 0.001, constants::INFINITY)
-                .map(|distance| (shape, distance))
-        })
-        .min_by(|(_, xr), (_, yr)| {
-            xr.distance
-                .partial_cmp(&yr.distance)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })
-        .and_then(|(_, hit_record)| hit_record.material.scatter(&ray, &hit_record))
+        .intersect(ray, 0.001, constants::INFINITY)
+        .and_then(|hit_result| hit_result.material.scatter(&ray, &hit_result))
 }
 
 pub fn trace(ray: &Ray, scene: &Scene) -> Color {

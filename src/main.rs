@@ -17,7 +17,7 @@ use clap::App;
 use crate::math::*;
 use crate::utils::*;
 
-use std::convert::{TryInto};
+use std::convert::TryInto;
 
 use image::prelude::*;
 use image::{filled_image, BmpEncoder, RgbaPixel};
@@ -166,8 +166,14 @@ fn main() {
     const DEFAULT_WIDTH: usize = 1920;
     const DEFAULT_HEIGHT: usize = 1080;
 
-    let width = matches.value_of("width").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_WIDTH);
-    let height = matches.value_of("height").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_HEIGHT);
+    let width = matches
+        .value_of("width")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_WIDTH);
+    let height = matches
+        .value_of("height")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_HEIGHT);
     let output_file = matches.value_of("output").unwrap();
 
     let scene = match matches.value_of("scene") {
