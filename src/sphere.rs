@@ -1,12 +1,14 @@
+use crate::aabb::BoundingBox;
 use crate::hittable::{HitResult, Hittable};
 use crate::material::Material;
 use crate::math::*;
 use crate::ray_scanner::Ray;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Sphere {
     center: Point3,
     radius: FloatType,
+    bounding_box: BoundingBox,
     material: Box<dyn Material>,
 }
 
@@ -16,6 +18,10 @@ impl Sphere {
             center,
             radius,
             material,
+            bounding_box: BoundingBox::new(
+                center - vec3(radius, radius, radius),
+                center + vec3(radius, radius, radius),
+            ),
         }
     }
 }
@@ -68,5 +74,9 @@ impl Hittable for Sphere {
         }
 
         return None;
+    }
+
+    fn bounding_box(&self) -> &BoundingBox {
+        &self.bounding_box
     }
 }

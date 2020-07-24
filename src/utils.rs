@@ -45,3 +45,31 @@ pub fn random_color_in_range(min: FloatType, max: FloatType) -> crate::color::Co
     .try_into()
     .unwrap()
 }
+
+pub trait MyFoldFirst {
+    type Result;
+
+    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(
+        self,
+        func: F,
+    ) -> Option<Self::Result>;
+}
+
+impl<Item, Iter: Iterator<Item = Item>> MyFoldFirst for Iter {
+    type Result = Item;
+
+    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(
+        mut self,
+        func: F,
+    ) -> Option<Self::Result> {
+        if let Some(mut working_value) = self.next() {
+            while let Some(next_value) = self.next() {
+                working_value = func(working_value, next_value);
+            }
+
+            Some(working_value)
+        } else {
+            None
+        }
+    }
+}

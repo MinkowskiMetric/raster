@@ -131,37 +131,14 @@ impl std::ops::Add for VectorImage {
     }
 }
 
-trait MyFoldFirst {
-    type Result;
-
-    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(
-        self,
-        func: F,
-    ) -> Option<Self::Result>;
-}
-
-impl<Item, Iter: Iterator<Item = Item>> MyFoldFirst for Iter {
-    type Result = Item;
-
-    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(
-        mut self,
-        func: F,
-    ) -> Option<Self::Result> {
-        if let Some(mut working_value) = self.next() {
-            while let Some(next_value) = self.next() {
-                working_value = func(working_value, next_value);
-            }
-
-            Some(working_value)
-        } else {
-            None
-        }
-    }
-}
-
-pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: Scene, thread_count: usize, min_passes: usize) {
+pub fn scan<P: Pixel + From<Color>>(
+    image: &mut impl SurfaceMut<P>,
+    scene: Scene,
+    thread_count: usize,
+    min_passes: usize,
+) {
     let passes_per_thread = (min_passes + thread_count - 1) / thread_count;
-    
+
     let start_time = std::time::Instant::now();
 
     let (image_width, image_height) = image.dimensions();
@@ -171,12 +148,7 @@ pub fn scan<P: Pixel + From<Color>>(image: &mut impl SurfaceMut<P>, scene: Scene
         .map(|_a| {
             let thread_scene = scene.clone();
             thread::spawn(move || {
-                scan_batch(
-                    image_width,
-                    image_height,
-                    passes_per_thread,
-                    &thread_scene,
-                )
+                scan_batch(image_width, image_height, passes_per_thread, &thread_scene)
             })
         })
         .collect::<Vec<_>>()

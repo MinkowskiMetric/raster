@@ -2,7 +2,7 @@ use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Camera {
     origin: Point3,
     lower_left_corner: Point3,

@@ -1,3 +1,4 @@
+mod aabb;
 mod camera;
 mod color;
 mod hittable;
@@ -5,8 +6,10 @@ mod material;
 mod math;
 mod ray_scanner;
 mod scene;
+mod shape_list;
 mod sphere;
 mod utils;
+mod volume;
 extern crate cgmath;
 extern crate num;
 
@@ -26,7 +29,7 @@ fn attenuate_color(color: color::Color, attenuation: FloatType) -> color::Color 
     color.attenuate(attenuation)
 }
 
-fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
+fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
     let mut shapes: Vec<Box<dyn hittable::Hittable>> = Vec::new();
 
     shapes.push(Box::new(crate::sphere::Sphere::new(
@@ -101,10 +104,10 @@ fn random_scene(width: usize, height: usize) -> crate::scene::Scene {
         dist_to_focus,
     );
 
-    scene::Scene::new(camera, shapes)
+    (camera, shapes)
 }
 
-fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
+fn my_test_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
     let lookat = Point3::new(0.0, 0.0, -3.0);
@@ -156,7 +159,7 @@ fn my_test_scene(width: usize, height: usize) -> crate::scene::Scene {
             ))),
         )),
     ];
-    scene::Scene::new(camera, shapes)
+    (camera, shapes)
 }
 
 fn main() {
@@ -167,6 +170,7 @@ fn main() {
     const DEFAULT_HEIGHT: usize = 1080;
     const DEFAULT_MIN_PASSES: usize = 100;
     const DEFAULT_THREADS: usize = 8;
+    const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
     let width = matches
         .value_of("width")
@@ -177,16 +181,33 @@ fn main() {
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(DEFAULT_HEIGHT);
     let output_file = matches.value_of("output").unwrap();
-    let min_passes = matches.value_of("min-passes").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_MIN_PASSES);
-    let threads = matches.value_of("threads").and_then(|v| v.parse::<usize>().ok()).unwrap_or(DEFAULT_THREADS);
+    let min_passes = matches
+        .value_of("min-passes")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_MIN_PASSES);
+    let threads = matches
+        .value_of("threads")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_THREADS);
+    let enable_spatial_partitioning = matches
+        .value_of("enable-spatial-partitioning")
+        .and_then(|v| v.parse::<bool>().ok())
+        .unwrap_or(DEFAULT_ENABLE_SPATIAL_PARTITIONING);
 
-    let (scene, scene_name) = match matches.value_of("scene") {
+    let ((camera, shapes), scene_name) = match matches.value_of("scene") {
         Some("random") => (random_scene(width, height), "random"),
         _ => (my_test_scene(width, height), "mine"),
     };
+    let scene = scene::Scene::new(camera, enable_spatial_partitioning, shapes);
 
-    println!("Rendering scene \"{}\" at ({}, {})", scene_name, width, height);
-    println!("Using {} threads, with a minimum of {} passes per pixel", threads, min_passes);
+    println!(
+        "Rendering scene \"{}\" at ({}, {})",
+        scene_name, width, height
+    );
+    println!(
+        "Using {} threads, with a minimum of {} passes per pixel",
+        threads, min_passes
+    );
 
     let mut surf = filled_image(width, height, RgbaPixel::BLACK).unwrap();
     ray_scanner::scan(&mut surf, scene, threads, min_passes);

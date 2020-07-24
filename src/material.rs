@@ -32,7 +32,7 @@ pub trait MaterialClone {
     fn box_clone(&self) -> Box<dyn Material>;
 }
 
-pub trait Material: Sync + Send + MaterialClone {
+pub trait Material: Sync + Send + MaterialClone + std::fmt::Debug {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult>;
 }
 
@@ -48,7 +48,7 @@ impl Clone for Box<dyn Material> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Lambertian(Color);
 
 impl Lambertian {
@@ -71,7 +71,7 @@ impl Material for Lambertian {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Metal(Color, FloatType);
 
 impl Metal {
@@ -103,7 +103,7 @@ impl Material for Metal {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Dielectric(FloatType);
 
 impl Dielectric {

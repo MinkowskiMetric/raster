@@ -31,6 +31,11 @@ args:
         help: Minimum number of passes (defaults to 100)
         long: min-passes
         takes_value: true
+    - enable-spatial-partitioning:
+        help: Enable spatial partitioning (defaults to true)
+        long: enable-spatial-partitioning
+        takes_value: true
+        possible_values: [ "true", "false" ]
     - output:
         help: File to write to
         required: true
