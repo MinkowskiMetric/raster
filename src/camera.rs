@@ -46,13 +46,29 @@ impl Camera {
             lens_radius: aperture / 2.0,
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct PreparedCamera {
+    camera: Camera,
+    t0: FloatType,
+    t1: FloatType,
+}
+
+impl PreparedCamera {
+    pub fn make(camera: Camera, t0: FloatType, t1: FloatType) -> Self {
+        Self { camera, t0, t1 }
+    }
 
     pub fn make_ray(&self, s: FloatType, t: FloatType) -> Ray {
-        let rd = self.lens_radius * random_in_unit_disk();
-        let offset = self.u * rd.x + self.v * rd.y;
+        let rd = self.camera.lens_radius * random_in_unit_disk();
+        let offset = self.camera.u * rd.x + self.camera.v * rd.y;
 
         let direction =
-            self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset;
-        Ray::new(self.origin + offset, direction.normalize())
+            self.camera.lower_left_corner + s * self.camera.horizontal + t * self.camera.vertical
+                - self.camera.origin
+                - offset;
+        let time = random_in_range(self.t0, self.t1);
+        Ray::new(self.camera.origin + offset, direction.normalize(), time)
     }
 }

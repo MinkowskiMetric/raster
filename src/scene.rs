@@ -1,10 +1,10 @@
 use crate::aabb::BoundingBox;
-use crate::camera::Camera;
+use crate::camera::{Camera, PreparedCamera};
 use crate::hittable::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::volume::Volume;
 use crate::shape_list::ShapeList;
+use crate::volume::Volume;
 
 #[derive(Clone, Debug)]
 enum RootShape {
@@ -13,9 +13,14 @@ enum RootShape {
 }
 
 impl RootShape {
-    pub fn from_shapes(enable_spatial_partitioning: bool, shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> Self {
+    pub fn from_shapes(
+        enable_spatial_partitioning: bool,
+        t0: FloatType,
+        t1: FloatType,
+        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+    ) -> Self {
         if enable_spatial_partitioning {
-            RootShape::Volume(Volume::from_shapes(shapes))
+            RootShape::Volume(Volume::from_shapes(shapes, t0, t1))
         } else {
             RootShape::ShapeList(ShapeList::from_shapes(shapes))
         }
@@ -35,10 +40,10 @@ impl Hittable for RootShape {
         }
     }
 
-    fn bounding_box(&self) -> &BoundingBox {
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         match self {
-            RootShape::Volume(v) => v.bounding_box(),
-            RootShape::ShapeList(s) => s.bounding_box(),
+            RootShape::Volume(v) => v.bounding_box(t0, t1),
+            RootShape::ShapeList(s) => s.bounding_box(t0, t1),
         }
     }
 }
@@ -46,25 +51,47 @@ impl Hittable for RootShape {
 #[derive(Clone, Debug)]
 pub struct Scene {
     camera: Camera,
-    root_volume: RootShape,
+    enable_spatial_partitioning: bool,
+    shapes: Vec<Box<dyn Hittable>>,
 }
 
 impl Scene {
-    pub fn new(camera: Camera, enable_spatial_partitioning: bool, shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> Self {
-        let root_volume = RootShape::from_shapes(enable_spatial_partitioning, shapes);
-
+    pub fn new(
+        camera: Camera,
+        enable_spatial_partitioning: bool,
+        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+    ) -> Self {
         Scene {
             camera,
+            enable_spatial_partitioning,
+            shapes: shapes.into_iter().collect::<Vec<_>>(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PreparedScene {
+    camera: PreparedCamera,
+    root_volume: RootShape,
+}
+
+impl PreparedScene {
+    pub fn make(scene: Scene, t0: FloatType, t1: FloatType) -> Self {
+        let root_volume =
+            RootShape::from_shapes(scene.enable_spatial_partitioning, t0, t1, scene.shapes);
+
+        Self {
+            camera: PreparedCamera::make(scene.camera, t0, t1),
             root_volume,
         }
     }
 
-    pub fn camera(&self) -> &Camera {
+    pub fn camera(&self) -> &PreparedCamera {
         &self.camera
     }
 }
 
-impl Hittable for Scene {
+impl Hittable for PreparedScene {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -74,7 +101,7 @@ impl Hittable for Scene {
         self.root_volume.intersect(ray, t_min, t_max)
     }
 
-    fn bounding_box(&self) -> &BoundingBox {
-        self.root_volume.bounding_box()
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+        self.root_volume.bounding_box(t0, t1)
     }
 }

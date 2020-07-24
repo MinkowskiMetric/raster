@@ -7,15 +7,13 @@ use crate::utils::*;
 #[derive(Clone, Debug)]
 pub struct ShapeList {
     shapes: Box<[Box<dyn Hittable>]>,
-    bounding_box: BoundingBox,
 }
 
 impl ShapeList {
     pub fn from_shapes(shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> Self {
         let shapes = shapes.into_iter().collect::<Vec<_>>().into_boxed_slice();
-        let bounding_box = shapes.iter().map(|a| a.bounding_box().clone()).my_fold_first(|a,b| BoundingBox::surrounding_box(&a, &b)).unwrap_or(BoundingBox::empty_box());
 
-        Self { shapes, bounding_box }
+        Self { shapes }
     }
 }
 
@@ -36,7 +34,11 @@ impl Hittable for ShapeList {
             })
     }
 
-    fn bounding_box(&self) -> &BoundingBox {
-        &self.bounding_box
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+        self.shapes
+            .iter()
+            .map(|a| a.bounding_box(t0, t1).clone())
+            .my_fold_first(|a, b| BoundingBox::surrounding_box(&a, &b))
+            .unwrap_or(BoundingBox::empty_box())
     }
 }

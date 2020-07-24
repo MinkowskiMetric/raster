@@ -2,7 +2,7 @@ use crate::color::Color;
 use crate::hittable::Hittable;
 use crate::material::ScatterResult;
 use crate::math::*;
-use crate::scene::Scene;
+use crate::scene::{PreparedScene, Scene};
 use crate::utils::*;
 use std::slice::{Chunks, ChunksMut};
 use std::thread;
@@ -17,10 +17,11 @@ pub struct Ray {
     pub direction: Vector3,
     pub inv_direction: Vector3,
     pub sign: [usize; 3],
+    pub time: FloatType,
 }
 
 impl Ray {
-    pub fn new(origin: Point3, direction: Vector3) -> Self {
+    pub fn new(origin: Point3, direction: Vector3, time: FloatType) -> Self {
         let inv_direction = 1.0 / direction;
         let sign = [
             if inv_direction.x < 0.0 { 1 } else { 0 },
@@ -33,6 +34,7 @@ impl Ray {
             direction,
             inv_direction,
             sign,
+            time,
         }
     }
 }
@@ -134,6 +136,8 @@ impl std::ops::Add for VectorImage {
 pub fn scan<P: Pixel + From<Color>>(
     image: &mut impl SurfaceMut<P>,
     scene: Scene,
+    t0: FloatType,
+    t1: FloatType,
     thread_count: usize,
     min_passes: usize,
 ) {
@@ -142,6 +146,8 @@ pub fn scan<P: Pixel + From<Color>>(
     let start_time = std::time::Instant::now();
 
     let (image_width, image_height) = image.dimensions();
+
+    let scene = PreparedScene::make(scene, t0, t1);
 
     let vector_image = (0..thread_count)
         .into_iter()
@@ -185,7 +191,7 @@ fn scan_batch(
     image_width: usize,
     image_height: usize,
     pass_count: usize,
-    scene: &Scene,
+    scene: &PreparedScene,
 ) -> VectorImage {
     let mut image = VectorImage::new(image_width, image_height);
     let (image_width, image_height) = (image_width as FloatType, image_height as FloatType);
@@ -258,13 +264,13 @@ impl<'a> FixedSizeAttenuationStack<'a> {
     }
 }
 
-fn single_trace(ray: &Ray, scene: &Scene) -> Option<ScatterResult> {
+fn single_trace(ray: &Ray, scene: &PreparedScene) -> Option<ScatterResult> {
     scene
         .intersect(ray, 0.001, constants::INFINITY)
         .and_then(|hit_result| hit_result.material.scatter(&ray, &hit_result))
 }
 
-pub fn trace(ray: &Ray, scene: &Scene) -> Color {
+pub fn trace(ray: &Ray, scene: &PreparedScene) -> Color {
     let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
     attenuation_stack.push(ScatterResult {

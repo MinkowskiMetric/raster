@@ -62,11 +62,15 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point + hit_record.surface_normal + random_unit_vector();
         Some(ScatterResult {
             attenuation: cgmath::Vector4::from(*self.color()).truncate(),
-            scattered: Ray::new(hit_record.hit_point, target - hit_record.hit_point),
+            scattered: Ray::new(
+                hit_record.hit_point,
+                target - hit_record.hit_point,
+                ray_in.time,
+            ),
         })
     }
 }
@@ -95,7 +99,7 @@ impl Material for Metal {
         if reflected.dot(hit_record.surface_normal) > 0.0 {
             Some(ScatterResult {
                 attenuation: cgmath::Vector4::from(*self.color()).truncate(),
-                scattered: Ray::new(hit_record.hit_point, reflected.normalize()),
+                scattered: Ray::new(hit_record.hit_point, reflected.normalize(), ray_in.time),
             })
         } else {
             None
@@ -134,7 +138,7 @@ impl Material for Dielectric {
 
             Some(ScatterResult {
                 attenuation: vec3(1.0, 1.0, 1.0),
-                scattered: Ray::new(hit_record.hit_point, reflected),
+                scattered: Ray::new(hit_record.hit_point, reflected, ray_in.time),
             })
         } else {
             let refracted = refract(
@@ -145,7 +149,7 @@ impl Material for Dielectric {
 
             Some(ScatterResult {
                 attenuation: vec3(1.0, 1.0, 1.0),
-                scattered: Ray::new(hit_record.hit_point, refracted),
+                scattered: Ray::new(hit_record.hit_point, refracted, ray_in.time),
             })
         }
     }

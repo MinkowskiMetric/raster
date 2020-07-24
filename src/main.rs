@@ -50,17 +50,19 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
             );
 
             if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
-                let material: Box<dyn material::Material> = if choose_mat < 0.8 {
-                    Box::new(material::Lambertian::new(random_color_in_range(0.0, 1.0)))
+                shapes.push(if choose_mat < 0.8 {
+                    let center2 = center + vec3(0.0, random_in_range(0.0, 0.5), 0.0);
+                    let material = Box::new(material::Lambertian::new(random_color_in_range(0.0, 1.0)));
+                    Box::new(sphere::MovingSphere::new((center, 0.0), (center2, 1.0), 0.2, material))
                 } else if choose_mat < 0.95 {
                     let albedo = random_color_in_range(0.5, 1.0);
                     let fuzz = random_in_range(0.0, 1.0);
-                    Box::new(material::Metal::new(albedo, fuzz))
+                    let material = Box::new(material::Metal::new(albedo, fuzz));
+                    Box::new(crate::sphere::Sphere::new(center, 0.2, material))
                 } else {
-                    Box::new(material::Dielectric::new(1.5))
-                };
-
-                shapes.push(Box::new(crate::sphere::Sphere::new(center, 0.2, material)));
+                    let material = Box::new(material::Dielectric::new(1.5));
+                    Box::new(crate::sphere::Sphere::new(center, 0.2, material))
+                });
             }
         }
     }
@@ -107,7 +109,10 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
     (camera, shapes)
 }
 
-fn my_test_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
+fn my_test_scene(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
     let lookat = Point3::new(0.0, 0.0, -3.0);
@@ -200,6 +205,8 @@ fn main() {
     };
     let scene = scene::Scene::new(camera, enable_spatial_partitioning, shapes);
 
+    let (t0, t1) = (0.0, 1.0);
+
     println!(
         "Rendering scene \"{}\" at ({}, {})",
         scene_name, width, height
@@ -210,7 +217,7 @@ fn main() {
     );
 
     let mut surf = filled_image(width, height, RgbaPixel::BLACK).unwrap();
-    ray_scanner::scan(&mut surf, scene, threads, min_passes);
+    ray_scanner::scan(&mut surf, scene, t0, t1, threads, min_passes);
     if let Err(e) = BmpEncoder::new().write_image_to_file(&surf, output_file) {
         println!("Failed to write output: {}", e);
     }

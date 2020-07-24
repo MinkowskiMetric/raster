@@ -23,7 +23,7 @@ pub trait Hittable: Sync + Send + HittableClone + std::fmt::Debug {
         t_max: FloatType,
     ) -> Option<HitResult<'a>>;
 
-    fn bounding_box(&self) -> &BoundingBox;
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox;
 }
 
 impl<T: Hittable + Clone + 'static> HittableClone for T {
