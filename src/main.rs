@@ -1,6 +1,7 @@
 mod aabb;
 mod camera;
 mod color;
+mod fixed_size_stack;
 mod hittable;
 mod material;
 mod math;

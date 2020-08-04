@@ -219,53 +219,7 @@ fn scan_batch(
 
 const MAX_DEPTH: usize = 50;
 
-fn assign_swap<T>(target: &mut T, value: T) -> T {
-    let mut swap_value = value;
-    std::mem::swap(target, &mut swap_value);
-    swap_value
-}
-
-struct FixedSizeAttenuationStack<'a> {
-    data: &'a mut [Option<ScatterResult>],
-    top: usize,
-}
-
-impl<'a> FixedSizeAttenuationStack<'a> {
-    pub fn new(data: &'a mut [Option<ScatterResult>]) -> Self {
-        FixedSizeAttenuationStack { data, top: 0 }
-    }
-
-    pub fn push(&mut self, scatter_result: ScatterResult) {
-        debug_assert!(self.top < self.data.len());
-        debug_assert!(self.data[self.top].is_none());
-
-        self.data[self.top] = Some(scatter_result);
-        self.top += 1;
-    }
-
-    pub fn pop(&mut self) -> Option<ScatterResult> {
-        if self.top > 0 {
-            self.top -= 1;
-            debug_assert!(self.data[self.top].is_some());
-            assign_swap(&mut self.data[self.top], None)
-        } else {
-            None
-        }
-    }
-
-    pub fn last(&self) -> Option<&ScatterResult> {
-        if self.top > 0 {
-            debug_assert!(self.data[self.top - 1].is_some());
-            self.data[self.top - 1].as_ref()
-        } else {
-            None
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self.top
-    }
-}
+type FixedSizeAttenuationStack<'a> = crate::fixed_size_stack::FixedSizeStack<'a, ScatterResult>;
 
 fn single_trace(
     ray: &Ray,

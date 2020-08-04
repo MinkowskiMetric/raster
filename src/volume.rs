@@ -63,8 +63,8 @@ enum InnerVolume {
     NoChild,
     SingleChild(Box<dyn Hittable>),
     TwoChild {
-        left: Box<dyn Hittable>,
-        right: Box<dyn Hittable>,
+        left: Box<Volume>,
+        right: Box<Volume>,
     },
 }
 
@@ -111,26 +111,15 @@ impl Volume {
             // Sort the shapes list according to a random axis
             shapes.sort_by(random_axis_comparator(t0, t1));
 
-            if shapes.len() == 2 {
-                Self::from_inner_volume(
-                    InnerVolume::TwoChild {
-                        left: shapes[0].take().unwrap(),
-                        right: shapes[1].take().unwrap(),
-                    },
-                    t0,
-                    t1,
-                )
-            } else {
-                let pivot = shapes.len() / 2;
-                Self::from_inner_volume(
-                    InnerVolume::TwoChild {
-                        left: Box::new(Self::from_shapes_slice(&mut shapes[0..pivot], t0, t1)),
-                        right: Box::new(Self::from_shapes_slice(&mut shapes[pivot..], t0, t1)),
-                    },
-                    t0,
-                    t1,
-                )
-            }
+            let pivot = shapes.len() / 2;
+            Self::from_inner_volume(
+                InnerVolume::TwoChild {
+                    left: Box::new(Self::from_shapes_slice(&mut shapes[0..pivot], t0, t1)),
+                    right: Box::new(Self::from_shapes_slice(&mut shapes[pivot..], t0, t1)),
+                },
+                t0,
+                t1,
+            )
         }
     }
 
@@ -142,22 +131,19 @@ impl Volume {
             bounding_box,
         }
     }
+}
 
-    fn intersect_children<'a>(
-        &'a self,
-        ray: &Ray,
-        t_min: FloatType,
-        t_max: FloatType,
-        stats: &mut TracingStats,
-    ) -> (Option<HitResult<'a>>, Option<HitResult<'a>>) {
-        match &self.inner_volume {
-            InnerVolume::NoChild => (None, None),
-            InnerVolume::SingleChild(child) => (child.intersect(ray, t_min, t_max, stats), None),
-            InnerVolume::TwoChild { left, right } => (
-                left.intersect(ray, t_min, t_max, stats),
-                right.intersect(ray, t_min, t_max, stats),
-            ),
-        }
+type FixedSizeVolumeStack<'a, 'b> = crate::fixed_size_stack::FixedSizeStack<'a, &'b Volume>;
+
+fn replace_hit_result<'a>(
+    hit_result: Option<HitResult<'a>>,
+    new_value: Option<HitResult<'a>>,
+) -> Option<HitResult<'a>> {
+    match (hit_result, new_value) {
+        (Some(left), Some(right)) if left.distance < right.distance => Some(left),
+        (_, Some(right)) => Some(right),
+        (Some(left), _) => Some(left),
+        _ => None,
     }
 }
 
@@ -169,17 +155,38 @@ impl Hittable for Volume {
         t_max: FloatType,
         stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
-        stats.count_bounding_box_test();
-        if self.bounding_box.intersect(ray, t_min, t_max) {
-            match self.intersect_children(ray, t_min, t_max, stats) {
-                (Some(left), Some(right)) if left.distance < right.distance => Some(left),
-                (_, Some(right)) => Some(right),
-                (Some(left), _) => Some(left),
-                _ => None,
+        let mut volume_stack_data = [None; 50];
+        let mut volume_stack = FixedSizeVolumeStack::new(&mut volume_stack_data);
+        let mut hit_result = None;
+
+        volume_stack.push(self);
+
+        while let Some(v) = volume_stack.pop() {
+            stats.count_bounding_box_test();
+            if v.bounding_box.intersect(ray, t_min, t_max) {
+                if let InnerVolume::TwoChild { left, right } = &v.inner_volume {
+                    // We know that we can always push one value onto the stack here
+                    // because we just popped a value off
+                    volume_stack.push(right.as_ref());
+
+                    // But this push might panic if the stack is full so check for that and
+                    // recurse if necessary
+                    if volume_stack.is_full() {
+                        hit_result = replace_hit_result(
+                            hit_result,
+                            left.intersect(ray, t_min, t_max, stats),
+                        );
+                    } else {
+                        volume_stack.push(left.as_ref());
+                    }
+                } else if let InnerVolume::SingleChild(c) = &v.inner_volume {
+                    hit_result =
+                        replace_hit_result(hit_result, c.intersect(ray, t_min, t_max, stats));
+                }
             }
-        } else {
-            None
         }
+
+        hit_result
     }
 
     fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
