@@ -2,6 +2,7 @@ use crate::aabb::BoundingBox;
 use crate::hittable::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::stats::TracingStats;
 use crate::utils::*;
 
 #[derive(Clone, Debug)]
@@ -23,10 +24,11 @@ impl Hittable for ShapeList {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
+        stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
         self.shapes
             .iter()
-            .filter_map(|shape| shape.intersect(&ray, t_min, t_max))
+            .filter_map(|shape| shape.intersect(&ray, t_min, t_max, stats))
             .min_by(|xr, yr| {
                 xr.distance
                     .partial_cmp(&yr.distance)

@@ -8,6 +8,7 @@ mod ray_scanner;
 mod scene;
 mod shape_list;
 mod sphere;
+mod stats;
 mod utils;
 mod volume;
 extern crate cgmath;
@@ -52,8 +53,14 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
             if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
                 shapes.push(if choose_mat < 0.8 {
                     let center2 = center + vec3(0.0, random_in_range(0.0, 0.5), 0.0);
-                    let material = Box::new(material::Lambertian::new(random_color_in_range(0.0, 1.0)));
-                    Box::new(sphere::MovingSphere::new((center, 0.0), (center2, 1.0), 0.2, material))
+                    let material =
+                        Box::new(material::Lambertian::new(random_color_in_range(0.0, 1.0)));
+                    Box::new(sphere::MovingSphere::new(
+                        (center, 0.0),
+                        (center2, 1.0),
+                        0.2,
+                        material,
+                    ))
                 } else if choose_mat < 0.95 {
                     let albedo = random_color_in_range(0.5, 1.0);
                     let fuzz = random_in_range(0.0, 1.0);

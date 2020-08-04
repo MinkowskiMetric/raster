@@ -3,6 +3,7 @@ use crate::hittable::Hittable;
 use crate::material::ScatterResult;
 use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
+use crate::stats::TracingStats;
 use crate::utils::*;
 use std::slice::{Chunks, ChunksMut};
 use std::thread;
@@ -149,7 +150,7 @@ pub fn scan<P: Pixel + From<Color>>(
 
     let scene = PreparedScene::make(scene, t0, t1);
 
-    let vector_image = (0..thread_count)
+    let (vector_image, tracing_stats) = (0..thread_count)
         .into_iter()
         .map(|_a| {
             let thread_scene = scene.clone();
@@ -163,7 +164,7 @@ pub fn scan<P: Pixel + From<Color>>(
         .my_fold_first(|a, b| {
             if let Ok(a) = a {
                 if let Ok(b) = b {
-                    Ok(a + b)
+                    Ok((a.0 + b.0, a.1 + b.1))
                 } else {
                     b
                 }
@@ -185,6 +186,7 @@ pub fn scan<P: Pixel + From<Color>>(
 
     let elapsed = start_time.elapsed().as_secs_f64();
     println!("Total runtime: {} seconds", elapsed);
+    println!("Tracing stats: {:#?}", tracing_stats);
 }
 
 fn scan_batch(
@@ -192,7 +194,8 @@ fn scan_batch(
     image_height: usize,
     pass_count: usize,
     scene: &PreparedScene,
-) -> VectorImage {
+) -> (VectorImage, TracingStats) {
+    let mut stats = TracingStats::new();
     let mut image = VectorImage::new(image_width, image_height);
     let (image_width, image_height) = (image_width as FloatType, image_height as FloatType);
 
@@ -206,12 +209,12 @@ fn scan_batch(
                 );
                 let ray = scene.camera().make_ray(u, v);
 
-                cgmath::Vector4::from(trace(&ray, scene))
+                cgmath::Vector4::from(trace(&ray, scene, &mut stats))
             })
             .fold(cgmath::vec4(0.0, 0.0, 0.0, 0.0), |sum, v| sum + v);
     }
 
-    image
+    (image, stats)
 }
 
 const MAX_DEPTH: usize = 50;
@@ -264,13 +267,18 @@ impl<'a> FixedSizeAttenuationStack<'a> {
     }
 }
 
-fn single_trace(ray: &Ray, scene: &PreparedScene) -> Option<ScatterResult> {
+fn single_trace(
+    ray: &Ray,
+    scene: &PreparedScene,
+    stats: &mut TracingStats,
+) -> Option<ScatterResult> {
+    stats.count_ray_cast();
     scene
-        .intersect(ray, 0.001, constants::INFINITY)
+        .intersect(ray, 0.001, constants::INFINITY, stats)
         .and_then(|hit_result| hit_result.material.scatter(&ray, &hit_result))
 }
 
-pub fn trace(ray: &Ray, scene: &PreparedScene) -> Color {
+pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut TracingStats) -> Color {
     let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
     attenuation_stack.push(ScatterResult {
@@ -281,7 +289,7 @@ pub fn trace(ray: &Ray, scene: &PreparedScene) -> Color {
     loop {
         let current_ray = &attenuation_stack.last().unwrap().scattered;
 
-        let scatter_result = single_trace(current_ray, scene);
+        let scatter_result = single_trace(current_ray, scene, stats);
         if scatter_result.is_some() && attenuation_stack.len() < MAX_DEPTH {
             attenuation_stack.push(scatter_result.unwrap());
         } else {

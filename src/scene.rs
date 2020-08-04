@@ -4,6 +4,7 @@ use crate::hittable::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::shape_list::ShapeList;
+use crate::stats::TracingStats;
 use crate::volume::Volume;
 
 #[derive(Clone, Debug)]
@@ -33,10 +34,11 @@ impl Hittable for RootShape {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
+        stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
         match self {
-            RootShape::Volume(v) => v.intersect(ray, t_min, t_max),
-            RootShape::ShapeList(s) => s.intersect(ray, t_min, t_max),
+            RootShape::Volume(v) => v.intersect(ray, t_min, t_max, stats),
+            RootShape::ShapeList(s) => s.intersect(ray, t_min, t_max, stats),
         }
     }
 
@@ -97,8 +99,9 @@ impl Hittable for PreparedScene {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
+        stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
-        self.root_volume.intersect(ray, t_min, t_max)
+        self.root_volume.intersect(ray, t_min, t_max, stats)
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {

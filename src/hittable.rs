@@ -2,6 +2,7 @@ use crate::aabb::BoundingBox;
 use crate::material::Material;
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::stats::TracingStats;
 
 pub struct HitResult<'a> {
     pub distance: FloatType,
@@ -21,6 +22,7 @@ pub trait Hittable: Sync + Send + HittableClone + std::fmt::Debug {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
+        stats: &mut TracingStats,
     ) -> Option<HitResult<'a>>;
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox;

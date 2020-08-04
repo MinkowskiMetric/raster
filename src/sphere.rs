@@ -3,6 +3,7 @@ use crate::hittable::{HitResult, Hittable};
 use crate::material::Material;
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::stats::TracingStats;
 
 #[derive(Clone, Debug)]
 pub struct Sphere {
@@ -30,7 +31,12 @@ impl Sphere {
 }
 
 impl MovingSphere {
-    pub fn new(center0: (Point3, FloatType), center1: (Point3, FloatType), radius: FloatType, material: Box<dyn Material>) -> Self {
+    pub fn new(
+        center0: (Point3, FloatType),
+        center1: (Point3, FloatType),
+        radius: FloatType,
+        material: Box<dyn Material>,
+    ) -> Self {
         Self {
             center0,
             center1,
@@ -40,12 +46,21 @@ impl MovingSphere {
     }
 
     fn center(&self, t: FloatType) -> Point3 {
-        self.center0.0 + ((t - self.center0.1) / (self.center1.1 - self.center0.1)) * (self.center1.0 - self.center0.0)
+        self.center0.0
+            + ((t - self.center0.1) / (self.center1.1 - self.center0.1))
+                * (self.center1.0 - self.center0.0)
     }
 }
 
 impl Hittable for Sphere {
-    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<HitResult> {
+    fn intersect(
+        &self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        stats: &mut TracingStats,
+    ) -> Option<HitResult> {
+        stats.count_sphere_test();
         let oc = ray.origin - self.center;
         let a = ray.direction.dot(ray.direction);
         let b = oc.dot(ray.direction);
@@ -103,7 +118,14 @@ impl Hittable for Sphere {
 }
 
 impl Hittable for MovingSphere {
-    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<HitResult> {
+    fn intersect(
+        &self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        stats: &mut TracingStats,
+    ) -> Option<HitResult> {
+        stats.count_moving_sphere_test();
         let center = self.center(ray.time);
         let oc = ray.origin - center;
         let a = ray.direction.dot(ray.direction);

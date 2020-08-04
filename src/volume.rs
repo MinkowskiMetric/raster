@@ -2,6 +2,7 @@ use crate::aabb::BoundingBox;
 use crate::hittable::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::stats::TracingStats;
 use crate::utils::*;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -147,13 +148,14 @@ impl Volume {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
+        stats: &mut TracingStats,
     ) -> (Option<HitResult<'a>>, Option<HitResult<'a>>) {
         match &self.inner_volume {
             InnerVolume::NoChild => (None, None),
-            InnerVolume::SingleChild(child) => (child.intersect(ray, t_min, t_max), None),
+            InnerVolume::SingleChild(child) => (child.intersect(ray, t_min, t_max, stats), None),
             InnerVolume::TwoChild { left, right } => (
-                left.intersect(ray, t_min, t_max),
-                right.intersect(ray, t_min, t_max),
+                left.intersect(ray, t_min, t_max, stats),
+                right.intersect(ray, t_min, t_max, stats),
             ),
         }
     }
@@ -165,9 +167,11 @@ impl Hittable for Volume {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
+        stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
+        stats.count_bounding_box_test();
         if self.bounding_box.intersect(ray, t_min, t_max) {
-            match self.intersect_children(ray, t_min, t_max) {
+            match self.intersect_children(ray, t_min, t_max, stats) {
                 (Some(left), Some(right)) if left.distance < right.distance => Some(left),
                 (_, Some(right)) => Some(right),
                 (Some(left), _) => Some(left),
