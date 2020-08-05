@@ -14,4 +14,4 @@ edition = "2018"
 "clap" = { version = "~2.27.0", features = ["yaml"] }
 
 [profile.release]
-debug = true
+debug = 2

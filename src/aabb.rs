@@ -7,6 +7,7 @@ pub struct BoundingBox {
     pt_max: Point3,
 }
 
+#[cfg(not(all(target_feature = "avx", not(feature = "disableavx"))))]
 fn test_axis(
     pt_min: FloatType,
     pt_max: FloatType,
@@ -27,6 +28,34 @@ fn test_axis(
     *t_max = t1.min(*t_max);
 
     !(t_max <= t_min)
+}
+
+#[inline]
+#[target_feature(enable = "avx")]
+unsafe fn max_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
+    use std::arch::x86_64::*;
+
+    let x = _mm256_extractf128_pd(v, 0);            // extract v[0], and v[1]
+    let y = _mm256_extractf128_pd(v, 1);            // extract v[2], and v[3]
+    let m1 = _mm_max_pd(x, y);                      // m1[0] = max(v[0], v[2]), m1[1] = max(v[1], v[3])
+    let m2 = _mm_permute_pd(m1, 1);                 // m2[0] = m1[1], m2[1] = m1[0]
+    let m = _mm_max_pd(m1, m2);
+
+    m
+}
+
+#[inline]
+#[target_feature(enable = "avx")]
+unsafe fn min_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
+    use std::arch::x86_64::*;
+
+    let x = _mm256_extractf128_pd(v, 0);            // extract v[0], and v[1]
+    let y = _mm256_extractf128_pd(v, 1);            // extract v[2], and v[3]
+    let m1 = _mm_min_pd(x, y);                      // m1[0] = min(v[0], v[2]), m1[1] = min(v[1], v[3])
+    let m2 = _mm_permute_pd(m1, 1);                 // m2[0] = m1[1], m2[1] = m1[0]
+    let m = _mm_min_pd(m1, m2);
+
+    m
 }
 
 impl BoundingBox {
@@ -67,28 +96,60 @@ impl BoundingBox {
         &self.pt_max
     }
 
+    #[inline]
+    #[target_feature(enable = "avx")]
+    pub unsafe fn intersect_avx(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> bool {
+        use std::arch::x86_64::*;
+
+        // We can probably do better than this if we improve the way these are stored
+        let ray_origin = _mm256_set_pd(ray.origin.x, ray.origin.y, ray.origin.z, 1.0);
+        let ray_inv_direction = _mm256_set_pd(ray.inv_direction.x, ray.inv_direction.y, ray.inv_direction.z, 1.0);
+        let pt_min = _mm256_set_pd(self.pt_min.x, self.pt_min.y, self.pt_min.z, 1.0);
+        let pt_max = _mm256_set_pd(self.pt_max.x, self.pt_max.y, self.pt_max.z, 1.0);
+
+        let dir_sign = _mm256_cmp_pd(ray_inv_direction, _mm256_setzero_pd(), _CMP_LT_OQ);
+
+        // Add t_min and t_max into the fourth value in the vector
+        let t0 = _mm256_mul_pd(_mm256_sub_pd(pt_min, ray_origin), ray_inv_direction);
+        let t0 = _mm256_blend_pd(_mm256_set1_pd(t_min), t0, 0xe);
+        let t1 = _mm256_mul_pd(_mm256_sub_pd(pt_max, ray_origin), ray_inv_direction);
+        let t1 = _mm256_blend_pd(_mm256_set1_pd(t_max), t1, 0xe);
+
+        // Swizzle the values to get the min and max values the right way round according to
+        // the direction and select the min and max values
+        let t_min = max_v(_mm256_blendv_pd(t0, t1, dir_sign));
+        let t_max = min_v(_mm256_blendv_pd(t1, t0, dir_sign));
+
+        0 != _mm_comilt_sd(t_min, t_max)
+    }
+
+    #[inline]
     pub fn intersect(&self, ray: &Ray, mut t_min: FloatType, mut t_max: FloatType) -> bool {
-        test_axis(
-            self.pt_min.x,
-            self.pt_max.x,
-            ray.origin.x,
-            ray.direction.x,
-            &mut t_min,
-            &mut t_max,
-        ) && test_axis(
-            self.pt_min.y,
-            self.pt_max.y,
-            ray.origin.y,
-            ray.direction.y,
-            &mut t_min,
-            &mut t_max,
-        ) && test_axis(
-            self.pt_min.z,
-            self.pt_max.z,
-            ray.origin.z,
-            ray.direction.z,
-            &mut t_min,
-            &mut t_max,
-        )
+        if is_x86_feature_detected!("avx") {
+            unsafe { self.intersect_avx(ray, t_min, t_max) }
+        } else {
+            test_axis(
+                self.pt_min.x,
+                self.pt_max.x,
+                ray.origin.x,
+                ray.direction.x,
+                &mut t_min,
+                &mut t_max,
+            ) && test_axis(
+                self.pt_min.y,
+                self.pt_max.y,
+                ray.origin.y,
+                ray.direction.y,
+                &mut t_min,
+                &mut t_max,
+            ) && test_axis(
+                self.pt_min.z,
+                self.pt_max.z,
+                ray.origin.z,
+                ray.direction.z,
+                &mut t_min,
+                &mut t_max,
+            )
+        }
     }
 }
