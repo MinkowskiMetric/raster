@@ -184,7 +184,7 @@ impl Volume {
                 }
             }
         }
-        
+
         hit_result
     }
 }

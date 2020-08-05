@@ -35,10 +35,10 @@ fn test_axis(
 unsafe fn max_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
     use std::arch::x86_64::*;
 
-    let x = _mm256_extractf128_pd(v, 0);            // extract v[0], and v[1]
-    let y = _mm256_extractf128_pd(v, 1);            // extract v[2], and v[3]
-    let m1 = _mm_max_pd(x, y);                      // m1[0] = max(v[0], v[2]), m1[1] = max(v[1], v[3])
-    let m2 = _mm_permute_pd(m1, 1);                 // m2[0] = m1[1], m2[1] = m1[0]
+    let x = _mm256_extractf128_pd(v, 0); // extract v[0], and v[1]
+    let y = _mm256_extractf128_pd(v, 1); // extract v[2], and v[3]
+    let m1 = _mm_max_pd(x, y); // m1[0] = max(v[0], v[2]), m1[1] = max(v[1], v[3])
+    let m2 = _mm_permute_pd(m1, 1); // m2[0] = m1[1], m2[1] = m1[0]
     let m = _mm_max_pd(m1, m2);
 
     m
@@ -49,10 +49,10 @@ unsafe fn max_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
 unsafe fn min_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
     use std::arch::x86_64::*;
 
-    let x = _mm256_extractf128_pd(v, 0);            // extract v[0], and v[1]
-    let y = _mm256_extractf128_pd(v, 1);            // extract v[2], and v[3]
-    let m1 = _mm_min_pd(x, y);                      // m1[0] = min(v[0], v[2]), m1[1] = min(v[1], v[3])
-    let m2 = _mm_permute_pd(m1, 1);                 // m2[0] = m1[1], m2[1] = m1[0]
+    let x = _mm256_extractf128_pd(v, 0); // extract v[0], and v[1]
+    let y = _mm256_extractf128_pd(v, 1); // extract v[2], and v[3]
+    let m1 = _mm_min_pd(x, y); // m1[0] = min(v[0], v[2]), m1[1] = min(v[1], v[3])
+    let m2 = _mm_permute_pd(m1, 1); // m2[0] = m1[1], m2[1] = m1[0]
     let m = _mm_min_pd(m1, m2);
 
     m
@@ -103,7 +103,12 @@ impl BoundingBox {
 
         // We can probably do better than this if we improve the way these are stored
         let ray_origin = _mm256_set_pd(ray.origin.x, ray.origin.y, ray.origin.z, 1.0);
-        let ray_inv_direction = _mm256_set_pd(ray.inv_direction.x, ray.inv_direction.y, ray.inv_direction.z, 1.0);
+        let ray_inv_direction = _mm256_set_pd(
+            ray.inv_direction.x,
+            ray.inv_direction.y,
+            ray.inv_direction.z,
+            1.0,
+        );
         let pt_min = _mm256_set_pd(self.pt_min.x, self.pt_min.y, self.pt_min.z, 1.0);
         let pt_max = _mm256_set_pd(self.pt_max.x, self.pt_max.y, self.pt_max.z, 1.0);
 
