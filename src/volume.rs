@@ -33,9 +33,9 @@ fn get_axis_values(
         let bounding_box = hittable.bounding_box(t0, t1);
 
         match axis {
-            ComparatorAxis::X => bounding_box.min_point().x,
-            ComparatorAxis::Y => bounding_box.min_point().y,
-            ComparatorAxis::Z => bounding_box.min_point().z,
+            ComparatorAxis::X => bounding_box.min_point().x(),
+            ComparatorAxis::Y => bounding_box.min_point().y(),
+            ComparatorAxis::Z => bounding_box.min_point().z(),
         }
     } else {
         0.0

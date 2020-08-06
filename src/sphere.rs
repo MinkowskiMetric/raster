@@ -61,7 +61,8 @@ impl Hittable for Sphere {
         stats: &mut TracingStats,
     ) -> Option<HitResult> {
         stats.count_sphere_test();
-        let oc = ray.origin - self.center;
+        let ray_origin = ray.origin.into_point();
+        let oc = ray_origin - self.center;
         let a = ray.direction.dot(ray.direction);
         let b = oc.dot(ray.direction);
         let c = oc.dot(oc) - (self.radius * self.radius);
@@ -69,7 +70,7 @@ impl Hittable for Sphere {
         if discriminant > 0.0 {
             let temp = (-b - discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray_origin + (temp * ray.direction);
                 let outward_normal = (hit_point - self.center) / self.radius;
                 let front_face = ray.direction.dot(outward_normal) < 0.0;
                 let surface_normal = if front_face {
@@ -88,7 +89,7 @@ impl Hittable for Sphere {
 
             let temp = (-b + discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray_origin + (temp * ray.direction);
                 let outward_normal = (hit_point - self.center) / self.radius;
                 let front_face = ray.direction.dot(outward_normal) < 0.0;
                 let surface_normal = if front_face {
@@ -127,7 +128,8 @@ impl Hittable for MovingSphere {
     ) -> Option<HitResult> {
         stats.count_moving_sphere_test();
         let center = self.center(ray.time);
-        let oc = ray.origin - center;
+        let ray_origin = ray.origin.into_point();
+        let oc = ray_origin - center;
         let a = ray.direction.dot(ray.direction);
         let b = oc.dot(ray.direction);
         let c = oc.dot(oc) - (self.radius * self.radius);
@@ -135,7 +137,7 @@ impl Hittable for MovingSphere {
         if discriminant > 0.0 {
             let temp = (-b - discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray_origin + (temp * ray.direction);
                 let outward_normal = (hit_point - center) / self.radius;
                 let front_face = ray.direction.dot(outward_normal) < 0.0;
                 let surface_normal = if front_face {
@@ -154,7 +156,7 @@ impl Hittable for MovingSphere {
 
             let temp = (-b + discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray_origin + (temp * ray.direction);
                 let outward_normal = (hit_point - center) / self.radius;
                 let front_face = ray.direction.dot(outward_normal) < 0.0;
                 let surface_normal = if front_face {

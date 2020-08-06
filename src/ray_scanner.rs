@@ -14,9 +14,9 @@ use std::convert::TryInto;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Ray {
-    pub origin: Point3,
+    pub origin: M256Point3,
     pub direction: Vector3,
-    pub inv_direction: Vector3,
+    pub inv_direction: M256Vector3,
     pub sign: [usize; 3],
     pub time: FloatType,
 }
@@ -31,9 +31,9 @@ impl Ray {
         ];
 
         Self {
-            origin,
+            origin: origin.into(),
             direction,
-            inv_direction,
+            inv_direction: inv_direction.into(),
             sign,
             time,
         }

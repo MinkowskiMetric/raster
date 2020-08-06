@@ -3,8 +3,8 @@ use crate::ray_scanner::Ray;
 
 #[derive(Clone, Debug)]
 pub struct BoundingBox {
-    pt_min: Point3,
-    pt_max: Point3,
+    pt_min: M256Point3,
+    pt_max: M256Point3,
 }
 
 #[cfg(not(all(target_feature = "avx", not(feature = "disableavx"))))]
@@ -61,38 +61,38 @@ unsafe fn min_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
 impl BoundingBox {
     pub fn new(pt1: Point3, pt2: Point3) -> Self {
         BoundingBox {
-            pt_min: Point3::new(pt1.x.min(pt2.x), pt1.y.min(pt2.y), pt1.z.min(pt2.z)),
-            pt_max: Point3::new(pt1.x.max(pt2.x), pt1.y.max(pt2.y), pt1.z.max(pt2.z)),
+            pt_min: Point3::new(pt1.x.min(pt2.x), pt1.y.min(pt2.y), pt1.z.min(pt2.z)).into(),
+            pt_max: Point3::new(pt1.x.max(pt2.x), pt1.y.max(pt2.y), pt1.z.max(pt2.z)).into(),
         }
     }
 
     pub fn empty_box() -> Self {
         let zero_point = Point3::new(0.0, 0.0, 0.0);
         BoundingBox {
-            pt_min: zero_point,
-            pt_max: zero_point,
+            pt_min: zero_point.into(),
+            pt_max: zero_point.into(),
         }
     }
 
     pub fn surrounding_box(box0: &BoundingBox, box1: &BoundingBox) -> Self {
         let pt_min = Point3::new(
-            box0.min_point().x.min(box1.min_point().x),
-            box0.min_point().y.min(box1.min_point().y),
-            box0.min_point().z.min(box1.min_point().z),
+            box0.min_point().x().min(box1.min_point().x()),
+            box0.min_point().y().min(box1.min_point().y()),
+            box0.min_point().z().min(box1.min_point().z()),
         );
         let pt_max = Point3::new(
-            box0.max_point().x.max(box1.max_point().x),
-            box0.max_point().y.max(box1.max_point().y),
-            box0.max_point().z.max(box1.max_point().z),
+            box0.max_point().x().max(box1.max_point().x()),
+            box0.max_point().y().max(box1.max_point().y()),
+            box0.max_point().z().max(box1.max_point().z()),
         );
         Self::new(pt_min, pt_max)
     }
 
-    pub fn min_point(&self) -> &Point3 {
+    pub fn min_point(&self) -> &M256Point3 {
         &self.pt_min
     }
 
-    pub fn max_point(&self) -> &Point3 {
+    pub fn max_point(&self) -> &M256Point3 {
         &self.pt_max
     }
 
@@ -102,15 +102,10 @@ impl BoundingBox {
         use std::arch::x86_64::*;
 
         // We can probably do better than this if we improve the way these are stored
-        let ray_origin = _mm256_set_pd(ray.origin.x, ray.origin.y, ray.origin.z, 1.0);
-        let ray_inv_direction = _mm256_set_pd(
-            ray.inv_direction.x,
-            ray.inv_direction.y,
-            ray.inv_direction.z,
-            1.0,
-        );
-        let pt_min = _mm256_set_pd(self.pt_min.x, self.pt_min.y, self.pt_min.z, 1.0);
-        let pt_max = _mm256_set_pd(self.pt_max.x, self.pt_max.y, self.pt_max.z, 1.0);
+        let ray_origin = ray.origin.load_v();
+        let ray_inv_direction = ray.inv_direction.load_v();
+        let pt_min = self.pt_min.load_v();
+        let pt_max = self.pt_max.load_v();
 
         let dir_sign = _mm256_cmp_pd(ray_inv_direction, _mm256_setzero_pd(), _CMP_LT_OQ);
 
@@ -134,23 +129,23 @@ impl BoundingBox {
             unsafe { self.intersect_avx(ray, t_min, t_max) }
         } else {
             test_axis(
-                self.pt_min.x,
-                self.pt_max.x,
-                ray.origin.x,
+                self.pt_min.x(),
+                self.pt_max.x(),
+                ray.origin.x(),
                 ray.direction.x,
                 &mut t_min,
                 &mut t_max,
             ) && test_axis(
-                self.pt_min.y,
-                self.pt_max.y,
-                ray.origin.y,
+                self.pt_min.y(),
+                self.pt_max.y(),
+                ray.origin.y(),
                 ray.direction.y,
                 &mut t_min,
                 &mut t_max,
             ) && test_axis(
-                self.pt_min.z,
-                self.pt_max.z,
-                ray.origin.z,
+                self.pt_min.z(),
+                self.pt_max.z(),
+                ray.origin.z(),
                 ray.direction.z,
                 &mut t_min,
                 &mut t_max,
