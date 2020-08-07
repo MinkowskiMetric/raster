@@ -1,6 +1,7 @@
 pub type FloatType = f64;
 pub type Point3 = cgmath::Point3<FloatType>;
 pub type Vector3 = cgmath::Vector3<FloatType>;
+pub type Vector4 = cgmath::Vector4<FloatType>;
 pub use cgmath::Deg;
 pub use cgmath::Rad;
 
@@ -74,6 +75,10 @@ impl M256Point3 {
     pub fn z(&self) -> f64 {
         self.val[1]
     }
+
+    pub fn w(&self) -> f64 {
+        self.val[0]
+    }
 }
 
 #[repr(C, align(32))]
@@ -93,6 +98,20 @@ impl From<Vector3> for M256Vector3 {
 impl From<M256Vector3> for Vector3 {
     fn from(p: M256Vector3) -> Self {
         Self::new(p.x(), p.y(), p.z())
+    }
+}
+
+impl From<Vector4> for M256Vector3 {
+    fn from(p: Vector4) -> Self {
+        Self {
+            val: [p.w, p.z, p.y, p.x],
+        }
+    }
+}
+
+impl From<M256Vector3> for Vector4 {
+    fn from(p: M256Vector3) -> Self {
+        Self::new(p.x(), p.y(), p.z(), p.w())
     }
 }
 
@@ -117,5 +136,9 @@ impl M256Vector3 {
 
     pub fn z(&self) -> f64 {
         self.val[1]
+    }
+
+    pub fn w(&self) -> f64 {
+        self.val[0]
     }
 }

@@ -17,24 +17,25 @@ pub struct Ray {
     pub origin: M256Point3,
     pub direction: Vector3,
     pub inv_direction: M256Vector3,
-    pub sign: [usize; 3],
+    pub sign: M256Vector3,
     pub time: FloatType,
 }
 
 impl Ray {
     pub fn new(origin: Point3, direction: Vector3, time: FloatType) -> Self {
         let inv_direction = 1.0 / direction;
-        let sign = [
-            if inv_direction.x < 0.0 { 1 } else { 0 },
-            if inv_direction.y < 0.0 { 1 } else { 0 },
-            if inv_direction.z < 0.0 { 1 } else { 0 },
-        ];
+        let sign = Vector4::new(
+            if inv_direction.x < 0.0 { -1.0 } else { 0.0 },
+            if inv_direction.y < 0.0 { -1.0 } else { 0.0 },
+            if inv_direction.z < 0.0 { -1.0 } else { 0.0 },
+            0.0,
+        );
 
         Self {
             origin: origin.into(),
             direction,
             inv_direction: inv_direction.into(),
-            sign,
+            sign: sign.into(),
             time,
         }
     }

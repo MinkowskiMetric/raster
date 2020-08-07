@@ -104,10 +104,9 @@ impl BoundingBox {
         // We can probably do better than this if we improve the way these are stored
         let ray_origin = ray.origin.load_v();
         let ray_inv_direction = ray.inv_direction.load_v();
+        let dir_sign = ray.sign.load_v();
         let pt_min = self.pt_min.load_v();
         let pt_max = self.pt_max.load_v();
-
-        let dir_sign = _mm256_cmp_pd(ray_inv_direction, _mm256_setzero_pd(), _CMP_LT_OQ);
 
         // Add t_min and t_max into the fourth value in the vector
         let t0 = _mm256_mul_pd(_mm256_sub_pd(pt_min, ray_origin), ray_inv_direction);
