@@ -104,7 +104,7 @@ impl BoundingBox {
         // We can probably do better than this if we improve the way these are stored
         let ray_origin = ray.origin.load_v();
         let ray_inv_direction = ray.inv_direction.load_v();
-        let dir_sign = ray.sign.load_v();
+        let dir_sign = _mm256_cmp_pd(ray_inv_direction, _mm256_setzero_pd(), _CMP_LT_OQ);
         let pt_min = self.pt_min.load_v();
         let pt_max = self.pt_max.load_v();
 
@@ -116,10 +116,18 @@ impl BoundingBox {
 
         // Swizzle the values to get the min and max values the right way round according to
         // the direction and select the min and max values
-        let t_min = max_v(_mm256_blendv_pd(t0, t1, dir_sign));
-        let t_max = min_v(_mm256_blendv_pd(t1, t0, dir_sign));
+        let t_min_l = _mm256_and_pd(dir_sign, t1);
+        let t_min_r = _mm256_andnot_pd(dir_sign, t0);
+        let t_min_f = _mm256_or_pd(t_min_l, t_min_r);
+        let t_min = max_v(t_min_f);
+        let t_max_l = _mm256_and_pd(dir_sign, t0);
+        let t_max_r = _mm256_andnot_pd(dir_sign, t1);
+        let t_max_f = _mm256_or_pd(t_max_l, t_max_r);
+        let t_max = min_v(t_max_f);
 
-        0 != _mm_comilt_sd(t_min, t_max)
+        let cmp = 0 != _mm_comilt_sd(t_min, t_max);
+
+        cmp
     }
 
     #[inline]
