@@ -220,7 +220,8 @@ fn scan_batch(
 
 const MAX_DEPTH: usize = 50;
 
-type FixedSizeAttenuationStack<'a> = crate::fixed_size_stack::FixedSizeStack<'a, PartialScatterResult>;
+type FixedSizeAttenuationStack<'a> =
+    crate::fixed_size_stack::FixedSizeStack<'a, PartialScatterResult>;
 
 fn single_trace(
     ray: &Ray,

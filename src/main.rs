@@ -10,6 +10,7 @@ mod scene;
 mod shape_list;
 mod sphere;
 mod stats;
+mod texture;
 mod utils;
 mod volume;
 extern crate cgmath;
@@ -37,9 +38,16 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
     shapes.push(Box::new(crate::sphere::Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Box::new(material::Lambertian::new(
-            vec3(0.5, 0.5, 0.5).try_into().unwrap(),
-        )),
+        Box::new(material::Lambertian::new(Box::new(
+            texture::CheckerTexture::new(
+                Box::new(texture::SolidTexture::new(
+                    vec3(0.2, 0.3, 0.1).try_into().unwrap(),
+                )),
+                Box::new(texture::SolidTexture::new(
+                    vec3(0.9, 0.9, 0.9).try_into().unwrap(),
+                )),
+            ),
+        ))),
     )));
 
     for a in -11..11 {
@@ -54,8 +62,9 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
             if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
                 shapes.push(if choose_mat < 0.8 {
                     let center2 = center + vec3(0.0, random_in_range(0.0, 0.5), 0.0);
-                    let material =
-                        Box::new(material::Lambertian::new(random_color_in_range(0.0, 1.0)));
+                    let material = Box::new(material::Lambertian::new(Box::new(
+                        texture::SolidTexture::new(random_color_in_range(0.0, 1.0)),
+                    )));
                     Box::new(sphere::MovingSphere::new(
                         (center, 0.0),
                         (center2, 1.0),
@@ -84,9 +93,9 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
     shapes.push(Box::new(crate::sphere::Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
-        Box::new(material::Lambertian::new(
-            vec3(0.4, 0.2, 0.1).try_into().unwrap(),
-        )),
+        Box::new(material::Lambertian::new(Box::new(
+            texture::SolidTexture::new(vec3(0.4, 0.2, 0.1).try_into().unwrap()),
+        ))),
     )));
 
     shapes.push(Box::new(crate::sphere::Sphere::new(
@@ -166,9 +175,8 @@ fn my_test_scene(
         Box::new(crate::sphere::Sphere::new(
             Point3::new(0.0, -51.0, -5.0),
             50.0,
-            Box::new(material::Lambertian::new(attenuate_color(
-                color::Color::YELLOW,
-                0.5,
+            Box::new(material::Lambertian::new(Box::new(
+                texture::SolidTexture::new(attenuate_color(color::Color::YELLOW, 0.5)),
             ))),
         )),
     ];

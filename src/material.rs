@@ -2,6 +2,7 @@ use crate::color::Color;
 use crate::hittable::HitResult;
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::texture::Texture;
 use crate::utils::*;
 
 fn reflect(v: Vector3, n: Vector3) -> Vector3 {
@@ -54,23 +55,28 @@ impl Clone for Box<dyn Material> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Lambertian(Color);
+pub struct Lambertian(Box<dyn Texture>);
 
 impl Lambertian {
-    pub fn new(color: Color) -> Self {
-        Lambertian(color)
+    pub fn new(texture: Box<dyn Texture>) -> Self {
+        Lambertian(texture)
     }
 
-    pub fn color(&self) -> &Color {
-        &self.0
+    pub fn albedo(&self) -> &dyn Texture {
+        self.0.as_ref()
     }
 }
 
 impl Material for Lambertian {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point + hit_record.surface_normal + random_unit_vector();
+        let color = self
+            .albedo()
+            .value(hit_record.hit_point, hit_record.u, hit_record.v);
         Some(ScatterResult {
-            partial: PartialScatterResult { attenuation: cgmath::Vector4::from(*self.color()).truncate() },
+            partial: PartialScatterResult {
+                attenuation: cgmath::Vector4::from(color).truncate(),
+            },
             scattered: Ray::new(
                 hit_record.hit_point,
                 target - hit_record.hit_point,
@@ -103,7 +109,9 @@ impl Material for Metal {
             + self.fuzz() * random_in_unit_sphere();
         if reflected.dot(hit_record.surface_normal) > 0.0 {
             Some(ScatterResult {
-                partial: PartialScatterResult { attenuation: cgmath::Vector4::from(*self.color()).truncate() },
+                partial: PartialScatterResult {
+                    attenuation: cgmath::Vector4::from(*self.color()).truncate(),
+                },
                 scattered: Ray::new(hit_record.hit_point, reflected.normalize(), ray_in.time),
             })
         } else {
@@ -142,7 +150,9 @@ impl Material for Dielectric {
             let reflected = reflect(unit_ray_direction, hit_record.surface_normal);
 
             Some(ScatterResult {
-                partial: PartialScatterResult { attenuation: vec3(1.0, 1.0, 1.0) },
+                partial: PartialScatterResult {
+                    attenuation: vec3(1.0, 1.0, 1.0),
+                },
                 scattered: Ray::new(hit_record.hit_point, reflected, ray_in.time),
             })
         } else {
@@ -153,7 +163,9 @@ impl Material for Dielectric {
             );
 
             Some(ScatterResult {
-                partial: PartialScatterResult { attenuation: vec3(1.0, 1.0, 1.0) },
+                partial: PartialScatterResult {
+                    attenuation: vec3(1.0, 1.0, 1.0),
+                },
                 scattered: Ray::new(hit_record.hit_point, refracted, ray_in.time),
             })
         }

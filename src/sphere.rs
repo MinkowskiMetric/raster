@@ -5,6 +5,16 @@ use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::stats::TracingStats;
 
+fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
+    let phi = p.z.atan2(p.x);
+    let theta = p.y.asin();
+
+    let u = 1.0 - (phi + constants::PI) / (2.0 * constants::PI);
+    let v = (theta + constants::PI / 2.0) / constants::PI;
+
+    (u, v)
+}
+
 #[derive(Clone, Debug)]
 pub struct Sphere {
     center: Point3,
@@ -78,12 +88,15 @@ impl Hittable for Sphere {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv((hit_point - self.center) / self.radius);
                 return Some(HitResult {
                     distance: temp,
                     hit_point,
                     surface_normal,
                     front_face,
                     material: &self.material,
+                    u,
+                    v,
                 });
             }
 
@@ -97,12 +110,15 @@ impl Hittable for Sphere {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv((hit_point - self.center) / self.radius);
                 return Some(HitResult {
                     distance: temp,
                     hit_point,
                     surface_normal,
                     front_face,
                     material: &self.material,
+                    u,
+                    v,
                 });
             }
         }
@@ -145,12 +161,15 @@ impl Hittable for MovingSphere {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv((hit_point - center) / self.radius);
                 return Some(HitResult {
                     distance: temp,
                     hit_point,
                     surface_normal,
                     front_face,
                     material: &self.material,
+                    u,
+                    v,
                 });
             }
 
@@ -164,12 +183,15 @@ impl Hittable for MovingSphere {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv((hit_point - center) / self.radius);
                 return Some(HitResult {
                     distance: temp,
                     hit_point,
                     surface_normal,
                     front_face,
                     material: &self.material,
+                    u,
+                    v,
                 });
             }
         }

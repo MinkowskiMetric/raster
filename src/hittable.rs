@@ -10,6 +10,8 @@ pub struct HitResult<'a> {
     pub surface_normal: Vector3,
     pub front_face: bool,
     pub material: &'a Box<dyn Material>,
+    pub u: FloatType,
+    pub v: FloatType,
 }
 
 pub trait HittableClone {
