@@ -5,6 +5,7 @@ mod fixed_size_stack;
 mod hittable;
 mod material;
 mod math;
+mod perlin;
 mod ray_scanner;
 mod scene;
 mod shape_list;
@@ -235,6 +236,47 @@ fn two_spheres(
     (camera, shapes)
 }
 
+fn two_perlin_spheres(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
+    let pertext = texture::NoiseTexture::new();
+
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(13.0, 2.0, 3.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = camera::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+    let shapes: Vec<Box<dyn hittable::Hittable>> = vec![
+        Box::new(crate::sphere::Sphere::new(
+            Point3::new(0.0, -1000.0, 0.0),
+            1000.0,
+            Box::new(material::Lambertian::new(Box::new(
+                pertext.clone()
+            ))),
+        )),
+        Box::new(crate::sphere::Sphere::new(
+            Point3::new(0.0, 2.0, 0.0),
+            2.0,
+            Box::new(material::Lambertian::new(Box::new(
+                pertext.clone()
+            ))),
+        )),
+    ];
+
+    (camera, shapes)
+}
+
 fn main() {
     let yaml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
@@ -270,6 +312,7 @@ fn main() {
     let ((camera, shapes), scene_name) = match matches.value_of("scene") {
         Some("random") => (random_scene(width, height), "random"),
         Some("twospheres") => (two_spheres(width, height), "twospheres"),
+        Some("twoperlinspheres") => (two_perlin_spheres(width, height), "twoperlinspheres"),
         _ => (my_test_scene(width, height), "mine"),
     };
     let scene = scene::Scene::new(camera, enable_spatial_partitioning, shapes);

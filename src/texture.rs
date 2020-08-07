@@ -1,5 +1,7 @@
 use crate::color::Color;
 use crate::math::*;
+use crate::perlin::Perlin;
+use std::convert::TryInto;
 
 pub trait Texture: Sync + Send + TextureClone + std::fmt::Debug {
     fn value(&self, p: Point3, u: FloatType, v: FloatType) -> Color;
@@ -66,5 +68,24 @@ impl Texture for CheckerTexture {
         } else {
             self.texture2().value(p, u, v)
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NoiseTexture(Perlin);
+
+impl NoiseTexture {
+    pub fn new() -> Self {
+        Self(Perlin::new())
+    }
+
+    pub fn perlin(&self) -> &Perlin {
+        &self.0
+    }
+}
+
+impl Texture for NoiseTexture {
+    fn value(&self, p: Point3, _u: FloatType, _v: FloatType) -> Color {
+        (Vector3::new(1.0, 1.0, 1.0) * self.perlin().noise(p)).try_into().unwrap()
     }
 }
