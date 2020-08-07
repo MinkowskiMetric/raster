@@ -183,6 +183,58 @@ fn my_test_scene(
     (camera, shapes)
 }
 
+fn two_spheres(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(13.0, 2.0, 3.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = camera::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+    let shapes: Vec<Box<dyn hittable::Hittable>> = vec![
+        Box::new(crate::sphere::Sphere::new(
+            Point3::new(0.0, -10.0, 0.0),
+            10.0,
+            Box::new(material::Lambertian::new(Box::new(
+                texture::CheckerTexture::new(
+                    Box::new(texture::SolidTexture::new(
+                        vec3(0.2, 0.3, 0.1).try_into().unwrap(),
+                    )),
+                    Box::new(texture::SolidTexture::new(
+                        vec3(0.9, 0.9, 0.9).try_into().unwrap(),
+                    )),
+                )
+            ))),
+        )),
+        Box::new(crate::sphere::Sphere::new(
+            Point3::new(0.0, 10.0, 0.0),
+            10.0,
+            Box::new(material::Lambertian::new(Box::new(
+                texture::CheckerTexture::new(
+                    Box::new(texture::SolidTexture::new(
+                        vec3(0.2, 0.3, 0.1).try_into().unwrap(),
+                    )),
+                    Box::new(texture::SolidTexture::new(
+                        vec3(0.9, 0.9, 0.9).try_into().unwrap(),
+                    )),
+                )
+            ))),
+        )),
+    ];
+    (camera, shapes)
+}
+
 fn main() {
     let yaml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
@@ -217,6 +269,7 @@ fn main() {
 
     let ((camera, shapes), scene_name) = match matches.value_of("scene") {
         Some("random") => (random_scene(width, height), "random"),
+        Some("twospheres") => (two_spheres(width, height), "twospheres"),
         _ => (my_test_scene(width, height), "mine"),
     };
     let scene = scene::Scene::new(camera, enable_spatial_partitioning, shapes);

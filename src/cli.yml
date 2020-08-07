@@ -22,7 +22,7 @@ args:
         help: Choose a scene to render (defaults to mine)
         long: scene
         takes_value: true
-        possible_values: [ mine, random ]
+        possible_values: [ mine, random, twospheres ]
     - threads:
         help: Number of threads (defaults to 8)
         long: threads
