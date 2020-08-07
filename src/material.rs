@@ -23,8 +23,13 @@ fn schlick(cosine: FloatType, ref_idx: FloatType) -> FloatType {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct ScatterResult {
+pub struct PartialScatterResult {
     pub attenuation: Vector3,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct ScatterResult {
+    pub partial: PartialScatterResult,
     pub scattered: Ray,
 }
 
@@ -65,7 +70,7 @@ impl Material for Lambertian {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point + hit_record.surface_normal + random_unit_vector();
         Some(ScatterResult {
-            attenuation: cgmath::Vector4::from(*self.color()).truncate(),
+            partial: PartialScatterResult { attenuation: cgmath::Vector4::from(*self.color()).truncate() },
             scattered: Ray::new(
                 hit_record.hit_point,
                 target - hit_record.hit_point,
@@ -98,7 +103,7 @@ impl Material for Metal {
             + self.fuzz() * random_in_unit_sphere();
         if reflected.dot(hit_record.surface_normal) > 0.0 {
             Some(ScatterResult {
-                attenuation: cgmath::Vector4::from(*self.color()).truncate(),
+                partial: PartialScatterResult { attenuation: cgmath::Vector4::from(*self.color()).truncate() },
                 scattered: Ray::new(hit_record.hit_point, reflected.normalize(), ray_in.time),
             })
         } else {
@@ -137,7 +142,7 @@ impl Material for Dielectric {
             let reflected = reflect(unit_ray_direction, hit_record.surface_normal);
 
             Some(ScatterResult {
-                attenuation: vec3(1.0, 1.0, 1.0),
+                partial: PartialScatterResult { attenuation: vec3(1.0, 1.0, 1.0) },
                 scattered: Ray::new(hit_record.hit_point, reflected, ray_in.time),
             })
         } else {
@@ -148,7 +153,7 @@ impl Material for Dielectric {
             );
 
             Some(ScatterResult {
-                attenuation: vec3(1.0, 1.0, 1.0),
+                partial: PartialScatterResult { attenuation: vec3(1.0, 1.0, 1.0) },
                 scattered: Ray::new(hit_record.hit_point, refracted, ray_in.time),
             })
         }

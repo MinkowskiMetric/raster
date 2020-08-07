@@ -1,6 +1,6 @@
 use crate::color::Color;
 use crate::hittable::Hittable;
-use crate::material::ScatterResult;
+use crate::material::{PartialScatterResult, ScatterResult};
 use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
 use crate::stats::TracingStats;
@@ -220,7 +220,7 @@ fn scan_batch(
 
 const MAX_DEPTH: usize = 50;
 
-type FixedSizeAttenuationStack<'a> = crate::fixed_size_stack::FixedSizeStack<'a, ScatterResult>;
+type FixedSizeAttenuationStack<'a> = crate::fixed_size_stack::FixedSizeStack<'a, PartialScatterResult>;
 
 fn single_trace(
     ray: &Ray,
@@ -236,35 +236,34 @@ fn single_trace(
 pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut TracingStats) -> Color {
     let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
-    attenuation_stack.push(ScatterResult {
+    attenuation_stack.push(PartialScatterResult {
         attenuation: vec3(1.0, 1.0, 1.0).try_into().unwrap(),
-        scattered: *ray,
     });
 
-    loop {
-        let current_ray = &attenuation_stack.last().unwrap().scattered;
+    let mut current_ray = ray.clone();
 
-        let scatter_result = single_trace(current_ray, scene, stats);
-        if scatter_result.is_some() && attenuation_stack.len() < MAX_DEPTH {
-            attenuation_stack.push(scatter_result.unwrap());
-        } else {
-            // At this point, we've either not hit anything, or we've run out of space in the stack
-            let mut color = if scatter_result.is_some() {
-                Color::BLACK
+    loop {
+        let scatter_result = single_trace(&current_ray, scene, stats);
+        if let Some(ScatterResult { partial, scattered }) = scatter_result {
+            if attenuation_stack.len() < MAX_DEPTH {
+                attenuation_stack.push(partial);
+                current_ray = scattered;
             } else {
-                let unit_direction = current_ray.direction;
-                let t = 0.5 * (1.0 - unit_direction.y);
-                (((1.0 - t) * vec3(1.0, 1.0, 1.0)) + (t * vec3(0.5, 0.7, 1.0)))
-                    .try_into()
-                    .unwrap()
-            };
+                return Color::BLACK;
+            }
+        } else {
+            let unit_direction = current_ray.direction;
+            let t = 0.5 * (1.0 - unit_direction.y);
+            let mut color = (((1.0 - t) * vec3(1.0, 1.0, 1.0)) + (t * vec3(0.5, 0.7, 1.0)))
+                .try_into()
+                .unwrap();
 
             while let Some(scatter_result) = attenuation_stack.pop() {
                 color = scatter_result
                     .attenuation
                     .mul_element_wise(cgmath::Vector4::from(color).truncate())
                     .try_into()
-                    .unwrap()
+                    .unwrap();
             }
 
             return color;
