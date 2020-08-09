@@ -1,5 +1,5 @@
 use crate::aabb::BoundingBox;
-use crate::hittable::{HitResult, Hittable};
+use crate::hittable::{HitResult, Hittable, SharedHittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::stats::TracingStats;
@@ -7,11 +7,11 @@ use crate::utils::*;
 
 #[derive(Clone, Debug)]
 pub struct ShapeList {
-    shapes: Box<[Box<dyn Hittable>]>,
+    shapes: Box<[SharedHittable]>,
 }
 
 impl ShapeList {
-    pub fn from_shapes(shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> Self {
+    pub fn from_shapes(shapes: impl IntoIterator<Item = SharedHittable>) -> Self {
         let shapes = shapes.into_iter().collect::<Vec<_>>().into_boxed_slice();
 
         Self { shapes }

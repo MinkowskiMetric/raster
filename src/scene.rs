@@ -1,11 +1,12 @@
 use crate::aabb::BoundingBox;
 use crate::camera::{Camera, PreparedCamera};
-use crate::hittable::{HitResult, Hittable};
+use crate::hittable::{HitResult, Hittable, SharedHittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::shape_list::ShapeList;
 use crate::stats::TracingStats;
 use crate::volume::Volume;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 enum RootShape {
@@ -18,7 +19,7 @@ impl RootShape {
         enable_spatial_partitioning: bool,
         t0: FloatType,
         t1: FloatType,
-        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+        shapes: impl IntoIterator<Item = SharedHittable>,
     ) -> Self {
         if enable_spatial_partitioning {
             RootShape::Volume(Volume::from_shapes(shapes, t0, t1))
@@ -54,14 +55,14 @@ impl Hittable for RootShape {
 pub struct Scene {
     camera: Camera,
     enable_spatial_partitioning: bool,
-    shapes: Vec<Box<dyn Hittable>>,
+    shapes: Vec<SharedHittable>,
 }
 
 impl Scene {
     pub fn new(
         camera: Camera,
         enable_spatial_partitioning: bool,
-        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+        shapes: impl IntoIterator<Item = SharedHittable>,
     ) -> Self {
         Scene {
             camera,
@@ -71,21 +72,21 @@ impl Scene {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct PreparedScene {
     camera: PreparedCamera,
     root_volume: RootShape,
 }
 
 impl PreparedScene {
-    pub fn make(scene: Scene, t0: FloatType, t1: FloatType) -> Self {
+    pub fn make(scene: Scene, t0: FloatType, t1: FloatType) -> Arc<Self> {
         let root_volume =
             RootShape::from_shapes(scene.enable_spatial_partitioning, t0, t1, scene.shapes);
 
-        Self {
+        Arc::new(Self {
             camera: PreparedCamera::make(scene.camera, t0, t1),
             root_volume,
-        }
+        })
     }
 
     pub fn camera(&self) -> &PreparedCamera {

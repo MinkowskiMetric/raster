@@ -24,6 +24,10 @@ use crate::color::Color;
 use crate::math::*;
 use crate::utils::*;
 
+use crate::hittable::{shapes::*, SharedHittable};
+use crate::material::materials::*;
+use crate::texture::textures::*;
+
 use std::convert::TryInto;
 
 use image::prelude::*;
@@ -33,23 +37,17 @@ fn attenuate_color(color: color::Color, attenuation: FloatType) -> color::Color 
     color.attenuate(attenuation)
 }
 
-fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
-    let mut shapes: Vec<Box<dyn hittable::Hittable>> = Vec::new();
+fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+    let mut shapes: Vec<SharedHittable> = Vec::new();
 
-    shapes.push(Box::new(crate::sphere::Sphere::new(
+    shapes.push(sphere(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Box::new(material::Lambertian::new(Box::new(
-            texture::CheckerTexture::new(
-                Box::new(texture::SolidTexture::new(
-                    vec3(0.2, 0.3, 0.1).try_into().unwrap(),
-                )),
-                Box::new(texture::SolidTexture::new(
-                    vec3(0.9, 0.9, 0.9).try_into().unwrap(),
-                )),
-            ),
-        ))),
-    )));
+        lambertian(checker_texture(
+            solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
+            solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
+        )),
+    ));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -63,50 +61,34 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
             if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
                 shapes.push(if choose_mat < 0.8 {
                     let center2 = center + vec3(0.0, random_in_range(0.0, 0.5), 0.0);
-                    let material = Box::new(material::Lambertian::new(Box::new(
-                        texture::SolidTexture::new(random_color_in_range(0.0, 1.0)),
-                    )));
-                    Box::new(sphere::MovingSphere::new(
-                        (center, 0.0),
-                        (center2, 1.0),
-                        0.2,
-                        material,
-                    ))
+                    let material = lambertian(solid_texture(random_color_in_range(0.0, 1.0)));
+                    moving_sphere((center, 0.0), (center2, 1.0), 0.2, material)
                 } else if choose_mat < 0.95 {
                     let albedo = random_color_in_range(0.5, 1.0);
                     let fuzz = random_in_range(0.0, 1.0);
-                    let material = Box::new(material::Metal::new(albedo, fuzz));
-                    Box::new(crate::sphere::Sphere::new(center, 0.2, material))
+                    let material = metal(albedo, fuzz);
+                    sphere(center, 0.2, material)
                 } else {
-                    let material = Box::new(material::Dielectric::new(1.5));
-                    Box::new(crate::sphere::Sphere::new(center, 0.2, material))
+                    let material = dielectric(1.5);
+                    sphere(center, 0.2, material)
                 });
             }
         }
     }
 
-    shapes.push(Box::new(crate::sphere::Sphere::new(
-        Point3::new(0.0, 1.0, 0.0),
-        1.0,
-        Box::new(material::Dielectric::new(1.5)),
-    )));
+    shapes.push(sphere(Point3::new(0.0, 1.0, 0.0), 1.0, dielectric(1.5)));
 
-    shapes.push(Box::new(crate::sphere::Sphere::new(
+    shapes.push(sphere(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
-        Box::new(material::Lambertian::new(Box::new(
-            texture::SolidTexture::new(vec3(0.4, 0.2, 0.1).try_into().unwrap()),
-        ))),
-    )));
+        lambertian(solid_texture(vec3(0.4, 0.2, 0.1).try_into().unwrap())),
+    ));
 
-    shapes.push(Box::new(crate::sphere::Sphere::new(
+    shapes.push(sphere(
         Point3::new(3.0, 1.0, 0.0),
         1.0,
-        Box::new(material::Metal::new(
-            vec3(0.7, 0.6, 0.5).try_into().unwrap(),
-            0.0,
-        )),
-    )));
+        metal(vec3(0.7, 0.6, 0.5).try_into().unwrap(), 0.0),
+    ));
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
@@ -127,10 +109,7 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hit
     (camera, shapes)
 }
 
-fn my_test_scene(
-    width: usize,
-    height: usize,
-) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
+fn my_test_scene(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
     let lookat = Point3::new(0.0, 0.0, -3.0);
@@ -146,45 +125,29 @@ fn my_test_scene(
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<Box<dyn hittable::Hittable>> = vec![
-        Box::new(crate::sphere::Sphere::new(
-            Point3::new(-0.5, 0.0, -3.0),
-            1.0,
-            Box::new(material::Dielectric::new(1.5)),
-        )),
-        Box::new(crate::sphere::Sphere::new(
-            Point3::new(-0.5, 0.0, -3.0),
-            -0.999,
-            Box::new(material::Dielectric::new(1.5)),
-        )),
-        Box::new(crate::sphere::Sphere::new(
+    let shapes: Vec<SharedHittable> = vec![
+        sphere(Point3::new(-0.5, 0.0, -3.0), 1.0, dielectric(1.5)),
+        sphere(Point3::new(-0.5, 0.0, -3.0), -0.999, dielectric(1.5)),
+        sphere(
             Point3::new(0.5, 0.0, -5.0),
             1.0,
-            Box::new(material::Metal::new(
-                attenuate_color(color::Color::MAGENTA, 0.8),
-                0.2,
-            )),
-        )),
-        Box::new(crate::sphere::Sphere::new(
+            metal(attenuate_color(color::Color::MAGENTA, 0.8), 0.2),
+        ),
+        sphere(
             Point3::new(-0.5, 0.0, -5.0),
             1.0,
-            Box::new(material::Metal::new(
-                attenuate_color(color::Color::WHITE, 0.8),
-                0.0,
-            )),
-        )),
-        Box::new(crate::sphere::Sphere::new(
+            metal(attenuate_color(color::Color::WHITE, 0.8), 0.0),
+        ),
+        sphere(
             Point3::new(0.0, -51.0, -5.0),
             50.0,
-            Box::new(material::Lambertian::new(Box::new(
-                texture::SolidTexture::new(attenuate_color(color::Color::YELLOW, 0.5)),
-            ))),
-        )),
+            lambertian(solid_texture(attenuate_color(color::Color::YELLOW, 0.5))),
+        ),
     ];
     (camera, shapes)
 }
 
-fn two_spheres(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
+fn two_spheres(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -200,44 +163,29 @@ fn two_spheres(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hitt
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<Box<dyn hittable::Hittable>> = vec![
-        Box::new(crate::sphere::Sphere::new(
+    let shapes: Vec<SharedHittable> = vec![
+        sphere(
             Point3::new(0.0, -10.0, 0.0),
             10.0,
-            Box::new(material::Lambertian::new(Box::new(
-                texture::CheckerTexture::new(
-                    Box::new(texture::SolidTexture::new(
-                        vec3(0.2, 0.3, 0.1).try_into().unwrap(),
-                    )),
-                    Box::new(texture::SolidTexture::new(
-                        vec3(0.9, 0.9, 0.9).try_into().unwrap(),
-                    )),
-                ),
-            ))),
-        )),
-        Box::new(crate::sphere::Sphere::new(
+            lambertian(checker_texture(
+                solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
+                solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
+            )),
+        ),
+        sphere(
             Point3::new(0.0, 10.0, 0.0),
             10.0,
-            Box::new(material::Lambertian::new(Box::new(
-                texture::CheckerTexture::new(
-                    Box::new(texture::SolidTexture::new(
-                        vec3(0.2, 0.3, 0.1).try_into().unwrap(),
-                    )),
-                    Box::new(texture::SolidTexture::new(
-                        vec3(0.9, 0.9, 0.9).try_into().unwrap(),
-                    )),
-                ),
-            ))),
-        )),
+            lambertian(checker_texture(
+                solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
+                solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
+            )),
+        ),
     ];
     (camera, shapes)
 }
 
-fn two_perlin_spheres(
-    width: usize,
-    height: usize,
-) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
-    let pertext = texture::NoiseTexture::new();
+fn two_perlin_spheres(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+    let pertext = noise_texture();
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
@@ -254,17 +202,13 @@ fn two_perlin_spheres(
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<Box<dyn hittable::Hittable>> = vec![
-        Box::new(crate::sphere::Sphere::new(
+    let shapes: Vec<SharedHittable> = vec![
+        sphere(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
-            Box::new(material::Lambertian::new(Box::new(pertext.clone()))),
-        )),
-        Box::new(crate::sphere::Sphere::new(
-            Point3::new(0.0, 2.0, 0.0),
-            2.0,
-            Box::new(material::Lambertian::new(Box::new(pertext.clone()))),
-        )),
+            lambertian(pertext.clone()),
+        ),
+        sphere(Point3::new(0.0, 2.0, 0.0), 2.0, lambertian(pertext.clone())),
     ];
 
     (camera, shapes)
@@ -278,7 +222,7 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
 const BUILTIN_SCENES: [(
     &'static str,
-    fn(usize, usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>),
+    fn(usize, usize) -> (camera::Camera, Vec<SharedHittable>),
 ); 4] = [
     ("random", random_scene),
     ("mine", my_test_scene),

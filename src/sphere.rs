@@ -1,6 +1,6 @@
 use crate::aabb::BoundingBox;
 use crate::hittable::{HitResult, Hittable};
-use crate::material::Material;
+use crate::material::SharedMaterial;
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::stats::TracingStats;
@@ -19,7 +19,7 @@ fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
 pub struct Sphere {
     center: Point3,
     radius: FloatType,
-    material: Box<dyn Material>,
+    material: SharedMaterial,
 }
 
 #[derive(Clone, Debug)]
@@ -27,11 +27,11 @@ pub struct MovingSphere {
     center0: (Point3, FloatType),
     center1: (Point3, FloatType),
     radius: FloatType,
-    material: Box<dyn Material>,
+    material: SharedMaterial,
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: FloatType, material: Box<dyn Material>) -> Self {
+    pub fn new(center: Point3, radius: FloatType, material: SharedMaterial) -> Self {
         Self {
             center,
             radius,
@@ -45,7 +45,7 @@ impl MovingSphere {
         center0: (Point3, FloatType),
         center1: (Point3, FloatType),
         radius: FloatType,
-        material: Box<dyn Material>,
+        material: SharedMaterial,
     ) -> Self {
         Self {
             center0,

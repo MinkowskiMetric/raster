@@ -2,8 +2,10 @@ use crate::color::Color;
 use crate::hittable::HitResult;
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::texture::Texture;
+use crate::texture::{SharedTexture, Texture};
 use crate::utils::*;
+
+use std::sync::Arc;
 
 fn reflect(v: Vector3, n: Vector3) -> Vector3 {
     return v - (2.0 * v.dot(n) * n);
@@ -34,31 +36,17 @@ pub struct ScatterResult {
     pub scattered: Ray,
 }
 
-pub trait MaterialClone {
-    fn box_clone(&self) -> Box<dyn Material>;
-}
-
-pub trait Material: Sync + Send + MaterialClone + std::fmt::Debug {
+pub trait Material: Sync + Send + std::fmt::Debug {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult>;
 }
 
-impl<T: Material + Clone + 'static> MaterialClone for T {
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
-    }
-}
-
-impl Clone for Box<dyn Material> {
-    fn clone(&self) -> Self {
-        self.box_clone()
-    }
-}
+pub type SharedMaterial = Arc<dyn Material>;
 
 #[derive(Clone, Debug)]
-pub struct Lambertian(Box<dyn Texture>);
+pub struct Lambertian(SharedTexture);
 
 impl Lambertian {
-    pub fn new(texture: Box<dyn Texture>) -> Self {
+    pub fn new(texture: SharedTexture) -> Self {
         Lambertian(texture)
     }
 
@@ -169,5 +157,21 @@ impl Material for Dielectric {
                 scattered: Ray::new(hit_record.hit_point, refracted, ray_in.time),
             })
         }
+    }
+}
+
+pub mod materials {
+    use super::*;
+
+    pub fn lambertian(texture: SharedTexture) -> Arc<Lambertian> {
+        Arc::new(Lambertian::new(texture))
+    }
+
+    pub fn metal(color: Color, fuzz: FloatType) -> Arc<Metal> {
+        Arc::new(Metal::new(color, fuzz))
+    }
+
+    pub fn dielectric(ri: FloatType) -> Arc<Dielectric> {
+        Arc::new(Dielectric::new(ri))
     }
 }
