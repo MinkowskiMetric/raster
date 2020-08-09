@@ -21,6 +21,7 @@ extern crate num;
 extern crate clap;
 use clap::App;
 
+use crate::color::Color;
 use crate::math::*;
 use crate::utils::*;
 
@@ -184,10 +185,7 @@ fn my_test_scene(
     (camera, shapes)
 }
 
-fn two_spheres(
-    width: usize,
-    height: usize,
-) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
+fn two_spheres(width: usize, height: usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -215,7 +213,7 @@ fn two_spheres(
                     Box::new(texture::SolidTexture::new(
                         vec3(0.9, 0.9, 0.9).try_into().unwrap(),
                     )),
-                )
+                ),
             ))),
         )),
         Box::new(crate::sphere::Sphere::new(
@@ -229,7 +227,7 @@ fn two_spheres(
                     Box::new(texture::SolidTexture::new(
                         vec3(0.9, 0.9, 0.9).try_into().unwrap(),
                     )),
-                )
+                ),
             ))),
         )),
     ];
@@ -261,23 +259,20 @@ fn two_perlin_spheres(
         Box::new(crate::sphere::Sphere::new(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
-            Box::new(material::Lambertian::new(Box::new(
-                pertext.clone()
-            ))),
+            Box::new(material::Lambertian::new(Box::new(pertext.clone()))),
         )),
         Box::new(crate::sphere::Sphere::new(
             Point3::new(0.0, 2.0, 0.0),
             2.0,
-            Box::new(material::Lambertian::new(Box::new(
-                pertext.clone()
-            ))),
+            Box::new(material::Lambertian::new(Box::new(pertext.clone()))),
         )),
     ];
 
     (camera, shapes)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let yaml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
 
@@ -295,7 +290,7 @@ fn main() {
         .value_of("height")
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(DEFAULT_HEIGHT);
-    let output_file = matches.value_of("output").unwrap();
+    let output_file = matches.value_of("output").unwrap().to_string();
     let min_passes = matches
         .value_of("min-passes")
         .and_then(|v| v.parse::<usize>().ok())
@@ -328,8 +323,19 @@ fn main() {
         threads, min_passes
     );
 
+    let vector_image = ray_scanner::scan(scene, width, height, t0, t1, threads, min_passes).await;
+
     let mut surf = filled_image(width, height, RgbaPixel::BLACK).unwrap();
-    ray_scanner::scan(&mut surf, scene, t0, t1, threads, min_passes);
+
+    vector_image
+        .pixels()
+        .zip(surf.pixels_mut())
+        .fold({}, |_, (src, dst)| {
+            let color = src / src.w;
+            let color: Color = color.try_into().unwrap();
+            *dst = color.gamma(2.0).into();
+        });
+
     if let Err(e) = BmpEncoder::new().write_image_to_file(&surf, output_file) {
         println!("Failed to write output: {}", e);
     }

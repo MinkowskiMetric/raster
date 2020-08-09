@@ -12,6 +12,8 @@ edition = "2018"
 "image" = { path = "./crates/image" }
 "rand" = "*"
 "clap" = { version = "~2.27.0", features = ["yaml"] }
+"futures" = { version= "~0.3.5" }
+"tokio" = { version="0.2.*", features = ["full"] }
 
 [profile.release]
 debug = 2

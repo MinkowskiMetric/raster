@@ -61,8 +61,7 @@ impl Perlin {
 
 impl std::fmt::Debug for Perlin {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Perlin")
-         .finish()
+        f.debug_struct("Perlin").finish()
     }
 }
 /*class perlin {

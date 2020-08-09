@@ -5,10 +5,8 @@ use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
 use crate::stats::TracingStats;
 use crate::utils::*;
+use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};
-use std::thread;
-
-use image::{Pixel, SurfaceMut};
 
 use std::convert::TryInto;
 
@@ -41,12 +39,12 @@ impl Ray {
     }
 }
 
-struct VectorImage {
+pub struct VectorImage {
     width: usize,
     data: Box<[cgmath::Vector4<FloatType>]>,
 }
 
-struct Pixels<'a> {
+pub struct Pixels<'a> {
     chunks: Chunks<'a, cgmath::Vector4<FloatType>>,
 }
 
@@ -58,7 +56,7 @@ impl<'a> Iterator for Pixels<'a> {
     }
 }
 
-struct PixelsMut<'a> {
+pub struct PixelsMut<'a> {
     chunks: ChunksMut<'a, cgmath::Vector4<FloatType>>,
 }
 
@@ -70,7 +68,7 @@ impl<'a> Iterator for PixelsMut<'a> {
     }
 }
 
-struct EnumeratePixelsMut<'a> {
+pub struct EnumeratePixelsMut<'a> {
     pixels: PixelsMut<'a>,
     x: usize,
     y: usize,
@@ -135,59 +133,46 @@ impl std::ops::Add for VectorImage {
     }
 }
 
-pub fn scan<P: Pixel + From<Color>>(
-    image: &mut impl SurfaceMut<P>,
+pub async fn scan(
     scene: Scene,
+    image_width: usize,
+    image_height: usize,
     t0: FloatType,
     t1: FloatType,
     thread_count: usize,
     min_passes: usize,
-) {
+) -> VectorImage {
+    let thread_count = thread_count.max(1);
+    let min_passes = min_passes.max(1);
     let passes_per_thread = (min_passes + thread_count - 1) / thread_count;
 
     let start_time = std::time::Instant::now();
 
-    let (image_width, image_height) = image.dimensions();
-
     let scene = PreparedScene::make(scene, t0, t1);
 
-    let (vector_image, tracing_stats) = (0..thread_count)
-        .into_iter()
-        .map(|_a| {
-            let thread_scene = scene.clone();
-            thread::spawn(move || {
-                scan_batch(image_width, image_height, passes_per_thread, &thread_scene)
-            })
+    let futures = (0..thread_count).into_iter().map(|_| {
+        let thread_scene = scene.clone();
+        tokio::task::spawn_blocking(move || {
+            scan_batch(image_width, image_height, passes_per_thread, &thread_scene)
         })
-        .collect::<Vec<_>>()
+    });
+
+    let (vector_image, tracing_stats) = join_all(futures)
+        .await
         .into_iter()
-        .map(|jh| jh.join())
-        .my_fold_first(|a, b| {
-            if let Ok(a) = a {
-                if let Ok(b) = b {
-                    Ok((a.0 + b.0, a.1 + b.1))
-                } else {
-                    b
-                }
-            } else {
-                a
-            }
+        .my_fold_first(|a, b| match (a, b) {
+            (Ok(a), Ok(b)) => Ok((a.0 + b.0, a.1 + b.1)),
+            (Err(a), _) => Err(a),
+            (_, Err(b)) => Err(b),
         })
         .unwrap()
         .unwrap();
 
-    vector_image
-        .pixels()
-        .zip(image.pixels_mut())
-        .fold({}, |_, (src, dst)| {
-            let color = src / src.w;
-            let color: Color = color.try_into().unwrap();
-            *dst = color.gamma(2.0).into();
-        });
-
     let elapsed = start_time.elapsed().as_secs_f64();
     println!("Total runtime: {} seconds", elapsed);
     println!("Tracing stats: {:#?}", tracing_stats);
+
+    vector_image
 }
 
 fn scan_batch(
