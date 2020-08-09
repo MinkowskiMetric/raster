@@ -17,9 +17,8 @@ mod volume;
 extern crate cgmath;
 extern crate num;
 
-#[macro_use]
 extern crate clap;
-use clap::App;
+use clap::{App, Arg};
 
 use crate::color::Color;
 use crate::math::*;
@@ -271,16 +270,104 @@ fn two_perlin_spheres(
     (camera, shapes)
 }
 
+const DEFAULT_WIDTH: usize = 1920;
+const DEFAULT_HEIGHT: usize = 1080;
+const DEFAULT_MIN_PASSES: usize = 100;
+const DEFAULT_THREADS: usize = 8;
+const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
+
+fn command_line() -> clap::ArgMatches<'static> {
+    App::new("raster")
+        .version("1.0")
+        .author("Stewart Tootill <stewart.tootill@live.co.uk>")
+        .about("My raytracer")
+        .arg(
+            Arg::with_name("width")
+                .short("w")
+                .long("width")
+                .help(&format!("Width of image, defaults to {}", DEFAULT_WIDTH))
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("height")
+                .short("h")
+                .long("height")
+                .help(&format!("Height of image, defaults to {}", DEFAULT_HEIGHT))
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("scene")
+                .long("scene")
+                .takes_value(true)
+                .help(&format!("Choose a scene to render, defaults to mine"))
+                .possible_values(&["mine", "random", "twospheres", "twoperlinspheres"]),
+        )
+        .arg(
+            Arg::with_name("threads")
+                .long("threads")
+                .help(&format!(
+                    "Number of threads, defaults to {}",
+                    DEFAULT_THREADS
+                ))
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("min-passes")
+                .long("min-passes")
+                .help(&format!(
+                    "Minimum number of passes, defaults to {}",
+                    DEFAULT_MIN_PASSES
+                ))
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("enable-spatial-partitioning")
+                .long("enable-spatial-partitioning")
+                .possible_values(&["true", "false"])
+                .help(&format!(
+                    "Enable spatial partitioning, defaults to {}",
+                    DEFAULT_ENABLE_SPATIAL_PARTITIONING
+                ))
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("output")
+                .help("File to write to")
+                .required(true)
+                .index(1)
+                .takes_value(true),
+        )
+        .get_matches()
+    /*
+
+    - scene:
+        help: Choose a scene to render (defaults to mine)
+        long: scene
+        takes_value: true
+        possible_values: [ mine, random, twospheres, twoperlinspheres ]
+    - threads:
+        help: Number of threads (defaults to 8)
+        long: threads
+        takes_value: true
+    - min-passes:
+        help: Minimum number of passes (defaults to 100)
+        long: min-passes
+        takes_value: true
+    - enable-spatial-partitioning:
+        help: Enable spatial partitioning (defaults to true)
+        long: enable-spatial-partitioning
+        takes_value: true
+        possible_values: [ "true", "false" ]
+    - output:
+        help: File to write to
+        required: true
+        index: 1
+        takes_value: true*/
+}
+
 #[tokio::main]
 async fn main() {
-    let yaml = load_yaml!("cli.yml");
-    let matches = App::from_yaml(yaml).get_matches();
-
-    const DEFAULT_WIDTH: usize = 1920;
-    const DEFAULT_HEIGHT: usize = 1080;
-    const DEFAULT_MIN_PASSES: usize = 100;
-    const DEFAULT_THREADS: usize = 8;
-    const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
+    let matches = command_line();
 
     let width = matches
         .value_of("width")
