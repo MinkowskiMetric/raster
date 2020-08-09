@@ -276,6 +276,16 @@ const DEFAULT_MIN_PASSES: usize = 100;
 const DEFAULT_THREADS: usize = 8;
 const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
+const BUILTIN_SCENES: [(
+    &'static str,
+    fn(usize, usize) -> (camera::Camera, Vec<Box<dyn hittable::Hittable>>),
+); 4] = [
+    ("random", random_scene),
+    ("mine", my_test_scene),
+    ("twospheres", two_spheres),
+    ("twoperlinspheres", two_perlin_spheres),
+];
+
 fn command_line() -> clap::ArgMatches<'static> {
     App::new("raster")
         .version("1.0")
@@ -299,8 +309,11 @@ fn command_line() -> clap::ArgMatches<'static> {
             Arg::with_name("scene")
                 .long("scene")
                 .takes_value(true)
-                .help(&format!("Choose a scene to render, defaults to mine"))
-                .possible_values(&["mine", "random", "twospheres", "twoperlinspheres"]),
+                .help(&format!(
+                    "Choose a scene to render, defaults to {}",
+                    BUILTIN_SCENES[0].0
+                ))
+                .possible_values(&BUILTIN_SCENES.iter().map(|a| a.0).collect::<Vec<_>>()),
         )
         .arg(
             Arg::with_name("threads")
@@ -338,31 +351,6 @@ fn command_line() -> clap::ArgMatches<'static> {
                 .takes_value(true),
         )
         .get_matches()
-    /*
-
-    - scene:
-        help: Choose a scene to render (defaults to mine)
-        long: scene
-        takes_value: true
-        possible_values: [ mine, random, twospheres, twoperlinspheres ]
-    - threads:
-        help: Number of threads (defaults to 8)
-        long: threads
-        takes_value: true
-    - min-passes:
-        help: Minimum number of passes (defaults to 100)
-        long: min-passes
-        takes_value: true
-    - enable-spatial-partitioning:
-        help: Enable spatial partitioning (defaults to true)
-        long: enable-spatial-partitioning
-        takes_value: true
-        possible_values: [ "true", "false" ]
-    - output:
-        help: File to write to
-        required: true
-        index: 1
-        takes_value: true*/
 }
 
 #[tokio::main]
@@ -391,12 +379,10 @@ async fn main() {
         .and_then(|v| v.parse::<bool>().ok())
         .unwrap_or(DEFAULT_ENABLE_SPATIAL_PARTITIONING);
 
-    let ((camera, shapes), scene_name) = match matches.value_of("scene") {
-        Some("random") => (random_scene(width, height), "random"),
-        Some("twospheres") => (two_spheres(width, height), "twospheres"),
-        Some("twoperlinspheres") => (two_perlin_spheres(width, height), "twoperlinspheres"),
-        _ => (my_test_scene(width, height), "mine"),
-    };
+    let scene_name = matches.value_of("scene").unwrap_or(BUILTIN_SCENES[0].0);
+    let (scene_name, scene_function) = BUILTIN_SCENES.iter().find(|a| a.0 == scene_name).unwrap();
+
+    let (camera, shapes) = scene_function(width, height);
     let scene = scene::Scene::new(camera, enable_spatial_partitioning, shapes);
 
     let (t0, t1) = (0.0, 1.0);
