@@ -78,7 +78,8 @@ impl NoiseTexture {
 impl Texture for NoiseTexture {
     fn value(&self, p: Point3, _u: FloatType, _v: FloatType) -> Color {
         (Vector3::new(1.0, 1.0, 1.0)
-            * (0.5 * (1.0 + (self.scale() * p.z).sin() + (10.0 * self.perlin().turbulence(p, 7)))))
+            * (0.5
+                * (1.0 + ((self.scale() * p.z) + (10.0 * self.perlin().turbulence(p, 7))).sin())))
         .try_into()
         .unwrap()
     }

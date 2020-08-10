@@ -77,7 +77,7 @@ impl Perlin {
         let mut temp_p = p;
         let mut weight = 1.0;
 
-        for i in 0..depth {
+        for _ in 0..depth {
             accum = accum + (weight * self.noise(temp_p));
             weight = weight * 0.5;
             temp_p = temp_p * 2.0;
@@ -100,9 +100,9 @@ impl Perlin {
                     let weight = Vector3::new(u - fi, v - fj, w - fk);
 
                     accum = accum
-                        + (((fi * u) + ((1.0 - fi) * (1.0 - u)))
-                            * ((fj * v) + ((1.0 - fj) * (1.0 - v)))
-                            * ((fk * w) + ((1.0 - fk) * (1.0 - w)))
+                        + (((fi * uu) + ((1.0 - fi) * (1.0 - uu)))
+                            * ((fj * vv) + ((1.0 - fj) * (1.0 - vv)))
+                            * ((fk * ww) + ((1.0 - fk) * (1.0 - ww)))
                             * c[i][j][k].dot(weight));
                 }
             }
