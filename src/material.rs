@@ -93,8 +93,10 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
-        let reflected = reflect(ray_in.direction.normalize(), hit_record.surface_normal)
-            + self.fuzz() * random_in_unit_sphere();
+        let reflected = reflect(
+            ray_in.direction.into_vector().normalize(),
+            hit_record.surface_normal,
+        ) + self.fuzz() * random_in_unit_sphere();
         if reflected.dot(hit_record.surface_normal) > 0.0 {
             Some(ScatterResult {
                 partial: PartialScatterResult {
@@ -128,7 +130,7 @@ impl Material for Dielectric {
         } else {
             self.refractive_index()
         };
-        let unit_ray_direction = ray_in.direction.normalize();
+        let unit_ray_direction = ray_in.direction.into_vector().normalize();
 
         let cos_theta = -unit_ray_direction.dot(hit_record.surface_normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();

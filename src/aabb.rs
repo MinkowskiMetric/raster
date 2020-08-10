@@ -7,29 +7,6 @@ pub struct BoundingBox {
     pt_max: M256Point3,
 }
 
-#[cfg(not(all(target_feature = "avx", not(feature = "disableavx"))))]
-fn test_axis(
-    pt_min: FloatType,
-    pt_max: FloatType,
-    ray_origin: FloatType,
-    ray_direction: FloatType,
-    t_min: &mut FloatType,
-    t_max: &mut FloatType,
-) -> bool {
-    let inverse_direction = 1.0 / ray_direction;
-    let mut t0 = (pt_min - ray_origin) * inverse_direction;
-    let mut t1 = (pt_max - ray_origin) * inverse_direction;
-
-    if inverse_direction < 0.0 {
-        std::mem::swap(&mut t0, &mut t1);
-    }
-
-    *t_min = t0.max(*t_min);
-    *t_max = t1.min(*t_max);
-
-    !(t_max <= t_min)
-}
-
 #[inline]
 #[target_feature(enable = "avx")]
 unsafe fn max_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {

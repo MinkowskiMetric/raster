@@ -13,7 +13,7 @@ use std::convert::TryInto;
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Ray {
     pub origin: M256Point3,
-    pub direction: Vector3,
+    pub direction: M256Vector3,
     pub inv_direction: M256Vector3,
     pub sign: M256Vector3,
     pub time: FloatType,
@@ -31,7 +31,7 @@ impl Ray {
 
         Self {
             origin: origin.into(),
-            direction,
+            direction: direction.into(),
             inv_direction: inv_direction.into(),
             sign: sign.into(),
             time,
@@ -239,7 +239,7 @@ pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut TracingStats) -> Colo
             }
         } else {
             let unit_direction = current_ray.direction;
-            let t = 0.5 * (1.0 - unit_direction.y);
+            let t = 0.5 * (1.0 - unit_direction.y());
             let mut color = (((1.0 - t) * vec3(1.0, 1.0, 1.0)) + (t * vec3(0.5, 0.7, 1.0)))
                 .try_into()
                 .unwrap();
