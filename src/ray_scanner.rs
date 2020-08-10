@@ -189,11 +189,12 @@ fn scan_batch(
         *pixel = (0..pass_count)
             .into_iter()
             .map(|_s| {
-                let (u, v) = (
+                let (s, t) = (
                     ((x as FloatType) + random_in_range(-0.5, 0.5)) / image_width,
-                    ((y as FloatType) + random_in_range(-0.5, 0.5)) / image_height,
+                    ((image_height - 1.0 - (y as FloatType)) + random_in_range(-0.5, 0.5))
+                        / image_height,
                 );
-                let ray = scene.camera().make_ray(u, v);
+                let ray = scene.camera().make_ray(s, t);
 
                 cgmath::Vector4::from(trace(&ray, scene, &mut stats))
             })

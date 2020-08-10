@@ -1,5 +1,5 @@
 use crate::math::*;
-use image::{rgba, RgbaPixel};
+use image::Rgb;
 use std::convert::{Infallible, TryFrom};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -54,25 +54,25 @@ impl Color {
     }
 }
 
-impl From<RgbaPixel> for Color {
-    fn from(p: RgbaPixel) -> Self {
+impl From<Rgb<u8>> for Color {
+    fn from(p: Rgb<u8>) -> Self {
+        let Rgb(p) = p;
         Color([
-            FloatType::from(p.get_r()) / 255.0,
-            FloatType::from(p.get_g()) / 255.0,
-            FloatType::from(p.get_b()) / 255.0,
-            FloatType::from(p.get_a()) / 255.0,
+            FloatType::from(p[0]) / 255.0,
+            FloatType::from(p[1]) / 255.0,
+            FloatType::from(p[2]) / 255.0,
+            1.0,
         ])
     }
 }
 
-impl From<Color> for RgbaPixel {
+impl From<Color> for Rgb<u8> {
     fn from(p: Color) -> Self {
-        rgba!(
+        Rgb([
             (p.get_r() * 255.0) as u8,
             (p.get_g() * 255.0) as u8,
             (p.get_b() * 255.0) as u8,
-            (p.get_a() * 255.0) as u8
-        )
+        ])
     }
 }
 

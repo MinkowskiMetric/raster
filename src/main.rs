@@ -30,8 +30,7 @@ use crate::texture::textures::*;
 
 use std::convert::TryInto;
 
-use image::prelude::*;
-use image::{filled_image, BmpEncoder, RgbaPixel};
+use image::RgbImage;
 
 fn attenuate_color(color: color::Color, attenuation: FloatType) -> color::Color {
     color.attenuate(attenuation)
@@ -342,7 +341,7 @@ async fn main() {
 
     let vector_image = ray_scanner::scan(scene, width, height, t0, t1, threads, min_passes).await;
 
-    let mut surf = filled_image(width, height, RgbaPixel::BLACK).unwrap();
+    let mut surf = RgbImage::new(width as u32, height as u32);
 
     vector_image
         .pixels()
@@ -353,7 +352,7 @@ async fn main() {
             *dst = color.gamma(2.0).into();
         });
 
-    if let Err(e) = BmpEncoder::new().write_image_to_file(&surf, output_file) {
+    if let Err(e) = surf.save(output_file) {
         println!("Failed to write output: {}", e);
     }
 }
