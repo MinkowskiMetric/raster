@@ -1,9 +1,9 @@
 use crate::color::Color;
 use crate::math::*;
 use crate::perlin::Perlin;
+use image::{GenericImageView, Pixel};
 use std::convert::TryInto;
 use std::sync::Arc;
-use image::{Pixel, GenericImageView};
 
 pub trait Texture: Sync + Send + std::fmt::Debug {
     fn value(&self, p: Point3, u: FloatType, v: FloatType) -> Color;
@@ -134,7 +134,9 @@ pub mod textures {
         Arc::new(NoiseTexture::new(scale))
     }
 
-    pub fn image_texture<Image: image::GenericImageView + Sync + Send>(image: Image) -> Arc<ImageTexture<Image>> {
+    pub fn image_texture<Image: image::GenericImageView + Sync + Send>(
+        image: Image,
+    ) -> Arc<ImageTexture<Image>> {
         Arc::new(ImageTexture::new(image))
     }
 }

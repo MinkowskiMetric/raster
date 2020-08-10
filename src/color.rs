@@ -1,7 +1,7 @@
 use crate::math::*;
 use image::Rgb;
-use std::convert::{Infallible, TryFrom};
 use num_traits::NumCast;
+use std::convert::{Infallible, TryFrom};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Color([FloatType; 4]);

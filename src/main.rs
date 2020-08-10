@@ -233,13 +233,11 @@ fn textured_earth(width: usize, height: usize) -> (camera::Camera, Vec<SharedHit
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<SharedHittable> = vec![
-        sphere(
-            Point3::new(0.0, 0.0, 0.0),
-            2.0,
-            lambertian(earth_image),
-        ),
-    ];
+    let shapes: Vec<SharedHittable> = vec![sphere(
+        Point3::new(0.0, 0.0, 0.0),
+        2.0,
+        lambertian(earth_image),
+    )];
 
     (camera, shapes)
 }
