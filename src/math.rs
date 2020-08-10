@@ -182,3 +182,23 @@ pub unsafe fn _mm256_dot_pd(x: std::arch::x86_64::__m256d, y: std::arch::x86_64:
 
     _mm_cvtsd_f64(_mm_add_pd(xy_l, xy_h))
 }
+
+pub fn trilinear_interp(c: &[[[f64; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+    let mut accum = 0.0;
+    for i in 0..2 {
+        let fi = i as f64;
+        for j in 0..2 {
+            let fj = j as f64;
+            for k in 0..2 {
+                let fk = k as f64;
+
+                accum = accum
+                    + (((fi * u) + ((1.0 - fi) * (1.0 - u)))
+                        * ((fj * v) + ((1.0 - fj) * (1.0 - v)))
+                        * ((fk * w) + ((1.0 - fk) * (1.0 - w)))
+                        * c[i][j][k]);
+            }
+        }
+    }
+    accum
+}

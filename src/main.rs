@@ -185,7 +185,7 @@ fn two_spheres(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittab
 }
 
 fn two_perlin_spheres(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
-    let pertext = noise_texture();
+    let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
