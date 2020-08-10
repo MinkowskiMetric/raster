@@ -213,6 +213,37 @@ fn two_perlin_spheres(width: usize, height: usize) -> (camera::Camera, Vec<Share
     (camera, shapes)
 }
 
+fn textured_earth(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+    let earth_bytes = include_bytes!("earthmap.jpg");
+    let earth_image = image::load_from_memory(earth_bytes).unwrap();
+    let earth_image = image_texture(earth_image);
+
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(13.0, 2.0, 3.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = camera::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+    let shapes: Vec<SharedHittable> = vec![
+        sphere(
+            Point3::new(0.0, 0.0, 0.0),
+            2.0,
+            lambertian(earth_image),
+        ),
+    ];
+
+    (camera, shapes)
+}
+
 const DEFAULT_WIDTH: usize = 1920;
 const DEFAULT_HEIGHT: usize = 1080;
 const DEFAULT_MIN_PASSES: usize = 100;
@@ -222,11 +253,12 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 const BUILTIN_SCENES: [(
     &'static str,
     fn(usize, usize) -> (camera::Camera, Vec<SharedHittable>),
-); 4] = [
+); 5] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
     ("twoperlinspheres", two_perlin_spheres),
+    ("earth", textured_earth),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {

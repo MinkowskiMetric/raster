@@ -1,6 +1,7 @@
 use crate::math::*;
 use image::Rgb;
 use std::convert::{Infallible, TryFrom};
+use num_traits::NumCast;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Color([FloatType; 4]);
@@ -54,24 +55,30 @@ impl Color {
     }
 }
 
-impl From<Rgb<u8>> for Color {
-    fn from(p: Rgb<u8>) -> Self {
+impl<T: image::Primitive> From<Rgb<T>> for Color {
+    fn from(p: Rgb<T>) -> Self {
+        let max_t = T::max_value();
+        let max_t = max_t.to_f64().unwrap();
+
         let Rgb(p) = p;
         Color([
-            FloatType::from(p[0]) / 255.0,
-            FloatType::from(p[1]) / 255.0,
-            FloatType::from(p[2]) / 255.0,
+            p[0].to_f64().unwrap() / max_t,
+            p[1].to_f64().unwrap() / max_t,
+            p[2].to_f64().unwrap() / max_t,
             1.0,
         ])
     }
 }
 
-impl From<Color> for Rgb<u8> {
+impl<T: image::Primitive> From<Color> for Rgb<T> {
     fn from(p: Color) -> Self {
+        let max_t = T::max_value();
+        let max_t = max_t.to_f64().unwrap();
+
         Rgb([
-            (p.get_r() * 255.0) as u8,
-            (p.get_g() * 255.0) as u8,
-            (p.get_b() * 255.0) as u8,
+            NumCast::from(p.get_r() * max_t).unwrap(),
+            NumCast::from(p.get_g() * max_t).unwrap(),
+            NumCast::from(p.get_b() * max_t).unwrap(),
         ])
     }
 }
