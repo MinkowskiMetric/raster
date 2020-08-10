@@ -173,7 +173,7 @@ impl Volume {
                     if volume_stack.is_full() {
                         hit_result = replace_hit_result(
                             hit_result,
-                            left.intersect(ray, t_min, t_max, stats),
+                            left.intersect_avx(ray, t_min, t_max, stats),
                         );
                     } else {
                         volume_stack.push(left.as_ref());
@@ -197,42 +197,7 @@ impl Hittable for Volume {
         t_max: FloatType,
         stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
-        if is_x86_feature_detected!("avx") {
-            unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
-        } else {
-            let mut volume_stack_data = [None; 50];
-            let mut volume_stack = FixedSizeVolumeStack::new(&mut volume_stack_data);
-            let mut hit_result = None;
-
-            volume_stack.push(self);
-
-            while let Some(v) = volume_stack.pop() {
-                stats.count_bounding_box_test();
-                if v.bounding_box.intersect(ray, t_min, t_max) {
-                    if let InnerVolume::TwoChild { left, right } = &v.inner_volume {
-                        // We know that we can always push one value onto the stack here
-                        // because we just popped a value off
-                        volume_stack.push(right.as_ref());
-
-                        // But this push might panic if the stack is full so check for that and
-                        // recurse if necessary
-                        if volume_stack.is_full() {
-                            hit_result = replace_hit_result(
-                                hit_result,
-                                left.intersect(ray, t_min, t_max, stats),
-                            );
-                        } else {
-                            volume_stack.push(left.as_ref());
-                        }
-                    } else if let InnerVolume::SingleChild(c) = &v.inner_volume {
-                        hit_result =
-                            replace_hit_result(hit_result, c.intersect(ray, t_min, t_max, stats));
-                    }
-                }
-            }
-
-            hit_result
-        }
+        unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }
 
     fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {

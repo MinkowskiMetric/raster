@@ -129,34 +129,4 @@ impl BoundingBox {
 
         cmp
     }
-
-    #[inline]
-    pub fn intersect(&self, ray: &Ray, mut t_min: FloatType, mut t_max: FloatType) -> bool {
-        if is_x86_feature_detected!("avx") {
-            unsafe { self.intersect_avx(ray, t_min, t_max) }
-        } else {
-            test_axis(
-                self.pt_min.x(),
-                self.pt_max.x(),
-                ray.origin.x(),
-                ray.direction.x,
-                &mut t_min,
-                &mut t_max,
-            ) && test_axis(
-                self.pt_min.y(),
-                self.pt_max.y(),
-                ray.origin.y(),
-                ray.direction.y,
-                &mut t_min,
-                &mut t_max,
-            ) && test_axis(
-                self.pt_min.z(),
-                self.pt_max.z(),
-                ray.origin.z(),
-                ray.direction.z,
-                &mut t_min,
-                &mut t_max,
-            )
-        }
-    }
 }
