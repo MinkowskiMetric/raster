@@ -38,6 +38,10 @@ pub struct ScatterResult {
 
 pub trait Material: Sync + Send + std::fmt::Debug {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult>;
+
+    fn emitted(&self, _p: Point3, _u: FloatType, _v: FloatType) -> Color {
+        Color::BLACK
+    }
 }
 
 pub type SharedMaterial = Arc<dyn Material>;
@@ -162,6 +166,29 @@ impl Material for Dielectric {
     }
 }
 
+#[derive(Debug)]
+pub struct DiffuseLight(SharedTexture);
+
+impl DiffuseLight {
+    pub fn new(emit: SharedTexture) -> Self {
+        Self(emit)
+    }
+
+    pub fn emit(&self) -> &dyn Texture {
+        self.0.as_ref()
+    }
+}
+
+impl Material for DiffuseLight {
+    fn emitted(&self, p: Point3, u: FloatType, v: FloatType) -> Color {
+        self.emit().value(p, u, v)
+    }
+
+    fn scatter(&self, _ray_in: &Ray, _hit_record: &HitResult) -> Option<ScatterResult> {
+        None
+    }
+}
+
 pub mod materials {
     use super::*;
 
@@ -175,5 +202,9 @@ pub mod materials {
 
     pub fn dielectric(ri: FloatType) -> Arc<Dielectric> {
         Arc::new(Dielectric::new(ri))
+    }
+
+    pub fn diffuse_light(texture: SharedTexture) -> Arc<DiffuseLight> {
+        Arc::new(DiffuseLight::new(texture))
     }
 }

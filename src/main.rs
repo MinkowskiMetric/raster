@@ -9,6 +9,7 @@ mod perlin;
 mod ray_scanner;
 mod scene;
 mod shape_list;
+mod sky;
 mod sphere;
 mod stats;
 mod texture;
@@ -26,6 +27,7 @@ use crate::utils::*;
 
 use crate::hittable::{shapes::*, SharedHittable};
 use crate::material::materials::*;
+use crate::sky::skies::*;
 use crate::texture::textures::*;
 
 use std::convert::TryInto;
@@ -36,7 +38,10 @@ fn attenuate_color(color: color::Color, attenuation: FloatType) -> color::Color 
     color.attenuate(attenuation)
 }
 
-fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+fn random_scene(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
     let mut shapes: Vec<SharedHittable> = Vec::new();
 
     shapes.push(sphere(
@@ -105,10 +110,13 @@ fn random_scene(width: usize, height: usize) -> (camera::Camera, Vec<SharedHitta
         dist_to_focus,
     );
 
-    (camera, shapes)
+    (camera, regular_sky(), shapes)
 }
 
-fn my_test_scene(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+fn my_test_scene(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
     let lookat = Point3::new(0.0, 0.0, -3.0);
@@ -143,10 +151,13 @@ fn my_test_scene(width: usize, height: usize) -> (camera::Camera, Vec<SharedHitt
             lambertian(solid_texture(attenuate_color(color::Color::YELLOW, 0.5))),
         ),
     ];
-    (camera, shapes)
+    (camera, regular_sky(), shapes)
 }
 
-fn two_spheres(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+fn two_spheres(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -180,10 +191,13 @@ fn two_spheres(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittab
             )),
         ),
     ];
-    (camera, shapes)
+    (camera, regular_sky(), shapes)
 }
 
-fn two_perlin_spheres(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+fn two_perlin_spheres(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
     let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -210,10 +224,13 @@ fn two_perlin_spheres(width: usize, height: usize) -> (camera::Camera, Vec<Share
         sphere(Point3::new(0.0, 2.0, 0.0), 2.0, lambertian(pertext.clone())),
     ];
 
-    (camera, shapes)
+    (camera, regular_sky(), shapes)
 }
 
-fn textured_earth(width: usize, height: usize) -> (camera::Camera, Vec<SharedHittable>) {
+fn textured_earth(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
     let earth_bytes = include_bytes!("earthmap.jpg");
     let earth_image = image::load_from_memory(earth_bytes).unwrap();
     let earth_image = image_texture(earth_image);
@@ -239,7 +256,48 @@ fn textured_earth(width: usize, height: usize) -> (camera::Camera, Vec<SharedHit
         lambertian(earth_image),
     )];
 
-    (camera, shapes)
+    (camera, regular_sky(), shapes)
+}
+
+fn simple_light(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+    let pertext = noise_texture(4.0);
+
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(26.0, 3.0, 6.0);
+    let lookat = Point3::new(0.0, 2.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = camera::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+    let shapes: Vec<SharedHittable> = vec![
+        sphere(
+            Point3::new(0.0, -1000.0, 0.0),
+            1000.0,
+            lambertian(pertext.clone()),
+        ),
+        sphere(Point3::new(0.0, 2.0, 0.0), 2.0, lambertian(pertext.clone())),
+        xy_rect(
+            3.0,
+            5.0,
+            1.0,
+            3.0,
+            -2.0,
+            diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
+        ),
+    ];
+
+    (camera, black_sky(), shapes)
 }
 
 const DEFAULT_WIDTH: usize = 1920;
@@ -250,13 +308,14 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
 const BUILTIN_SCENES: [(
     &'static str,
-    fn(usize, usize) -> (camera::Camera, Vec<SharedHittable>),
-); 5] = [
+    fn(usize, usize) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>),
+); 6] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
     ("twoperlinspheres", two_perlin_spheres),
     ("earth", textured_earth),
+    ("simplelight", simple_light),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {
@@ -355,8 +414,8 @@ async fn main() {
     let scene_name = matches.value_of("scene").unwrap_or(BUILTIN_SCENES[0].0);
     let (scene_name, scene_function) = BUILTIN_SCENES.iter().find(|a| a.0 == scene_name).unwrap();
 
-    let (camera, shapes) = scene_function(width, height);
-    let scene = scene::Scene::new(camera, enable_spatial_partitioning, shapes);
+    let (camera, sky, shapes) = scene_function(width, height);
+    let scene = scene::Scene::new(camera, sky, enable_spatial_partitioning, shapes);
 
     let (t0, t1) = (0.0, 1.0);
 
@@ -377,6 +436,9 @@ async fn main() {
         .pixels()
         .zip(surf.pixels_mut())
         .fold({}, |_, (src, dst)| {
+            if src.w != 400.0 {
+                panic!("dkldfhjlsdfshj");
+            }
             let color = src / src.w;
             let color: Color = color.try_into().unwrap();
             *dst = color.gamma(2.0).into();

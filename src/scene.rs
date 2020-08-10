@@ -4,6 +4,7 @@ use crate::hittable::{HitResult, Hittable, SharedHittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::shape_list::ShapeList;
+use crate::sky::{SharedSky, Sky};
 use crate::stats::TracingStats;
 use crate::volume::Volume;
 use std::sync::Arc;
@@ -54,6 +55,7 @@ impl Hittable for RootShape {
 #[derive(Clone, Debug)]
 pub struct Scene {
     camera: Camera,
+    sky: SharedSky,
     enable_spatial_partitioning: bool,
     shapes: Vec<SharedHittable>,
 }
@@ -61,11 +63,13 @@ pub struct Scene {
 impl Scene {
     pub fn new(
         camera: Camera,
+        sky: SharedSky,
         enable_spatial_partitioning: bool,
         shapes: impl IntoIterator<Item = SharedHittable>,
     ) -> Self {
         Scene {
             camera,
+            sky,
             enable_spatial_partitioning,
             shapes: shapes.into_iter().collect::<Vec<_>>(),
         }
@@ -75,6 +79,7 @@ impl Scene {
 #[derive(Debug)]
 pub struct PreparedScene {
     camera: PreparedCamera,
+    sky: SharedSky,
     root_volume: RootShape,
 }
 
@@ -85,12 +90,17 @@ impl PreparedScene {
 
         Arc::new(Self {
             camera: PreparedCamera::make(scene.camera, t0, t1),
+            sky: scene.sky,
             root_volume,
         })
     }
 
     pub fn camera(&self) -> &PreparedCamera {
         &self.camera
+    }
+
+    pub fn sky(&self) -> &dyn Sky {
+        self.sky.as_ref()
     }
 }
 

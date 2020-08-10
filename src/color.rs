@@ -4,7 +4,7 @@ use num_traits::NumCast;
 use std::convert::{Infallible, TryFrom};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Color([FloatType; 4]);
+pub struct Color(pub [FloatType; 4]);
 
 macro_rules! color_constant {
     ($name:ident, $r:expr, $g:expr, $b:expr) => {
@@ -76,9 +76,9 @@ impl<T: image::Primitive> From<Color> for Rgb<T> {
         let max_t = max_t.to_f64().unwrap();
 
         Rgb([
-            NumCast::from(p.get_r() * max_t).unwrap(),
-            NumCast::from(p.get_g() * max_t).unwrap(),
-            NumCast::from(p.get_b() * max_t).unwrap(),
+            NumCast::from(p.get_r().max(0.0).min(1.0) * max_t).unwrap(),
+            NumCast::from(p.get_g().max(0.0).min(1.0) * max_t).unwrap(),
+            NumCast::from(p.get_b().max(0.0).min(1.0) * max_t).unwrap(),
         ])
     }
 }
@@ -90,13 +90,7 @@ impl From<Color> for cgmath::Vector4<FloatType> {
 }
 
 fn check_channel(channel: FloatType) -> Result<FloatType, Infallible> {
-    if channel >= 0.0 && channel <= 1.0 {
-        Ok(channel)
-    } else if channel > 1.0 {
-        Ok(1.0)
-    } else {
-        Ok(0.0)
-    }
+    Ok(channel)
 }
 
 impl TryFrom<cgmath::Vector4<FloatType>> for Color {

@@ -206,54 +206,71 @@ fn scan_batch(
 
 const MAX_DEPTH: usize = 50;
 
-type FixedSizeAttenuationStack<'a> =
-    crate::fixed_size_stack::FixedSizeStack<'a, PartialScatterResult>;
+#[derive(Debug, Clone, Copy)]
+struct ScatterStackRecord {
+    partial: PartialScatterResult,
+    emitted: Color,
+}
 
-fn single_trace(
-    ray: &Ray,
-    scene: &PreparedScene,
-    stats: &mut TracingStats,
-) -> Option<ScatterResult> {
-    stats.count_ray_cast();
-    scene
-        .intersect(ray, 0.001, constants::INFINITY, stats)
-        .and_then(|hit_result| hit_result.material.scatter(&ray, &hit_result))
+type FixedSizeAttenuationStack<'a> =
+    crate::fixed_size_stack::FixedSizeStack<'a, ScatterStackRecord>;
+
+fn collapse_color_stack<'a>(mut stack: FixedSizeAttenuationStack<'a>, input_color: Color) -> Color {
+    let mut color = input_color;
+
+    while let Some(scatter_record) = stack.pop() {
+        let calc_color = Vector4::from(scatter_record.emitted)
+            + scatter_record
+                .partial
+                .attenuation
+                .extend(1.0)
+                .mul_element_wise(Vector4::from(color));
+
+        color = calc_color.try_into().unwrap();
+    }
+
+    // We need to ensure that the alpha channel is 1 when we come out of here, because that is used
+    // later to average the samples.
+    Vector4::from(color)
+        .truncate()
+        .extend(1.0)
+        .try_into()
+        .unwrap()
 }
 
 pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut TracingStats) -> Color {
     let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
-    attenuation_stack.push(PartialScatterResult {
-        attenuation: vec3(1.0, 1.0, 1.0).try_into().unwrap(),
-    });
 
     let mut current_ray = ray.clone();
 
     loop {
-        let scatter_result = single_trace(&current_ray, scene, stats);
-        if let Some(ScatterResult { partial, scattered }) = scatter_result {
-            if attenuation_stack.len() < MAX_DEPTH {
-                attenuation_stack.push(partial);
-                current_ray = scattered;
-            } else {
-                return Color::BLACK;
-            }
+        stats.count_ray_cast();
+
+        if attenuation_stack.len() >= MAX_DEPTH {
+            // We cannot recurse any further, there is no point doing another hit test
+            return collapse_color_stack(attenuation_stack, Color::BLACK);
         } else {
-            let unit_direction = current_ray.direction;
-            let t = 0.5 * (1.0 - unit_direction.y());
-            let mut color = (((1.0 - t) * vec3(1.0, 1.0, 1.0)) + (t * vec3(0.5, 0.7, 1.0)))
-                .try_into()
-                .unwrap();
-
-            while let Some(scatter_result) = attenuation_stack.pop() {
-                color = scatter_result
-                    .attenuation
-                    .mul_element_wise(cgmath::Vector4::from(color).truncate())
-                    .try_into()
-                    .unwrap();
+            if let Some(hit_result) =
+                scene.intersect(&current_ray, 0.001, constants::INFINITY, stats)
+            {
+                // We hit an object. First see if it emitted any light
+                let emitted =
+                    hit_result
+                        .material
+                        .emitted(hit_result.hit_point, hit_result.u, hit_result.v);
+                if let Some(ScatterResult { partial, scattered }) =
+                    hit_result.material.scatter(&current_ray, &hit_result)
+                {
+                    attenuation_stack.push(ScatterStackRecord { partial, emitted });
+                    current_ray = scattered;
+                } else {
+                    return collapse_color_stack(attenuation_stack, emitted);
+                }
+            } else {
+                // We did not intersect with any objects, so sample the sky
+                return collapse_color_stack(attenuation_stack, scene.sky().sample(&current_ray));
             }
-
-            return color;
         }
     }
 }
