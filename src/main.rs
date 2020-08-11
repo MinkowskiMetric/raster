@@ -370,6 +370,52 @@ fn cornell_box(
     (camera, black_sky(), shapes)
 }
 
+fn prism(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(278.0, 278.0, -800.0);
+    let lookat = Point3::new(278.0, 278.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = camera::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(40.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let white = lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])));
+    let glass = dielectric(1.5);
+    let light = diffuse_light(solid_texture(Color([30.0, 30.0, 30.0, 1.0])));
+
+    let shapes: Vec<SharedHittable> = vec![
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),           // The floor
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),         // The back wall
+
+        yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0, light.clone()),         // The light
+
+        yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0, white.clone()),         // Bottom of the slit
+        yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0, white.clone()),         // Top of the slit
+
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),         // Target wall
+
+        translate(vec3(300.0, 250.0, 0.0), rotate_z(Deg(15.0).into(), box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(50.0, 100.0, 555.0), glass.clone()))),
+    ];
+
+    let shapes: Vec<SharedHittable> = vec![scale(
+        vec3(1.0, 1.0, 1.0),
+        std::sync::Arc::new(shape_list::ShapeList::from_shapes(shapes)),
+    )];
+
+    (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
+}
+
 const DEFAULT_WIDTH: usize = 1920;
 const DEFAULT_HEIGHT: usize = 1080;
 const DEFAULT_MIN_PASSES: usize = 100;
@@ -379,7 +425,7 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 const BUILTIN_SCENES: [(
     &'static str,
     fn(usize, usize) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>),
-); 7] = [
+); 8] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
@@ -387,6 +433,7 @@ const BUILTIN_SCENES: [(
     ("earth", textured_earth),
     ("simplelight", simple_light),
     ("cornell", cornell_box),
+    ("prism", prism),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {
