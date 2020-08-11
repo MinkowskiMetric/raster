@@ -32,15 +32,6 @@ impl<'a, T: Sized> FixedSizeStack<'a, T> {
         }
     }
 
-    pub fn last(&self) -> Option<&T> {
-        if self.top > 0 {
-            debug_assert!(self.data[self.top - 1].is_some());
-            self.data[self.top - 1].as_ref()
-        } else {
-            None
-        }
-    }
-
     pub fn len(&self) -> usize {
         self.top
     }

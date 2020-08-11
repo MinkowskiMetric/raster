@@ -66,7 +66,7 @@ impl Hittable for XyRect {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        _stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
         let ray_origin = ray.origin.into_point();
         let ray_direction = ray.direction.into_vector();
@@ -105,7 +105,7 @@ impl Hittable for XyRect {
         })
     }
 
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
         BoundingBox::new(
             Point3::new(self.x0, self.y0, self.k - 0.0001),
             Point3::new(self.x1, self.y1, self.k + 0.0001),
