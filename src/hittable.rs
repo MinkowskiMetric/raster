@@ -38,7 +38,6 @@ macro_rules! generate_rectangle {
             $faxis0: (FloatType, FloatType),
             $faxis1: (FloatType, FloatType),
             $oaxis: FloatType,
-            normal: Vector3,
             material: SharedMaterial,
         }
 
@@ -47,21 +46,12 @@ macro_rules! generate_rectangle {
                 $faxis0: (FloatType, FloatType),
                 $faxis1: (FloatType, FloatType),
                 $oaxis: FloatType,
-                flip_normal: bool,
                 material: SharedMaterial,
             ) -> Self {
-                let normal = generate_rectangle!(make_normal $oaxis);
-                let normal = if flip_normal {
-                    -normal
-                } else {
-                    normal
-                };
-
                 Self {
                     $faxis0,
                     $faxis1,
                     $oaxis,
-                    normal,
                     material,
                 }
             }
@@ -91,7 +81,7 @@ macro_rules! generate_rectangle {
 
                 let u = ($faxis0 - self.$faxis0.0) / (self.$faxis0.1 - self.$faxis0.0);
                 let v = ($faxis1 - self.$faxis1.0) / (self.$faxis1.1 - self.$faxis1.0);
-                let outward_normal = self.normal;
+                let outward_normal = generate_rectangle!(make_normal $oaxis);
                 let front_face = ray_direction.dot(outward_normal) < 0.0;
                 let surface_normal = if front_face {
                     outward_normal
@@ -148,42 +138,36 @@ impl BoxShape {
                 (pt_min.x, pt_max.x),
                 (pt_min.y, pt_max.y),
                 pt_max.z,
-                false,
                 material.clone(),
             ),
             shapes::xy_rectangle(
                 (pt_min.x, pt_max.x),
                 (pt_min.y, pt_max.y),
                 pt_min.z,
-                true,
                 material.clone(),
             ),
             shapes::xz_rectangle(
                 (pt_min.x, pt_max.x),
                 (pt_min.z, pt_max.z),
                 pt_max.y,
-                false,
                 material.clone(),
             ),
             shapes::xz_rectangle(
                 (pt_min.x, pt_max.x),
                 (pt_min.z, pt_max.z),
                 pt_min.y,
-                true,
                 material.clone(),
             ),
             shapes::yz_rectangle(
                 (pt_min.y, pt_max.y),
                 (pt_min.z, pt_max.z),
                 pt_max.x,
-                false,
                 material.clone(),
             ),
             shapes::yz_rectangle(
                 (pt_min.y, pt_max.y),
                 (pt_min.z, pt_max.z),
                 pt_min.x,
-                true,
                 material.clone(),
             ),
         ];
@@ -463,6 +447,41 @@ impl Hittable for Scale {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct InvertNormal(SharedHittable);
+
+impl InvertNormal {
+    pub fn new(child: SharedHittable) -> Self {
+        Self(child)
+    }
+
+    fn child(&self) -> &dyn Hittable {
+        self.0.as_ref()
+    }
+}
+
+impl Hittable for InvertNormal {
+    fn intersect<'a>(
+        &'a self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        stats: &mut TracingStats,
+    ) -> Option<HitResult<'a>> {
+        if let Some(mut hit_result) = self.child().intersect(&ray, t_min, t_max, stats) {
+            hit_result.front_face = !hit_result.front_face;
+
+            Some(hit_result)
+        } else {
+            None
+        }
+    }
+
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+        self.child().bounding_box(t0, t1)
+    }
+}
+
 pub mod shapes {
     use super::*;
     use crate::material::SharedMaterial;
@@ -487,10 +506,9 @@ pub mod shapes {
                 $faxis0: (FloatType, FloatType),
                 $faxis1: (FloatType, FloatType),
                 $oaxis: FloatType,
-                flip_normal: bool,
                 material: SharedMaterial,
             ) -> Arc<$name> {
-                Arc::new($name::new($faxis0, $faxis1, $oaxis, flip_normal, material))
+                Arc::new($name::new($faxis0, $faxis1, $oaxis, material))
             }
         };
     }
@@ -521,5 +539,9 @@ pub mod shapes {
 
     pub fn scale(scale: Vector3, child: SharedHittable) -> Arc<Scale> {
         Arc::new(Scale::new(scale, child))
+    }
+
+    pub fn invert_normal(child: SharedHittable) -> Arc<InvertNormal> {
+        Arc::new(InvertNormal::new(child))
     }
 }
