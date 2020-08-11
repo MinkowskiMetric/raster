@@ -335,6 +335,11 @@ fn cornell_box(
     let white = lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])));
     let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
     let light = diffuse_light(solid_texture(Color([15.0, 15.0, 15.0, 1.0])));
+    let unit_cube = box_shape(
+        Point3::new(0.0, 0.0, 0.0),
+        Point3::new(1.0, 1.0, 1.0),
+        white.clone(),
+    );
 
     let shapes: Vec<SharedHittable> = vec![
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, false, green.clone()),
@@ -347,25 +352,22 @@ fn cornell_box(
             vec3(265.0, 0.0, 295.0),
             rotate_y(
                 Deg(15.0).into(),
-                box_shape(
-                    Point3::new(0.0, 0.0, 0.0),
-                    Point3::new(165.0, 330.0, 160.0),
-                    white.clone(),
-                ),
+                scale(vec3(165.0, 330.0, 160.0), unit_cube.clone()),
             ),
         ),
         translate(
             vec3(130.0, 0.0, 65.0),
             rotate_y(
                 Deg(-18.0).into(),
-                box_shape(
-                    Point3::new(0.0, 0.0, 0.0),
-                    Point3::new(165.0, 165.0, 165.0),
-                    white.clone(),
-                ),
+                scale(vec3(165.0, 165.0, 165.0), unit_cube.clone()),
             ),
         ),
     ];
+
+    let shapes: Vec<SharedHittable> = vec![scale(
+        vec3(1.0, 1.0, 1.0),
+        std::sync::Arc::new(shape_list::ShapeList::from_shapes(shapes)),
+    )];
 
     (camera, black_sky(), shapes)
 }

@@ -390,86 +390,48 @@ generate_rotate!(RotateY, x, z);
 generate_rotate!(RotateZ, x, y);
 generate_rotate!(RotateX, y, z);
 
-/*#[derive(Debug, Clone)]
-pub struct RotateY(FloatType, FloatType, SharedHittable);
+#[derive(Debug, Clone)]
+pub struct Scale(Vector3, SharedHittable);
 
-impl RotateY {
-    pub fn new(angle: Rad<FloatType>, child: SharedHittable) -> Self {
-        Self(angle.sin(), angle.cos(), child)
+impl Scale {
+    pub fn new(scale: Vector3, child: SharedHittable) -> Self {
+        Self(scale, child)
     }
 
-    fn sin_theta(&self) -> FloatType {
-        self.0
+    fn scale(&self) -> &Vector3 {
+        &self.0
     }
 
-    fn cos_theta(&self) -> FloatType {
-        self.1
+    fn scale_as_point(&self) -> Point3 {
+        Point3::new(self.0.x, self.0.y, self.0.z)
     }
 
     fn child(&self) -> &dyn Hittable {
-        self.2.as_ref()
+        self.1.as_ref()
     }
 
-    fn rotate_point(&self, p: Point3) -> Point3 {
-        let x = (self.cos_theta() * p.x) - (self.sin_theta() * p.z);
-        let z = (self.sin_theta() * p.x) + (self.cos_theta() * p.z);
-        Point3::new(x, p.y, z)
+    fn unscale_point(&self, p: Point3) -> Point3 {
+        let scale = self.scale();
+        Point3::new(p.x / scale.x, p.y / scale.y, p.z / scale.z)
     }
 
-    fn rotate_vector(&self, p: Vector3) -> Vector3 {
-        let x = (self.cos_theta() * p.x) - (self.sin_theta() * p.z);
-        let z = (self.sin_theta() * p.x) + (self.cos_theta() * p.z);
-        Vector3::new(x, p.y, z)
+    fn unscale_vector(&self, p: Vector3) -> Vector3 {
+        let scale = self.scale();
+        Vector3::new(p.x / scale.x, p.y / scale.y, p.z / scale.z)
     }
 
-    fn unrotate_point(&self, p: Point3) -> Point3 {
-        let x = (self.cos_theta() * p.x) + (self.sin_theta() * p.z);
-        let z = (-self.sin_theta() * p.x) + (self.cos_theta() * p.z);
-        Point3::new(x, p.y, z)
+    fn scale_point(&self, p: Point3) -> Point3 {
+        let scale = self.scale();
+        Point3::new(p.x * scale.x, p.y * scale.y, p.z * scale.z)
     }
 
-    fn unrotate_vector(&self, p: Vector3) -> Vector3 {
-        let x = (self.cos_theta() * p.x) + (self.sin_theta() * p.z);
-        let z = (-self.sin_theta() * p.x) + (self.cos_theta() * p.z);
-        Vector3::new(x, p.y, z)
+    fn scale_vector(&self, p: Vector3) -> Vector3 {
+        let scale = self.scale();
+        Vector3::new(p.x * scale.x, p.y * scale.y, p.z * scale.z)
     }
 }
 
-macro_rules! box_axis_worker {
-    ($self:ident, $pt_min:ident, $pt_max:ident, $bound:ident) => {
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 0, 0, 0);
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 0, 0, 1);
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 0, 1, 0);
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 0, 1, 1);
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 1, 0, 0);
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 1, 0, 1);
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 1, 1, 0);
-        box_axis_worker!(component $self, $pt_min, $pt_max, $bound, 1, 1, 1);
-    };
-
-    (component $self:ident, $pt_min:ident, $pt_max:ident, $bound:ident, $xsel:tt, $ysel:tt, $zsel:tt) => {
-        let x = box_axis_worker!(select_axis $bound, x, $xsel);
-        let y = box_axis_worker!(select_axis $bound, y, $ysel);
-        let z = box_axis_worker!(select_axis $bound, z, $zsel);
-
-        let x = ($self.cos_theta() * x) + ($self.sin_theta() * z);
-        let z = (-$self.sin_theta() * x) + ($self.cos_theta() * z);
-
-        box_axis_worker!(update_axis $pt_min, $pt_max, x);
-        box_axis_worker!(update_axis $pt_min, $pt_max, y);
-        box_axis_worker!(update_axis $pt_min, $pt_max, z);
-    };
-
-    (select_axis $bound:ident, $axis:ident, 0) => { $bound.min_point().into_point().$axis };
-    (select_axis $bound:ident, $axis:ident, 1) => { $bound.max_point().into_point().$axis };
-
-    (update_axis $pt_min:ident, $pt_max:ident, $axis:ident) => {
-        $pt_min.$axis = $pt_min.$axis.min($axis);
-        $pt_max.$axis = $pt_max.$axis.max($axis);
-    }
-}
-
-impl Hittable for RotateY {
+impl Hittable for Scale {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -477,13 +439,14 @@ impl Hittable for RotateY {
         t_max: FloatType,
         stats: &mut TracingStats,
     ) -> Option<HitResult<'a>> {
-        let origin = self.rotate_point(ray.origin.into_point());
-        let direction = self.rotate_vector(ray.direction.into_vector());
+        let scaled_origin = self.unscale_point(ray.origin.into_point());
+        let scaled_direction = self.unscale_vector(ray.direction.into_vector());
+        let scaled_ray = Ray::new(scaled_origin, scaled_direction, ray.time);
 
-        let moved_ray = Ray::new(origin, direction, ray.time);
-        if let Some(mut hit_result) = self.child().intersect(&moved_ray, t_min, t_max, stats) {
-            hit_result.hit_point = self.unrotate_point(hit_result.hit_point);
-            hit_result.surface_normal = self.unrotate_vector(hit_result.surface_normal);
+        if let Some(mut hit_result) = self.child().intersect(&scaled_ray, t_min, t_max, stats) {
+            hit_result.hit_point = self.scale_point(hit_result.hit_point);
+            hit_result.surface_normal = self.scale_vector(hit_result.surface_normal).normalize();
+            hit_result.distance = (hit_result.hit_point - ray.origin.into_point()).magnitude();
 
             Some(hit_result)
         } else {
@@ -492,24 +455,13 @@ impl Hittable for RotateY {
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        let child_bounding_box = self.child().bounding_box(t0, t1);
-
-        let mut pt_min = Point3::new(
-            constants::INFINITY,
-            constants::INFINITY,
-            constants::INFINITY,
-        );
-        let mut pt_max = Point3::new(
-            -constants::INFINITY,
-            -constants::INFINITY,
-            -constants::INFINITY,
-        );
-
-        box_axis_worker!(self, pt_min, pt_max, child_bounding_box);
-
-        BoundingBox::new(pt_min, pt_max)
+        let child_box = self.child().bounding_box(t0, t1);
+        BoundingBox::new(
+            self.scale_point(child_box.min_point().into_point()),
+            self.scale_point(child_box.max_point().into_point()),
+        )
     }
-}*/
+}
 
 pub mod shapes {
     use super::*;
@@ -557,10 +509,7 @@ pub mod shapes {
 
     macro_rules! generate_rotate_func {
         ($fn_name:ident, $name:ident) => {
-            pub fn $fn_name(
-                angle: Rad<FloatType>,
-                child: SharedHittable,
-            ) -> Arc<$name> {
+            pub fn $fn_name(angle: Rad<FloatType>, child: SharedHittable) -> Arc<$name> {
                 Arc::new($name::new(angle, child))
             }
         };
@@ -569,4 +518,8 @@ pub mod shapes {
     generate_rotate_func!(rotate_y, RotateY);
     generate_rotate_func!(rotate_z, RotateZ);
     generate_rotate_func!(rotate_x, RotateX);
+
+    pub fn scale(scale: Vector3, child: SharedHittable) -> Arc<Scale> {
+        Arc::new(Scale::new(scale, child))
+    }
 }
