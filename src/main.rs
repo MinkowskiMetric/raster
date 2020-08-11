@@ -296,12 +296,14 @@ fn simple_light(
             (3.0, 5.0),
             (1.0, 3.0),
             -2.0,
+            false,
             diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
         ),
         yz_rectangle(
             (1.0, 3.0),
             (3.0, 4.0),
             -2.0,
+            false,
             diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
         ),
     ];
@@ -335,15 +337,34 @@ fn cornell_box(
     let light = diffuse_light(solid_texture(Color([15.0, 15.0, 15.0, 1.0])));
 
     let shapes: Vec<SharedHittable> = vec![
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, red.clone()),
-        xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0, light.clone()),
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
-        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
-
-        box_shape(Point3::new(130.0, 0.0, 65.0), Point3::new(295.0, 165.0, 230.0), white.clone()),
-        box_shape(Point3::new(265.0, 0.0, 295.0), Point3::new(430.0, 330.0, 460.0), white.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, false, green.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, true, red.clone()),
+        xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0, true, light.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, false, white.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, true, white.clone()),
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, false, white.clone()),
+        translate(
+            vec3(265.0, 0.0, 295.0),
+            rotate_y(
+                Deg(15.0).into(),
+                box_shape(
+                    Point3::new(0.0, 0.0, 0.0),
+                    Point3::new(165.0, 330.0, 160.0),
+                    white.clone(),
+                ),
+            ),
+        ),
+        translate(
+            vec3(130.0, 0.0, 65.0),
+            rotate_y(
+                Deg(-18.0).into(),
+                box_shape(
+                    Point3::new(0.0, 0.0, 0.0),
+                    Point3::new(165.0, 165.0, 165.0),
+                    white.clone(),
+                ),
+            ),
+        ),
     ];
 
     (camera, black_sky(), shapes)
