@@ -287,6 +287,11 @@ fn simple_light(
             lambertian(pertext.clone()),
         ),
         sphere(Point3::new(0.0, 2.0, 0.0), 2.0, lambertian(pertext.clone())),
+        sphere(
+            Point3::new(0.0, 7.0, 0.0),
+            2.0,
+            diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
+        ),
         xy_rect(
             3.0,
             5.0,
@@ -436,9 +441,6 @@ async fn main() {
         .pixels()
         .zip(surf.pixels_mut())
         .fold({}, |_, (src, dst)| {
-            if src.w != 400.0 {
-                panic!("dkldfhjlsdfshj");
-            }
             let color = src / src.w;
             let color: Color = color.try_into().unwrap();
             *dst = color.gamma(2.0).into();
