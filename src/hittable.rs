@@ -2,6 +2,7 @@ use crate::aabb::BoundingBox;
 use crate::material::SharedMaterial;
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::shape_list::ShapeList;
 use crate::stats::TracingStats;
 use std::sync::Arc;
 
@@ -123,6 +124,50 @@ generate_rectangle!(XyRectangle, x, y, z);
 generate_rectangle!(XzRectangle, x, z, y);
 generate_rectangle!(YzRectangle, y, z, x);
 
+#[derive(Debug)]
+pub struct BoxShape {
+    pt_min: Point3,
+    pt_max: Point3,
+    shapes: ShapeList,
+}
+
+impl BoxShape {
+    pub fn new(pt_min: Point3, pt_max: Point3, material: SharedMaterial) -> Self {
+        let sides: Vec<SharedHittable> = vec![
+            shapes::xy_rectangle((pt_min.x, pt_max.x), (pt_min.y, pt_max.y), pt_max.z, material.clone()),
+            shapes::xy_rectangle((pt_min.x, pt_max.x), (pt_min.y, pt_max.y), pt_min.z, material.clone()),
+
+            shapes::xz_rectangle((pt_min.x, pt_max.x), (pt_min.z, pt_max.z), pt_min.y, material.clone()),
+            shapes::xz_rectangle((pt_min.x, pt_max.x), (pt_min.z, pt_max.z), pt_min.y, material.clone()),
+
+            shapes::yz_rectangle((pt_min.y, pt_max.y), (pt_min.z, pt_max.z), pt_min.x, material.clone()),
+            shapes::yz_rectangle((pt_min.y, pt_max.y), (pt_min.z, pt_max.z), pt_min.x, material.clone()),
+        ];
+
+        Self {
+            pt_min,
+            pt_max,
+            shapes: ShapeList::from_shapes(sides),
+        }
+    }
+}
+
+impl Hittable for BoxShape {
+    fn intersect<'a>(
+        &'a self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        stats: &mut TracingStats,
+    ) -> Option<HitResult<'a>> {
+        self.shapes.intersect(ray, t_min, t_max, stats)
+    }
+
+    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+        BoundingBox::new(self.pt_min, self.pt_max)
+    }
+}
+
 pub mod shapes {
     use super::*;
     use crate::material::SharedMaterial;
@@ -157,4 +202,8 @@ pub mod shapes {
     generate_rectangle_func!(xy_rectangle, XyRectangle, x, y, z);
     generate_rectangle_func!(xz_rectangle, XzRectangle, x, z, y);
     generate_rectangle_func!(yz_rectangle, YzRectangle, y, z, x);
+
+    pub fn box_shape(pt_min: Point3, pt_max: Point3, material: SharedMaterial) -> Arc<BoxShape> {
+        Arc::new(BoxShape::new(pt_min, pt_max, material))
+    }
 }

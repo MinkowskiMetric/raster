@@ -341,6 +341,9 @@ fn cornell_box(
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
         xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
+
+        box_shape(Point3::new(130.0, 0.0, 65.0), Point3::new(295.0, 165.0, 230.0), white.clone()),
+        box_shape(Point3::new(265.0, 0.0, 295.0), Point3::new(430.0, 330.0, 460.0), white.clone()),
     ];
 
     (camera, black_sky(), shapes)
