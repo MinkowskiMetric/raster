@@ -292,11 +292,15 @@ fn simple_light(
             2.0,
             diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
         ),
-        xy_rect(
-            3.0,
-            5.0,
-            1.0,
-            3.0,
+        xy_rectangle(
+            (3.0, 5.0),
+            (1.0, 3.0),
+            -2.0,
+            diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
+        ),
+        yz_rectangle(
+            (1.0, 3.0),
+            (3.0, 4.0),
             -2.0,
             diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
         ),
