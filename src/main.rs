@@ -309,6 +309,43 @@ fn simple_light(
     (camera, black_sky(), shapes)
 }
 
+fn cornell_box(
+    width: usize,
+    height: usize,
+) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(278.0, 278.0, -800.0);
+    let lookat = Point3::new(278.0, 278.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = camera::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(40.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let red = lambertian(solid_texture(Color([0.65, 0.05, 0.05, 1.0])));
+    let white = lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])));
+    let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
+    let light = diffuse_light(solid_texture(Color([15.0, 15.0, 15.0, 1.0])));
+
+    let shapes: Vec<SharedHittable> = vec![
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, red.clone()),
+        xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0, light.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
+    ];
+
+    (camera, black_sky(), shapes)
+}
+
 const DEFAULT_WIDTH: usize = 1920;
 const DEFAULT_HEIGHT: usize = 1080;
 const DEFAULT_MIN_PASSES: usize = 100;
@@ -318,13 +355,14 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 const BUILTIN_SCENES: [(
     &'static str,
     fn(usize, usize) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>),
-); 6] = [
+); 7] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
     ("twoperlinspheres", two_perlin_spheres),
     ("earth", textured_earth),
     ("simplelight", simple_light),
+    ("cornell", cornell_box),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {
