@@ -1,9 +1,11 @@
-use crate::aabb::BoundingBox;
-use crate::hittable::{HitResult, Hittable, SharedHittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::stats::TracingStats;
 use crate::utils::*;
+use crate::BoundingBox;
+use crate::TracingStats;
+use crate::{HitResult, Hittable, SharedHittable};
+
+use std::sync::Arc;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum ComparatorAxis {
@@ -202,5 +204,17 @@ impl Hittable for Volume {
 
     fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
         self.bounding_box.clone()
+    }
+}
+
+pub mod factories {
+    use super::*;
+
+    pub fn volume(
+        shapes: impl IntoIterator<Item = SharedHittable>,
+        t0: FloatType,
+        t1: FloatType,
+    ) -> Arc<Volume> {
+        Arc::new(Volume::from_shapes(shapes, t0, t1))
     }
 }

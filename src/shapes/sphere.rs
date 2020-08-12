@@ -1,9 +1,10 @@
-use crate::aabb::BoundingBox;
-use crate::hittable::{HitResult, Hittable};
-use crate::material::SharedMaterial;
+use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::stats::TracingStats;
+use crate::TracingStats;
+use crate::{BoundingBox, SharedMaterial};
+
+use std::sync::Arc;
 
 fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
     let phi = p.z.atan2(p.x);
@@ -353,5 +354,22 @@ impl Hittable for MovingSphere {
         );
 
         BoundingBox::surrounding_box(&box0, &box1)
+    }
+}
+
+pub mod factories {
+    use super::*;
+
+    pub fn sphere(center: Point3, radius: FloatType, material: SharedMaterial) -> Arc<Sphere> {
+        Arc::new(Sphere::new(center, radius, material))
+    }
+
+    pub fn moving_sphere(
+        center0: (Point3, FloatType),
+        center1: (Point3, FloatType),
+        radius: FloatType,
+        material: SharedMaterial,
+    ) -> Arc<MovingSphere> {
+        Arc::new(MovingSphere::new(center0, center1, radius, material))
     }
 }

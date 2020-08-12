@@ -6,23 +6,7 @@ use std::convert::{Infallible, TryFrom};
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Color(pub [FloatType; 4]);
 
-macro_rules! color_constant {
-    ($name:ident, $r:expr, $g:expr, $b:expr) => {
-        #[allow(dead_code)]
-        pub const $name: Color = Color([$r, $g, $b, 1.0]);
-    };
-}
-
 impl Color {
-    color_constant!(BLACK, 0.0, 0.0, 0.0);
-    color_constant!(RED, 1.0, 0.0, 0.0);
-    color_constant!(GREEN, 0.0, 1.0, 0.0);
-    color_constant!(BLUE, 0.0, 0.0, 1.0);
-    color_constant!(YELLOW, 1.0, 1.0, 0.0);
-    color_constant!(MAGENTA, 1.0, 0.0, 1.0);
-    color_constant!(CYAN, 0.0, 1.0, 1.0);
-    color_constant!(WHITE, 1.0, 1.0, 1.0);
-
     pub fn get_r(&self) -> FloatType {
         self.0[0]
     }
@@ -117,4 +101,24 @@ impl TryFrom<cgmath::Vector3<FloatType>> for Color {
             1.0,
         ]))
     }
+}
+
+pub mod constants {
+    use super::*;
+
+    macro_rules! color_constant {
+        ($name:ident, $r:expr, $g:expr, $b:expr) => {
+            #[allow(dead_code)]
+            pub const $name: Color = Color([$r, $g, $b, 1.0]);
+        };
+    }
+
+    color_constant!(BLACK, 0.0, 0.0, 0.0);
+    color_constant!(RED, 1.0, 0.0, 0.0);
+    color_constant!(GREEN, 0.0, 1.0, 0.0);
+    color_constant!(BLUE, 0.0, 0.0, 1.0);
+    color_constant!(YELLOW, 1.0, 1.0, 0.0);
+    color_constant!(MAGENTA, 1.0, 0.0, 1.0);
+    color_constant!(CYAN, 0.0, 1.0, 1.0);
+    color_constant!(WHITE, 1.0, 1.0, 1.0);
 }

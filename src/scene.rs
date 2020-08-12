@@ -1,12 +1,11 @@
-use crate::aabb::BoundingBox;
 use crate::camera::{Camera, PreparedCamera};
-use crate::hittable::{HitResult, Hittable, SharedHittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::shape_list::ShapeList;
+use crate::shapes::{ShapeList, Volume};
 use crate::sky::{SharedSky, Sky};
-use crate::stats::TracingStats;
-use crate::volume::Volume;
+use crate::BoundingBox;
+use crate::TracingStats;
+use crate::{HitResult, Hittable, SharedHittable};
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]

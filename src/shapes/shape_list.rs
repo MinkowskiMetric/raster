@@ -1,9 +1,11 @@
-use crate::aabb::BoundingBox;
-use crate::hittable::{HitResult, Hittable, SharedHittable};
+use super::{HitResult, Hittable, SharedHittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::stats::TracingStats;
 use crate::utils::*;
+use crate::BoundingBox;
+use crate::TracingStats;
+
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct ShapeList {
@@ -42,5 +44,13 @@ impl Hittable for ShapeList {
             .map(|a| a.bounding_box(t0, t1).clone())
             .my_fold_first(|a, b| BoundingBox::surrounding_box(&a, &b))
             .unwrap_or(BoundingBox::empty_box())
+    }
+}
+
+pub mod factories {
+    use super::*;
+
+    pub fn shape_list(shapes: impl IntoIterator<Item = SharedHittable>) -> Arc<ShapeList> {
+        Arc::new(ShapeList::from_shapes(shapes))
     }
 }

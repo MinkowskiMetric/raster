@@ -1,4 +1,5 @@
 use crate::color::Color;
+use crate::constants;
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use std::convert::TryInto;
@@ -48,7 +49,7 @@ impl Sky for ColorSky {
     }
 }
 
-pub mod skies {
+pub mod factories {
     use super::*;
 
     pub fn regular_sky() -> Arc<RegularSky> {
@@ -60,6 +61,6 @@ pub mod skies {
     }
 
     pub fn black_sky() -> Arc<ColorSky> {
-        color_sky(Color::BLACK)
+        color_sky(constants::BLACK)
     }
 }

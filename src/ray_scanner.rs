@@ -1,10 +1,8 @@
-use crate::color::Color;
-use crate::hittable::Hittable;
-use crate::material::{PartialScatterResult, ScatterResult};
 use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
-use crate::stats::TracingStats;
 use crate::utils::*;
+use crate::TracingStats;
+use crate::{constants, Color, Hittable, PartialScatterResult, ScatterResult};
 use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};
 
@@ -249,7 +247,7 @@ pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut TracingStats) -> Colo
 
         if attenuation_stack.len() >= MAX_DEPTH {
             // We cannot recurse any further, there is no point doing another hit test
-            return collapse_color_stack(attenuation_stack, Color::BLACK);
+            return collapse_color_stack(attenuation_stack, constants::BLACK);
         } else {
             if let Some(hit_result) =
                 scene.intersect(&current_ray, 0.001, constants::INFINITY, stats)

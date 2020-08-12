@@ -1,47 +1,20 @@
-mod aabb;
-mod camera;
-mod color;
-mod fixed_size_stack;
-mod hittable;
-mod material;
-mod math;
-mod perlin;
-mod ray_scanner;
-mod scene;
-mod shape_list;
-mod sky;
-mod sphere;
-mod stats;
-mod texture;
-mod utils;
-mod volume;
-extern crate cgmath;
-extern crate num;
-
 extern crate clap;
 use clap::{App, Arg};
-
-use crate::color::Color;
-use crate::math::*;
-use crate::utils::*;
-
-use crate::hittable::{shapes::*, SharedHittable};
-use crate::material::materials::*;
-use crate::sky::skies::*;
-use crate::texture::textures::*;
 
 use std::convert::TryInto;
 
 use image::RgbImage;
 
-fn attenuate_color(color: color::Color, attenuation: FloatType) -> color::Color {
+use raster::{prelude::*, Color, SharedHittable};
+
+fn attenuate_color(color: Color, attenuation: FloatType) -> Color {
     color.attenuate(attenuation)
 }
 
 fn random_scene(
     width: usize,
     height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let mut shapes: Vec<SharedHittable> = Vec::new();
 
     shapes.push(sphere(
@@ -100,7 +73,7 @@ fn random_scene(
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = 10.0;
     let aperture = 0.1;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -116,14 +89,14 @@ fn random_scene(
 fn my_test_scene(
     width: usize,
     height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
     let lookat = Point3::new(0.0, 0.0, -3.0);
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.1;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -138,17 +111,17 @@ fn my_test_scene(
         sphere(
             Point3::new(0.5, 0.0, -5.0),
             1.0,
-            metal(attenuate_color(color::Color::MAGENTA, 0.8), 0.2),
+            metal(attenuate_color(constants::MAGENTA, 0.8), 0.2),
         ),
         sphere(
             Point3::new(-0.5, 0.0, -5.0),
             1.0,
-            metal(attenuate_color(color::Color::WHITE, 0.8), 0.0),
+            metal(attenuate_color(constants::WHITE, 0.8), 0.0),
         ),
         sphere(
             Point3::new(0.0, -51.0, -5.0),
             50.0,
-            lambertian(solid_texture(attenuate_color(color::Color::YELLOW, 0.5))),
+            lambertian(solid_texture(attenuate_color(constants::YELLOW, 0.5))),
         ),
     ];
     (camera, regular_sky(), shapes)
@@ -157,14 +130,14 @@ fn my_test_scene(
 fn two_spheres(
     width: usize,
     height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -197,7 +170,7 @@ fn two_spheres(
 fn two_perlin_spheres(
     width: usize,
     height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -206,7 +179,7 @@ fn two_perlin_spheres(
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -230,7 +203,7 @@ fn two_perlin_spheres(
 fn textured_earth(
     width: usize,
     height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let earth_bytes = include_bytes!("earthmap.jpg");
     let earth_image = image::load_from_memory(earth_bytes).unwrap();
     let earth_image = image_texture(earth_image);
@@ -241,7 +214,7 @@ fn textured_earth(
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -262,7 +235,7 @@ fn textured_earth(
 fn simple_light(
     width: usize,
     height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -271,7 +244,7 @@ fn simple_light(
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -312,14 +285,14 @@ fn simple_light(
 fn cornell_box(
     width: usize,
     height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -362,25 +335,19 @@ fn cornell_box(
         ),
     ];
 
-    let shapes: Vec<SharedHittable> = vec![scale(
-        vec3(1.0, 1.0, 1.0),
-        std::sync::Arc::new(shape_list::ShapeList::from_shapes(shapes)),
-    )];
+    let shapes: Vec<SharedHittable> = vec![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
 
     (camera, black_sky(), shapes)
 }
 
-fn prism(
-    width: usize,
-    height: usize,
-) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>) {
+fn prism(width: usize, height: usize) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
-    let camera = camera::Camera::new(
+    let camera = raster::Camera::new(
         lookfrom,
         lookat,
         vup,
@@ -395,23 +362,26 @@ fn prism(
     let light = diffuse_light(solid_texture(Color([30.0, 30.0, 30.0, 1.0])));
 
     let shapes: Vec<SharedHittable> = vec![
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),           // The floor
-        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),         // The back wall
-
-        yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0, light.clone()),         // The light
-
-        yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0, white.clone()),         // Bottom of the slit
-        yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0, white.clone()),         // Top of the slit
-
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),         // Target wall
-
-        translate(vec3(300.0, 250.0, 0.0), rotate_z(Deg(15.0).into(), box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(50.0, 100.0, 555.0), glass.clone()))),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()), // The floor
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()), // The back wall
+        yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0, light.clone()), // The light
+        yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0, white.clone()), // Bottom of the slit
+        yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0, white.clone()), // Top of the slit
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()), // Target wall
+        translate(
+            vec3(300.0, 250.0, 0.0),
+            rotate_z(
+                Deg(15.0).into(),
+                box_shape(
+                    Point3::new(0.0, 0.0, 0.0),
+                    Point3::new(50.0, 100.0, 555.0),
+                    glass.clone(),
+                ),
+            ),
+        ),
     ];
 
-    let shapes: Vec<SharedHittable> = vec![scale(
-        vec3(1.0, 1.0, 1.0),
-        std::sync::Arc::new(shape_list::ShapeList::from_shapes(shapes)),
-    )];
+    let shapes: Vec<SharedHittable> = vec![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
 
     (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
 }
@@ -424,7 +394,7 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
 const BUILTIN_SCENES: [(
     &'static str,
-    fn(usize, usize) -> (camera::Camera, sky::SharedSky, Vec<SharedHittable>),
+    fn(usize, usize) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>),
 ); 8] = [
     ("random", random_scene),
     ("mine", my_test_scene),
@@ -533,7 +503,7 @@ async fn main() {
     let (scene_name, scene_function) = BUILTIN_SCENES.iter().find(|a| a.0 == scene_name).unwrap();
 
     let (camera, sky, shapes) = scene_function(width, height);
-    let scene = scene::Scene::new(camera, sky, enable_spatial_partitioning, shapes);
+    let scene = raster::Scene::new(camera, sky, enable_spatial_partitioning, shapes);
 
     let (t0, t1) = (0.0, 1.0);
 
@@ -546,7 +516,7 @@ async fn main() {
         threads, min_passes
     );
 
-    let vector_image = ray_scanner::scan(scene, width, height, t0, t1, threads, min_passes).await;
+    let vector_image = raster::scan(scene, width, height, t0, t1, threads, min_passes).await;
 
     let mut surf = RgbImage::new(width as u32, height as u32);
 
