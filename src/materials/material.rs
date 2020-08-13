@@ -4,8 +4,6 @@ use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::HitResult;
 
-use std::sync::Arc;
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PartialScatterResult {
     pub attenuation: Vector3,
@@ -24,5 +22,3 @@ pub trait Material: Sync + Send + std::fmt::Debug {
         constants::BLACK
     }
 }
-
-pub type SharedMaterial = Arc<dyn Material>;

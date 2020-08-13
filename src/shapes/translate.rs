@@ -1,16 +1,14 @@
-use super::{HitResult, Hittable, SharedHittable};
+use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
 use crate::TracingStats;
 
-use std::sync::Arc;
-
 #[derive(Debug, Clone)]
-pub struct Translate(Vector3, SharedHittable);
+pub struct Translate<T: 'static + Hittable + Clone>(Vector3, T);
 
-impl Translate {
-    pub fn new(offset: Vector3, child: SharedHittable) -> Self {
+impl<T: 'static + Hittable + Clone> Translate<T> {
+    pub fn new(offset: Vector3, child: T) -> Self {
         Self(offset, child)
     }
 
@@ -18,12 +16,12 @@ impl Translate {
         self.0
     }
 
-    fn child(&self) -> &dyn Hittable {
-        self.1.as_ref()
+    fn child(&self) -> &T {
+        &self.1
     }
 }
 
-impl Hittable for Translate {
+impl<T: 'static + Hittable + Clone> Hittable for Translate<T> {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -56,7 +54,7 @@ impl Hittable for Translate {
 pub mod factories {
     use super::*;
 
-    pub fn translate(offset: Vector3, child: SharedHittable) -> Arc<Translate> {
-        Arc::new(Translate::new(offset, child))
+    pub fn translate<T: 'static + Hittable + Clone>(offset: Vector3, child: T) -> Translate<T> {
+        Translate::new(offset, child)
     }
 }

@@ -2,9 +2,7 @@ use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::TracingStats;
-use crate::{BoundingBox, SharedMaterial};
-
-use std::sync::Arc;
+use crate::{BoundingBox, Material};
 
 fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
     let phi = p.z.atan2(p.x);
@@ -17,14 +15,14 @@ fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
 }
 
 #[derive(Clone, Debug)]
-pub struct Sphere {
+pub struct Sphere<T: 'static + Material + Clone> {
     center: M256Point3,
     radius: FloatType,
-    material: SharedMaterial,
+    material: T,
 }
 
-impl Sphere {
-    pub fn new(center: Point3, radius: FloatType, material: SharedMaterial) -> Self {
+impl<T: 'static + Material + Clone> Sphere<T> {
+    pub fn new(center: Point3, radius: FloatType, material: T) -> Self {
         Self {
             center: center.into(),
             radius,
@@ -148,7 +146,7 @@ impl Sphere {
     }
 }
 
-impl Hittable for Sphere {
+impl<T: 'static + Material + Clone> Hittable for Sphere<T> {
     fn intersect(
         &self,
         ray: &Ray,
@@ -168,20 +166,20 @@ impl Hittable for Sphere {
 }
 
 #[derive(Clone, Debug)]
-pub struct MovingSphere {
+pub struct MovingSphere<T: 'static + Material + Clone> {
     space_origin: M256Point3,
     time_origin: M256Point3,
     velocity: M256Vector3,
     radius: FloatType,
-    material: SharedMaterial,
+    material: T,
 }
 
-impl MovingSphere {
+impl<T: 'static + Material + Clone> MovingSphere<T> {
     pub fn new(
         center0: (Point3, FloatType),
         center1: (Point3, FloatType),
         radius: FloatType,
-        material: SharedMaterial,
+        material: T,
     ) -> Self {
         let space_origin = center0.0.into();
         let time_origin = Point3::new(center0.1, center0.1, center0.1).into();
@@ -332,7 +330,7 @@ impl MovingSphere {
     }
 }
 
-impl Hittable for MovingSphere {
+impl<T: 'static + Material + Clone> Hittable for MovingSphere<T> {
     fn intersect(
         &self,
         ray: &Ray,
@@ -360,16 +358,20 @@ impl Hittable for MovingSphere {
 pub mod factories {
     use super::*;
 
-    pub fn sphere(center: Point3, radius: FloatType, material: SharedMaterial) -> Arc<Sphere> {
-        Arc::new(Sphere::new(center, radius, material))
+    pub fn sphere<T: 'static + Material + Clone>(
+        center: Point3,
+        radius: FloatType,
+        material: T,
+    ) -> Sphere<T> {
+        Sphere::new(center, radius, material)
     }
 
-    pub fn moving_sphere(
+    pub fn moving_sphere<T: 'static + Material + Clone>(
         center0: (Point3, FloatType),
         center1: (Point3, FloatType),
         radius: FloatType,
-        material: SharedMaterial,
-    ) -> Arc<MovingSphere> {
-        Arc::new(MovingSphere::new(center0, center1, radius, material))
+        material: T,
+    ) -> MovingSphere<T> {
+        MovingSphere::new(center0, center1, radius, material)
     }
 }

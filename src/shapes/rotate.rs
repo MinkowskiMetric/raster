@@ -1,19 +1,17 @@
-use super::{HitResult, Hittable, SharedHittable};
+use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
 use crate::TracingStats;
 
-use std::sync::Arc;
-
 macro_rules! generate_rotate {
 
     ($name:ident, $a1:ident, $a2:ident) => {
         #[derive(Debug, Clone)]
-        pub struct $name(FloatType, FloatType, SharedHittable);
+        pub struct $name<T: 'static + Hittable + Clone>(FloatType, FloatType, T);
 
-        impl $name {
-            pub fn new(angle: Rad<FloatType>, child: SharedHittable) -> Self {
+        impl<T: 'static + Hittable + Clone> $name<T> {
+            pub fn new(angle: Rad<FloatType>, child: T) -> Self {
                 Self(angle.sin(), angle.cos(), child)
             }
 
@@ -25,8 +23,8 @@ macro_rules! generate_rotate {
                 self.1
             }
 
-            fn child(&self) -> &dyn Hittable {
-                self.2.as_ref()
+            fn child(&self) -> &T {
+                &self.2
             }
 
             fn rotate_point(&self, p: Point3) -> Point3 {
@@ -54,7 +52,7 @@ macro_rules! generate_rotate {
             }
         }
 
-        impl Hittable for $name {
+        impl<T: 'static + Hittable + Clone> Hittable for $name<T> {
             fn intersect<'a>(
                 &'a self,
                 ray: &Ray,
@@ -142,8 +140,11 @@ pub mod factories {
 
     macro_rules! generate_rotate_func {
         ($fn_name:ident, $name:ident) => {
-            pub fn $fn_name(angle: Rad<FloatType>, child: SharedHittable) -> Arc<$name> {
-                Arc::new($name::new(angle, child))
+            pub fn $fn_name<T: 'static + Hittable + Clone>(
+                angle: Rad<FloatType>,
+                child: T,
+            ) -> $name<T> {
+                $name::new(angle, child)
             }
         };
     }

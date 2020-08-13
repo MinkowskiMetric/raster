@@ -1,8 +1,8 @@
 use crate::math::*;
 use crate::{Color, Texture};
 use image::{GenericImageView, Pixel};
-use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct ImageTexture<Image: GenericImageView + Sync + Send>(Image);
 
 impl<Image: GenericImageView + Sync + Send> ImageTexture<Image> {
@@ -38,7 +38,7 @@ pub mod factories {
 
     pub fn image_texture<Image: image::GenericImageView + Sync + Send>(
         image: Image,
-    ) -> Arc<ImageTexture<Image>> {
-        Arc::new(ImageTexture::new(image))
+    ) -> ImageTexture<Image> {
+        ImageTexture::new(image)
     }
 }

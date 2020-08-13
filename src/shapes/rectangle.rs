@@ -2,26 +2,24 @@ use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::TracingStats;
-use crate::{BoundingBox, SharedMaterial};
-
-use std::sync::Arc;
+use crate::{BoundingBox, Material};
 
 macro_rules! generate_rectangle {
     ($name:ident, $faxis0:ident, $faxis1:ident, $oaxis:ident) => {
-        #[derive(Debug)]
-        pub struct $name {
+        #[derive(Debug, Clone)]
+        pub struct $name<T: 'static + Material + Clone> {
             $faxis0: (FloatType, FloatType),
             $faxis1: (FloatType, FloatType),
             $oaxis: FloatType,
-            material: SharedMaterial,
+            material: T,
         }
 
-        impl $name {
+        impl<T: 'static + Material + Clone> $name<T> {
             pub fn new(
                 $faxis0: (FloatType, FloatType),
                 $faxis1: (FloatType, FloatType),
                 $oaxis: FloatType,
-                material: SharedMaterial,
+                material: T,
             ) -> Self {
                 Self {
                     $faxis0,
@@ -32,7 +30,7 @@ macro_rules! generate_rectangle {
             }
         }
 
-        impl Hittable for $name {
+        impl<T: 'static + Material + Clone> Hittable for $name<T> {
             fn intersect<'a>(
                 &'a self,
                 ray: &Ray,
@@ -104,13 +102,13 @@ pub mod factories {
 
     macro_rules! generate_rectangle_func {
         ($fn_name:ident, $name:ident, $faxis0:ident, $faxis1:ident, $oaxis:ident) => {
-            pub fn $fn_name(
+            pub fn $fn_name<T: 'static + Material + Clone>(
                 $faxis0: (FloatType, FloatType),
                 $faxis1: (FloatType, FloatType),
                 $oaxis: FloatType,
-                material: SharedMaterial,
-            ) -> Arc<$name> {
-                Arc::new($name::new($faxis0, $faxis1, $oaxis, material))
+                material: T,
+            ) -> $name<T> {
+                $name::new($faxis0, $faxis1, $oaxis, material)
             }
         };
     }

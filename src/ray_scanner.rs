@@ -7,6 +7,7 @@ use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};
 
 use std::convert::TryInto;
+use std::sync::Arc;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Ray {
@@ -146,7 +147,7 @@ pub async fn scan(
 
     let start_time = std::time::Instant::now();
 
-    let scene = PreparedScene::make(scene, t0, t1);
+    let scene = Arc::new(PreparedScene::make(scene, t0, t1));
 
     let futures = (0..thread_count).into_iter().map(|_| {
         let thread_scene = scene.clone();

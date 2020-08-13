@@ -5,7 +5,7 @@ mod material;
 mod metal;
 mod utils;
 
-pub use material::{Material, PartialScatterResult, ScatterResult, SharedMaterial};
+pub use material::{Material, PartialScatterResult, ScatterResult};
 
 pub mod factories {
     use super::*;

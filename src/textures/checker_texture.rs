@@ -1,25 +1,29 @@
 use crate::math::*;
-use crate::{Color, SharedTexture, Texture};
-use std::sync::Arc;
+use crate::{Color, Texture};
 
 #[derive(Debug, Clone)]
-pub struct CheckerTexture(SharedTexture, SharedTexture);
+pub struct CheckerTexture<Tex1: 'static + Texture + Clone, Tex2: 'static + Texture + Clone>(
+    Tex1,
+    Tex2,
+);
 
-impl CheckerTexture {
-    pub fn new(texture1: SharedTexture, texture2: SharedTexture) -> Self {
+impl<Tex1: 'static + Texture + Clone, Tex2: 'static + Texture + Clone> CheckerTexture<Tex1, Tex2> {
+    pub fn new(texture1: Tex1, texture2: Tex2) -> Self {
         Self(texture1, texture2)
     }
 
-    pub fn texture1(&self) -> &dyn Texture {
-        self.0.as_ref()
+    pub fn texture1(&self) -> &Tex1 {
+        &self.0
     }
 
-    pub fn texture2(&self) -> &dyn Texture {
-        self.1.as_ref()
+    pub fn texture2(&self) -> &Tex2 {
+        &self.1
     }
 }
 
-impl Texture for CheckerTexture {
+impl<Tex1: 'static + Texture + Clone, Tex2: 'static + Texture + Clone> Texture
+    for CheckerTexture<Tex1, Tex2>
+{
     fn value(&self, p: Point3, u: FloatType, v: FloatType) -> Color {
         let sines = (10.0 * p.x).sin() * (10.0 * p.y).sin() * (10.0 * p.z).sin();
 
@@ -34,10 +38,10 @@ impl Texture for CheckerTexture {
 pub mod factories {
     use super::*;
 
-    pub fn checker_texture(
-        texture1: SharedTexture,
-        texture2: SharedTexture,
-    ) -> Arc<CheckerTexture> {
-        Arc::new(CheckerTexture::new(texture1, texture2))
+    pub fn checker_texture<Tex1: 'static + Texture + Clone, Tex2: 'static + Texture + Clone>(
+        texture1: Tex1,
+        texture2: Tex2,
+    ) -> CheckerTexture<Tex1, Tex2> {
+        CheckerTexture::new(texture1, texture2)
     }
 }

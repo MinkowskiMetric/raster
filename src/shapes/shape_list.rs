@@ -1,20 +1,18 @@
-use super::{HitResult, Hittable, SharedHittable};
+use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
 use crate::TracingStats;
 
-use std::sync::Arc;
-
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct ShapeList {
-    shapes: Box<[SharedHittable]>,
+    shapes: Vec<Box<dyn Hittable>>,
 }
 
 impl ShapeList {
-    pub fn from_shapes(shapes: impl IntoIterator<Item = SharedHittable>) -> Self {
-        let shapes = shapes.into_iter().collect::<Vec<_>>().into_boxed_slice();
+    pub fn from_shapes(shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> Self {
+        let shapes = shapes.into_iter().collect::<Vec<_>>();
 
         Self { shapes }
     }
@@ -47,10 +45,44 @@ impl Hittable for ShapeList {
     }
 }
 
+impl IntoIterator for ShapeList {
+    type Item = Box<dyn Hittable>;
+    type IntoIter = std::vec::IntoIter<Box<dyn Hittable>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.shapes.into_iter()
+    }
+}
+
 pub mod factories {
     use super::*;
 
-    pub fn shape_list(shapes: impl IntoIterator<Item = SharedHittable>) -> Arc<ShapeList> {
-        Arc::new(ShapeList::from_shapes(shapes))
+    pub fn shape_list(shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> ShapeList {
+        ShapeList::from_shapes(shapes)
     }
+}
+
+pub mod macro_pieces {
+    use super::*;
+
+    pub trait MakeBoxedHittable {
+        fn make_boxed_hittable(self) -> Box<dyn Hittable>;
+    }
+
+    impl<T: 'static + Hittable> MakeBoxedHittable for T {
+        fn make_boxed_hittable(self) -> Box<dyn Hittable> {
+            Box::new(self)
+        }
+    }
+
+    pub fn make_boxed_hittable<T: 'static + MakeBoxedHittable>(t: T) -> Box<dyn Hittable> {
+        t.make_boxed_hittable()
+    }
+}
+
+#[macro_export]
+macro_rules! shapes {
+    () => { $crate::ShapeList::from_shapes(vec![]) };
+    //($elem:expr; $n:expr) => { ... };
+    ($($x:expr),+ $(,)?) => { $crate::ShapeList::from_shapes(vec![$($crate::macro_pieces::make_boxed_hittable($x)),+]) };
 }

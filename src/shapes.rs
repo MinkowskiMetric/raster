@@ -11,9 +11,10 @@ mod sphere;
 mod translate;
 mod volume;
 
+pub use crate::shapes;
 pub use aabb::BoundingBox;
 pub use hit_result::HitResult;
-pub use hittable::{Hittable, SharedHittable};
+pub use hittable::Hittable;
 pub use shape_list::ShapeList;
 pub use volume::Volume;
 
@@ -29,4 +30,10 @@ pub mod factories {
     pub use sphere::factories::*;
     pub use translate::factories::*;
     pub use volume::factories::*;
+}
+
+pub mod macro_pieces {
+    use super::*;
+
+    pub use shape_list::macro_pieces::*;
 }

@@ -4,8 +4,6 @@ use crate::math::*;
 use crate::utils::*;
 use crate::{HitResult, Ray};
 
-use std::sync::Arc;
-
 #[derive(Clone, Debug)]
 pub struct Dielectric(FloatType);
 
@@ -61,7 +59,7 @@ impl Material for Dielectric {
 pub mod factories {
     use super::*;
 
-    pub fn dielectric(ri: FloatType) -> Arc<Dielectric> {
-        Arc::new(Dielectric::new(ri))
+    pub fn dielectric(ri: FloatType) -> Dielectric {
+        Dielectric::new(ri)
     }
 }

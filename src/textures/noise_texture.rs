@@ -1,7 +1,7 @@
 use crate::math::*;
 use crate::noise::Perlin;
 use crate::{Color, Texture};
-use std::{convert::TryInto, sync::Arc};
+use std::convert::TryInto;
 
 #[derive(Debug, Clone)]
 pub struct NoiseTexture(Perlin, f64);
@@ -33,7 +33,7 @@ impl Texture for NoiseTexture {
 pub mod factories {
     use super::*;
 
-    pub fn noise_texture(scale: f64) -> Arc<NoiseTexture> {
-        Arc::new(NoiseTexture::new(scale))
+    pub fn noise_texture(scale: f64) -> NoiseTexture {
+        NoiseTexture::new(scale)
     }
 }

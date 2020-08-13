@@ -1,23 +1,21 @@
 use super::{Material, PartialScatterResult, ScatterResult};
 use crate::utils::*;
-use crate::{HitResult, Ray, SharedTexture, Texture};
-
-use std::sync::Arc;
+use crate::{HitResult, Ray, Texture};
 
 #[derive(Clone, Debug)]
-pub struct Lambertian(SharedTexture);
+pub struct Lambertian<T: 'static + Texture + Clone>(T);
 
-impl Lambertian {
-    pub fn new(texture: SharedTexture) -> Self {
+impl<T: 'static + Texture + Clone> Lambertian<T> {
+    pub fn new(texture: T) -> Self {
         Lambertian(texture)
     }
 
-    pub fn albedo(&self) -> &dyn Texture {
-        self.0.as_ref()
+    pub fn albedo(&self) -> &T {
+        &self.0
     }
 }
 
-impl Material for Lambertian {
+impl<T: 'static + Texture + Clone> Material for Lambertian<T> {
     fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point + hit_record.surface_normal + random_unit_vector();
         let color = self
@@ -39,7 +37,7 @@ impl Material for Lambertian {
 pub mod factories {
     use super::*;
 
-    pub fn lambertian(texture: SharedTexture) -> Arc<Lambertian> {
-        Arc::new(Lambertian::new(texture))
+    pub fn lambertian<T: 'static + Texture + Clone>(texture: T) -> Lambertian<T> {
+        Lambertian::new(texture)
     }
 }

@@ -1,5 +1,5 @@
 use crate::math::*;
-use crate::SharedMaterial;
+use crate::Material;
 
 #[derive(Debug)]
 pub struct HitResult<'a> {
@@ -7,7 +7,7 @@ pub struct HitResult<'a> {
     pub hit_point: Point3,
     pub surface_normal: Vector3,
     pub front_face: bool,
-    pub material: &'a SharedMaterial,
+    pub material: &'a dyn Material,
     pub u: FloatType,
     pub v: FloatType,
 }

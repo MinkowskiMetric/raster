@@ -1,6 +1,5 @@
 use crate::math::*;
 use crate::{Color, Texture};
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct SolidTexture(Color);
@@ -24,7 +23,7 @@ impl Texture for SolidTexture {
 pub mod factories {
     use super::*;
 
-    pub fn solid_texture(color: Color) -> Arc<SolidTexture> {
-        Arc::new(SolidTexture::new(color))
+    pub fn solid_texture(color: Color) -> SolidTexture {
+        SolidTexture::new(color)
     }
 }

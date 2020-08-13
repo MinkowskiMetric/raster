@@ -5,9 +5,11 @@ use crate::TracingStats;
 
 use super::HitResult;
 
-use std::sync::Arc;
+pub trait HittableClone {
+    fn box_clone(&self) -> Box<dyn Hittable>;
+}
 
-pub trait Hittable: Sync + Send + std::fmt::Debug {
+pub trait Hittable: HittableClone + Sync + Send + std::fmt::Debug {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -19,4 +21,14 @@ pub trait Hittable: Sync + Send + std::fmt::Debug {
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox;
 }
 
-pub type SharedHittable = Arc<dyn Hittable>;
+impl<T: 'static + Hittable + Clone> HittableClone for T {
+    fn box_clone(&self) -> Box<dyn Hittable> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Hittable> {
+    fn clone(&self) -> Box<dyn Hittable> {
+        self.as_ref().box_clone()
+    }
+}

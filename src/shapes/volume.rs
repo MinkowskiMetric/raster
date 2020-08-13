@@ -3,9 +3,7 @@ use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
 use crate::TracingStats;
-use crate::{HitResult, Hittable, SharedHittable};
-
-use std::sync::Arc;
+use crate::{HitResult, Hittable};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum ComparatorAxis {
@@ -26,7 +24,7 @@ fn random_axis() -> ComparatorAxis {
 }
 
 fn get_axis_values(
-    hittable: &Option<SharedHittable>,
+    hittable: &Option<Box<dyn Hittable>>,
     t0: FloatType,
     t1: FloatType,
     axis: ComparatorAxis,
@@ -47,7 +45,7 @@ fn get_axis_values(
 fn random_axis_comparator(
     t0: FloatType,
     t1: FloatType,
-) -> impl Fn(&Option<SharedHittable>, &Option<SharedHittable>) -> std::cmp::Ordering {
+) -> impl Fn(&Option<Box<dyn Hittable>>, &Option<Box<dyn Hittable>>) -> std::cmp::Ordering {
     let comparator_axis = random_axis();
 
     move |left, right| {
@@ -63,7 +61,7 @@ fn random_axis_comparator(
 #[derive(Clone, Debug)]
 enum InnerVolume {
     NoChild,
-    SingleChild(SharedHittable),
+    SingleChild(Box<dyn Hittable>),
     TwoChild {
         left: Box<Volume>,
         right: Box<Volume>,
@@ -106,7 +104,7 @@ fn replace_hit_result<'a>(
 
 impl Volume {
     pub fn from_shapes(
-        shapes: impl IntoIterator<Item = SharedHittable>,
+        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
         t0: FloatType,
         t1: FloatType,
     ) -> Self {
@@ -115,7 +113,7 @@ impl Volume {
     }
 
     fn from_shapes_slice(
-        shapes: &mut [Option<SharedHittable>],
+        shapes: &mut [Option<Box<dyn Hittable>>],
         t0: FloatType,
         t1: FloatType,
     ) -> Self {
@@ -211,10 +209,10 @@ pub mod factories {
     use super::*;
 
     pub fn volume(
-        shapes: impl IntoIterator<Item = SharedHittable>,
+        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
         t0: FloatType,
         t1: FloatType,
-    ) -> Arc<Volume> {
-        Arc::new(Volume::from_shapes(shapes, t0, t1))
+    ) -> Volume {
+        Volume::from_shapes(shapes, t0, t1)
     }
 }

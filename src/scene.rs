@@ -2,13 +2,12 @@ use crate::camera::{Camera, PreparedCamera};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::shapes::{ShapeList, Volume};
-use crate::sky::{SharedSky, Sky};
+use crate::sky::Sky;
 use crate::BoundingBox;
 use crate::TracingStats;
-use crate::{HitResult, Hittable, SharedHittable};
-use std::sync::Arc;
+use crate::{HitResult, Hittable};
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 enum RootShape {
     Volume(Volume),
     ShapeList(ShapeList),
@@ -19,7 +18,7 @@ impl RootShape {
         enable_spatial_partitioning: bool,
         t0: FloatType,
         t1: FloatType,
-        shapes: impl IntoIterator<Item = SharedHittable>,
+        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
     ) -> Self {
         if enable_spatial_partitioning {
             RootShape::Volume(Volume::from_shapes(shapes, t0, t1))
@@ -51,20 +50,20 @@ impl Hittable for RootShape {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Scene {
     camera: Camera,
-    sky: SharedSky,
+    sky: Sky,
     enable_spatial_partitioning: bool,
-    shapes: Vec<SharedHittable>,
+    shapes: Vec<Box<dyn Hittable>>,
 }
 
 impl Scene {
     pub fn new(
         camera: Camera,
-        sky: SharedSky,
+        sky: Sky,
         enable_spatial_partitioning: bool,
-        shapes: impl IntoIterator<Item = SharedHittable>,
+        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
     ) -> Self {
         Scene {
             camera,
@@ -75,31 +74,31 @@ impl Scene {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PreparedScene {
     camera: PreparedCamera,
-    sky: SharedSky,
+    sky: Sky,
     root_volume: RootShape,
 }
 
 impl PreparedScene {
-    pub fn make(scene: Scene, t0: FloatType, t1: FloatType) -> Arc<Self> {
+    pub fn make(scene: Scene, t0: FloatType, t1: FloatType) -> Self {
         let root_volume =
             RootShape::from_shapes(scene.enable_spatial_partitioning, t0, t1, scene.shapes);
 
-        Arc::new(Self {
+        Self {
             camera: PreparedCamera::make(scene.camera, t0, t1),
             sky: scene.sky,
             root_volume,
-        })
+        }
     }
 
     pub fn camera(&self) -> &PreparedCamera {
         &self.camera
     }
 
-    pub fn sky(&self) -> &dyn Sky {
-        self.sky.as_ref()
+    pub fn sky(&self) -> &Sky {
+        &self.sky
     }
 }
 

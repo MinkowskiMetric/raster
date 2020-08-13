@@ -5,26 +5,23 @@ use std::convert::TryInto;
 
 use image::RgbImage;
 
-use raster::{prelude::*, Color, SharedHittable};
+use raster::{prelude::*, shapes, Color, Hittable, ShapeList};
 
 fn attenuate_color(color: Color, attenuation: FloatType) -> Color {
     color.attenuate(attenuation)
 }
 
-fn random_scene(
-    width: usize,
-    height: usize,
-) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
-    let mut shapes: Vec<SharedHittable> = Vec::new();
+fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let mut shapes: Vec<Box<dyn Hittable>> = Vec::new();
 
-    shapes.push(sphere(
+    shapes.push(Box::new(sphere(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
         lambertian(checker_texture(
             solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
             solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
         )),
-    ));
+    )));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -39,33 +36,37 @@ fn random_scene(
                 shapes.push(if choose_mat < 0.8 {
                     let center2 = center + vec3(0.0, random_in_range(0.0, 0.5), 0.0);
                     let material = lambertian(solid_texture(random_color_in_range(0.0, 1.0)));
-                    moving_sphere((center, 0.0), (center2, 1.0), 0.2, material)
+                    Box::new(moving_sphere((center, 0.0), (center2, 1.0), 0.2, material))
                 } else if choose_mat < 0.95 {
                     let albedo = random_color_in_range(0.5, 1.0);
                     let fuzz = random_in_range(0.0, 1.0);
                     let material = metal(albedo, fuzz);
-                    sphere(center, 0.2, material)
+                    Box::new(sphere(center, 0.2, material))
                 } else {
                     let material = dielectric(1.5);
-                    sphere(center, 0.2, material)
+                    Box::new(sphere(center, 0.2, material))
                 });
             }
         }
     }
 
-    shapes.push(sphere(Point3::new(0.0, 1.0, 0.0), 1.0, dielectric(1.5)));
+    shapes.push(Box::new(sphere(
+        Point3::new(0.0, 1.0, 0.0),
+        1.0,
+        dielectric(1.5),
+    )));
 
-    shapes.push(sphere(
+    shapes.push(Box::new(sphere(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         lambertian(solid_texture(vec3(0.4, 0.2, 0.1).try_into().unwrap())),
-    ));
+    )));
 
-    shapes.push(sphere(
+    shapes.push(Box::new(sphere(
         Point3::new(3.0, 1.0, 0.0),
         1.0,
         metal(vec3(0.7, 0.6, 0.5).try_into().unwrap(), 0.0),
-    ));
+    )));
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
@@ -83,13 +84,10 @@ fn random_scene(
         dist_to_focus,
     );
 
-    (camera, regular_sky(), shapes)
+    (camera, regular_sky(), ShapeList::from_shapes(shapes))
 }
 
-fn my_test_scene(
-    width: usize,
-    height: usize,
-) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
+fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
     let lookat = Point3::new(0.0, 0.0, -3.0);
@@ -105,7 +103,7 @@ fn my_test_scene(
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<SharedHittable> = vec![
+    let shapes = shapes![
         sphere(Point3::new(-0.5, 0.0, -3.0), 1.0, dielectric(1.5)),
         invert_normal(sphere(Point3::new(-0.5, 0.0, -3.0), 0.999, dielectric(1.5))),
         sphere(
@@ -127,10 +125,7 @@ fn my_test_scene(
     (camera, regular_sky(), shapes)
 }
 
-fn two_spheres(
-    width: usize,
-    height: usize,
-) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
+fn two_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -146,7 +141,7 @@ fn two_spheres(
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<SharedHittable> = vec![
+    let shapes = shapes![
         sphere(
             Point3::new(0.0, -10.0, 0.0),
             10.0,
@@ -167,10 +162,7 @@ fn two_spheres(
     (camera, regular_sky(), shapes)
 }
 
-fn two_perlin_spheres(
-    width: usize,
-    height: usize,
-) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
+fn two_perlin_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -188,7 +180,7 @@ fn two_perlin_spheres(
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<SharedHittable> = vec![
+    let shapes = shapes![
         sphere(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
@@ -200,10 +192,7 @@ fn two_perlin_spheres(
     (camera, regular_sky(), shapes)
 }
 
-fn textured_earth(
-    width: usize,
-    height: usize,
-) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
+fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let earth_bytes = include_bytes!("earthmap.jpg");
     let earth_image = image::load_from_memory(earth_bytes).unwrap();
     let earth_image = image_texture(earth_image);
@@ -223,7 +212,7 @@ fn textured_earth(
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<SharedHittable> = vec![sphere(
+    let shapes = shapes![sphere(
         Point3::new(0.0, 0.0, 0.0),
         2.0,
         lambertian(earth_image),
@@ -232,10 +221,7 @@ fn textured_earth(
     (camera, regular_sky(), shapes)
 }
 
-fn simple_light(
-    width: usize,
-    height: usize,
-) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
+fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -253,7 +239,7 @@ fn simple_light(
         aperture,
         dist_to_focus,
     );
-    let shapes: Vec<SharedHittable> = vec![
+    let shapes = shapes![
         sphere(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
@@ -282,10 +268,7 @@ fn simple_light(
     (camera, black_sky(), shapes)
 }
 
-fn cornell_box(
-    width: usize,
-    height: usize,
-) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
+fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
@@ -312,7 +295,7 @@ fn cornell_box(
         white.clone(),
     );
 
-    let shapes: Vec<SharedHittable> = vec![
+    let shapes = shapes![
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, red.clone()),
         xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0, light.clone()),
@@ -335,12 +318,12 @@ fn cornell_box(
         ),
     ];
 
-    let shapes: Vec<SharedHittable> = vec![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
+    let shapes = shapes![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
 
     (camera, black_sky(), shapes)
 }
 
-fn prism(width: usize, height: usize) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>) {
+fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
@@ -361,7 +344,7 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::SharedSky, Vec
     let glass = dielectric(1.5);
     let light = diffuse_light(solid_texture(Color([30.0, 30.0, 30.0, 1.0])));
 
-    let shapes: Vec<SharedHittable> = vec![
+    let shapes = shapes![
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()), // The floor
         xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()), // The back wall
         yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0, light.clone()), // The light
@@ -381,7 +364,7 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::SharedSky, Vec
         ),
     ];
 
-    let shapes: Vec<SharedHittable> = vec![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
+    let shapes = shapes![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
 
     (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
 }
@@ -394,7 +377,7 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
 const BUILTIN_SCENES: [(
     &'static str,
-    fn(usize, usize) -> (raster::Camera, raster::SharedSky, Vec<SharedHittable>),
+    fn(usize, usize) -> (raster::Camera, raster::Sky, ShapeList),
 ); 8] = [
     ("random", random_scene),
     ("mine", my_test_scene),

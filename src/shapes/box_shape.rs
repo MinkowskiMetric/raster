@@ -1,12 +1,10 @@
-use super::{factories::*, HitResult, Hittable, ShapeList, SharedHittable};
+use super::{factories::*, shapes, HitResult, Hittable, ShapeList};
 use crate::math::*;
 use crate::BoundingBox;
 use crate::TracingStats;
-use crate::{Ray, SharedMaterial};
+use crate::{Material, Ray};
 
-use std::sync::Arc;
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BoxShape {
     pt_min: Point3,
     pt_max: Point3,
@@ -14,8 +12,8 @@ pub struct BoxShape {
 }
 
 impl BoxShape {
-    pub fn new(pt_min: Point3, pt_max: Point3, material: SharedMaterial) -> Self {
-        let sides: Vec<SharedHittable> = vec![
+    pub fn new<T: 'static + Material + Clone>(pt_min: Point3, pt_max: Point3, material: T) -> Self {
+        let sides = shapes![
             xy_rectangle(
                 (pt_min.x, pt_max.x),
                 (pt_min.y, pt_max.y),
@@ -81,7 +79,11 @@ impl Hittable for BoxShape {
 pub mod factories {
     use super::*;
 
-    pub fn box_shape(pt_min: Point3, pt_max: Point3, material: SharedMaterial) -> Arc<BoxShape> {
-        Arc::new(BoxShape::new(pt_min, pt_max, material))
+    pub fn box_shape<T: 'static + Material + Clone>(
+        pt_min: Point3,
+        pt_max: Point3,
+        material: T,
+    ) -> BoxShape {
+        BoxShape::new(pt_min, pt_max, material)
     }
 }

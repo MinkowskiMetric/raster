@@ -1,16 +1,14 @@
-use super::{HitResult, Hittable, SharedHittable};
+use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
 use crate::TracingStats;
 
-use std::sync::Arc;
-
 #[derive(Debug, Clone)]
-pub struct Scale(Vector3, SharedHittable);
+pub struct Scale<T: 'static + Hittable + Clone>(Vector3, T);
 
-impl Scale {
-    pub fn new(scale: Vector3, child: SharedHittable) -> Self {
+impl<T: 'static + Hittable + Clone> Scale<T> {
+    pub fn new(scale: Vector3, child: T) -> Self {
         Self(scale, child)
     }
 
@@ -18,8 +16,8 @@ impl Scale {
         &self.0
     }
 
-    fn child(&self) -> &dyn Hittable {
-        self.1.as_ref()
+    fn child(&self) -> &T {
+        &self.1
     }
 
     fn unscale_point(&self, p: Point3) -> Point3 {
@@ -43,7 +41,7 @@ impl Scale {
     }
 }
 
-impl Hittable for Scale {
+impl<T: 'static + Hittable + Clone> Hittable for Scale<T> {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -78,7 +76,7 @@ impl Hittable for Scale {
 pub mod factories {
     use super::*;
 
-    pub fn scale(scale: Vector3, child: SharedHittable) -> Arc<Scale> {
-        Arc::new(Scale::new(scale, child))
+    pub fn scale<T: 'static + Hittable + Clone>(scale: Vector3, child: T) -> Scale<T> {
+        Scale::new(scale, child)
     }
 }

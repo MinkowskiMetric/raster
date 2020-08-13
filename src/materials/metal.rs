@@ -4,8 +4,6 @@ use crate::math::*;
 use crate::utils::*;
 use crate::{Color, HitResult, Ray};
 
-use std::sync::Arc;
-
 #[derive(Clone, Debug)]
 pub struct Metal(Color, FloatType);
 
@@ -45,7 +43,7 @@ impl Material for Metal {
 pub mod factories {
     use super::*;
 
-    pub fn metal(color: Color, fuzz: FloatType) -> Arc<Metal> {
-        Arc::new(Metal::new(color, fuzz))
+    pub fn metal(color: Color, fuzz: FloatType) -> Metal {
+        Metal::new(color, fuzz)
     }
 }

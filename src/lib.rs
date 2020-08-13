@@ -15,13 +15,13 @@ pub mod utils;
 
 pub use camera::Camera;
 pub use color::Color;
-pub use materials::{Material, PartialScatterResult, ScatterResult, SharedMaterial};
+pub use materials::{Material, PartialScatterResult, ScatterResult};
 pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
-pub use shapes::{BoundingBox, HitResult, Hittable, SharedHittable};
-pub use sky::{SharedSky, Sky};
+pub use shapes::{BoundingBox, HitResult, Hittable, ShapeList};
+pub use sky::Sky;
 pub use stats::TracingStats;
-pub use textures::{SharedTexture, Texture};
+pub use textures::Texture;
 
 pub mod constants {
     use super::*;
@@ -48,11 +48,15 @@ pub mod factories {
 pub mod prelude {
     use super::*;
 
-    pub use super::SharedHittable;
-
     pub use factories::*;
     pub use math::*;
     pub use utils::*;
 
     pub use super::constants;
+}
+
+pub mod macro_pieces {
+    use super::*;
+
+    pub use shapes::macro_pieces::*;
 }

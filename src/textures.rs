@@ -4,7 +4,7 @@ mod noise_texture;
 mod solid_texture;
 mod texture;
 
-pub use texture::{SharedTexture, Texture};
+pub use texture::Texture;
 
 pub mod factories {
     use super::*;

@@ -1,23 +1,21 @@
 use super::{Material, ScatterResult};
 use crate::math::*;
-use crate::{Color, HitResult, Ray, SharedTexture, Texture};
+use crate::{Color, HitResult, Ray, Texture};
 
-use std::sync::Arc;
+#[derive(Debug, Clone)]
+pub struct DiffuseLight<T: 'static + Texture + Clone>(T);
 
-#[derive(Debug)]
-pub struct DiffuseLight(SharedTexture);
-
-impl DiffuseLight {
-    pub fn new(emit: SharedTexture) -> Self {
+impl<T: 'static + Texture + Clone> DiffuseLight<T> {
+    pub fn new(emit: T) -> Self {
         Self(emit)
     }
 
-    pub fn emit(&self) -> &dyn Texture {
-        self.0.as_ref()
+    pub fn emit(&self) -> &T {
+        &self.0
     }
 }
 
-impl Material for DiffuseLight {
+impl<T: 'static + Texture + Clone> Material for DiffuseLight<T> {
     fn emitted(&self, p: Point3, u: FloatType, v: FloatType) -> Color {
         self.emit().value(p, u, v)
     }
@@ -30,7 +28,7 @@ impl Material for DiffuseLight {
 pub mod factories {
     use super::*;
 
-    pub fn diffuse_light(texture: SharedTexture) -> Arc<DiffuseLight> {
-        Arc::new(DiffuseLight::new(texture))
+    pub fn diffuse_light<T: 'static + Texture + Clone>(texture: T) -> DiffuseLight<T> {
+        DiffuseLight::new(texture)
     }
 }

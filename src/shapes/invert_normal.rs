@@ -1,25 +1,23 @@
-use super::{HitResult, Hittable, SharedHittable};
+use super::{HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
 use crate::TracingStats;
 
-use std::sync::Arc;
-
 #[derive(Debug, Clone)]
-pub struct InvertNormal(SharedHittable);
+pub struct InvertNormal<T: Hittable + Clone>(T);
 
-impl InvertNormal {
-    pub fn new(child: SharedHittable) -> Self {
+impl<T: 'static + Hittable + Clone> InvertNormal<T> {
+    pub fn new(child: T) -> Self {
         Self(child)
     }
 
-    fn child(&self) -> &dyn Hittable {
-        self.0.as_ref()
+    fn child(&self) -> &T {
+        &self.0
     }
 }
 
-impl Hittable for InvertNormal {
+impl<T: 'static + Hittable + Clone> Hittable for InvertNormal<T> {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -44,7 +42,7 @@ impl Hittable for InvertNormal {
 pub mod factories {
     use super::*;
 
-    pub fn invert_normal(child: SharedHittable) -> Arc<InvertNormal> {
-        Arc::new(InvertNormal::new(child))
+    pub fn invert_normal<T: 'static + Hittable + Clone>(child: T) -> InvertNormal<T> {
+        InvertNormal::new(child)
     }
 }
