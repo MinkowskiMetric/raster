@@ -18,7 +18,7 @@ pub use color::Color;
 pub use materials::{Material, PartialScatterResult, ScatterResult};
 pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
-pub use shapes::{BoundingBox, HitResult, Hittable, ShapeList};
+pub use shapes::{BoundingBox, GeometryObject, HitResult, Hittable, ShapeList};
 pub use sky::Sky;
 pub use stats::TracingStats;
 pub use textures::Texture;
@@ -53,10 +53,4 @@ pub mod prelude {
     pub use utils::*;
 
     pub use super::constants;
-}
-
-pub mod macro_pieces {
-    use super::*;
-
-    pub use shapes::macro_pieces::*;
 }

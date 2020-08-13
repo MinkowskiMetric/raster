@@ -1,4 +1,4 @@
-use super::{HitResult, Hittable};
+use super::{CoreHittable, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::TracingStats;
@@ -30,7 +30,7 @@ macro_rules! generate_rectangle {
             }
         }
 
-        impl<T: 'static + Material + Clone> Hittable for $name<T> {
+        impl<T: 'static + Material + Clone> CoreHittable for $name<T> {
             fn intersect<'a>(
                 &'a self,
                 ray: &Ray,

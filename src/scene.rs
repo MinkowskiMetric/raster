@@ -18,12 +18,12 @@ impl RootShape {
         enable_spatial_partitioning: bool,
         t0: FloatType,
         t1: FloatType,
-        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+        shapes: ShapeList,
     ) -> Self {
         if enable_spatial_partitioning {
             RootShape::Volume(Volume::from_shapes(shapes, t0, t1))
         } else {
-            RootShape::ShapeList(ShapeList::from_shapes(shapes))
+            RootShape::ShapeList(shapes)
         }
     }
 }
@@ -55,7 +55,7 @@ pub struct Scene {
     camera: Camera,
     sky: Sky,
     enable_spatial_partitioning: bool,
-    shapes: Vec<Box<dyn Hittable>>,
+    shapes: ShapeList,
 }
 
 impl Scene {
@@ -63,13 +63,13 @@ impl Scene {
         camera: Camera,
         sky: Sky,
         enable_spatial_partitioning: bool,
-        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+        shapes: ShapeList,
     ) -> Self {
         Scene {
             camera,
             sky,
             enable_spatial_partitioning,
-            shapes: shapes.into_iter().collect::<Vec<_>>(),
+            shapes,
         }
     }
 }

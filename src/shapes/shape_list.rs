@@ -1,4 +1,4 @@
-use super::{HitResult, Hittable};
+use super::{GeometryObject, HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
@@ -11,10 +11,17 @@ pub struct ShapeList {
 }
 
 impl ShapeList {
-    pub fn from_shapes(shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> Self {
-        let shapes = shapes.into_iter().collect::<Vec<_>>();
+    pub fn build() -> Self {
+        Self { shapes: Vec::new() }
+    }
 
-        Self { shapes }
+    pub fn push<T: GeometryObject>(&mut self, shape: T) {
+        self.shapes.extend(shape.into_geometry_iterator());
+    }
+
+    pub fn extend_with_shape<T: GeometryObject>(mut self, shape: T) -> Self {
+        self.push(shape);
+        self
     }
 }
 
@@ -54,35 +61,18 @@ impl IntoIterator for ShapeList {
     }
 }
 
-pub mod factories {
-    use super::*;
+impl GeometryObject for ShapeList {
+    type GeometryIterator = std::vec::IntoIter<Box<dyn Hittable>>;
 
-    pub fn shape_list(shapes: impl IntoIterator<Item = Box<dyn Hittable>>) -> ShapeList {
-        ShapeList::from_shapes(shapes)
-    }
-}
-
-pub mod macro_pieces {
-    use super::*;
-
-    pub trait MakeBoxedHittable {
-        fn make_boxed_hittable(self) -> Box<dyn Hittable>;
-    }
-
-    impl<T: 'static + Hittable> MakeBoxedHittable for T {
-        fn make_boxed_hittable(self) -> Box<dyn Hittable> {
-            Box::new(self)
-        }
-    }
-
-    pub fn make_boxed_hittable<T: 'static + MakeBoxedHittable>(t: T) -> Box<dyn Hittable> {
-        t.make_boxed_hittable()
+    fn into_geometry_iterator(self) -> Self::GeometryIterator {
+        self.shapes.into_iter()
     }
 }
 
 #[macro_export]
 macro_rules! shapes {
-    () => { $crate::ShapeList::from_shapes(vec![]) };
-    //($elem:expr; $n:expr) => { ... };
-    ($($x:expr),+ $(,)?) => { $crate::ShapeList::from_shapes(vec![$($crate::macro_pieces::make_boxed_hittable($x)),+]) };
+    () => { $crate::ShapeList::build() };
+    ($($x:expr),+ $(,)?) => {
+        $crate::ShapeList::build()$(.extend_with_shape($x))+
+    };
 }

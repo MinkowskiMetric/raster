@@ -1,23 +1,14 @@
-use super::{HitResult, Hittable};
+use super::{factories::*, GeometryModifier, GeometryObject, GeometryWrapper, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
-use crate::TracingStats;
 
 #[derive(Debug, Clone)]
-pub struct Scale<T: 'static + Hittable + Clone>(Vector3, T);
+pub struct Scale(Vector3);
 
-impl<T: 'static + Hittable + Clone> Scale<T> {
-    pub fn new(scale: Vector3, child: T) -> Self {
-        Self(scale, child)
-    }
-
+impl Scale {
     fn scale(&self) -> &Vector3 {
         &self.0
-    }
-
-    fn child(&self) -> &T {
-        &self.1
     }
 
     fn unscale_point(&self, p: Point3) -> Point3 {
@@ -41,34 +32,30 @@ impl<T: 'static + Hittable + Clone> Scale<T> {
     }
 }
 
-impl<T: 'static + Hittable + Clone> Hittable for Scale<T> {
-    fn intersect<'a>(
-        &'a self,
-        ray: &Ray,
-        t_min: FloatType,
-        t_max: FloatType,
-        stats: &mut TracingStats,
-    ) -> Option<HitResult<'a>> {
+impl GeometryModifier for Scale {
+    fn process_input_ray(&self, ray: &Ray) -> Ray {
         let scaled_origin = self.unscale_point(ray.origin.into_point());
         let scaled_direction = self.unscale_vector(ray.direction.into_vector());
-        let scaled_ray = Ray::new(scaled_origin, scaled_direction, ray.time);
-
-        if let Some(mut hit_result) = self.child().intersect(&scaled_ray, t_min, t_max, stats) {
-            hit_result.hit_point = self.scale_point(hit_result.hit_point);
-            hit_result.surface_normal = self.scale_vector(hit_result.surface_normal).normalize();
-            hit_result.distance = (hit_result.hit_point - ray.origin.into_point()).magnitude();
-
-            Some(hit_result)
-        } else {
-            None
-        }
+        Ray::new(scaled_origin, scaled_direction, ray.time)
     }
 
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        let child_box = self.child().bounding_box(t0, t1);
+    fn process_hit_result<'a>(
+        &self,
+        original_ray: &Ray,
+        _modified_ray: &Ray,
+        mut hit_result: HitResult<'a>,
+    ) -> HitResult<'a> {
+        hit_result.hit_point = self.scale_point(hit_result.hit_point);
+        hit_result.surface_normal = self.scale_vector(hit_result.surface_normal).normalize();
+        hit_result.distance = (hit_result.hit_point - original_ray.origin.into_point()).magnitude();
+
+        hit_result
+    }
+
+    fn translate_bounding_box(&self, child_bounding_box: BoundingBox) -> BoundingBox {
         BoundingBox::new(
-            self.scale_point(child_box.min_point().into_point()),
-            self.scale_point(child_box.max_point().into_point()),
+            self.scale_point(child_bounding_box.min_point().into_point()),
+            self.scale_point(child_bounding_box.max_point().into_point()),
         )
     }
 }
@@ -76,7 +63,10 @@ impl<T: 'static + Hittable + Clone> Hittable for Scale<T> {
 pub mod factories {
     use super::*;
 
-    pub fn scale<T: 'static + Hittable + Clone>(scale: Vector3, child: T) -> Scale<T> {
-        Scale::new(scale, child)
+    pub fn scale<T: 'static + GeometryObject + Clone>(
+        scale: Vector3,
+        child: T,
+    ) -> GeometryWrapper<Scale, T> {
+        geometry_wrapper(Scale(scale), child)
     }
 }

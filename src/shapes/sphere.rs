@@ -1,4 +1,4 @@
-use super::{HitResult, Hittable};
+use super::{CoreHittable, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::TracingStats;
@@ -146,7 +146,7 @@ impl<T: 'static + Material + Clone> Sphere<T> {
     }
 }
 
-impl<T: 'static + Material + Clone> Hittable for Sphere<T> {
+impl<T: 'static + Material + Clone> CoreHittable for Sphere<T> {
     fn intersect(
         &self,
         ray: &Ray,
@@ -330,7 +330,7 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
     }
 }
 
-impl<T: 'static + Material + Clone> Hittable for MovingSphere<T> {
+impl<T: 'static + Material + Clone> CoreHittable for MovingSphere<T> {
     fn intersect(
         &self,
         ray: &Ray,

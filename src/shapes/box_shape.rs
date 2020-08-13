@@ -1,8 +1,6 @@
-use super::{factories::*, shapes, HitResult, Hittable, ShapeList};
+use super::{factories::*, shapes, GeometryObject, ShapeList};
 use crate::math::*;
-use crate::BoundingBox;
-use crate::TracingStats;
-use crate::{Material, Ray};
+use crate::Material;
 
 #[derive(Debug, Clone)]
 pub struct BoxShape {
@@ -13,7 +11,7 @@ pub struct BoxShape {
 
 impl BoxShape {
     pub fn new<T: 'static + Material + Clone>(pt_min: Point3, pt_max: Point3, material: T) -> Self {
-        let sides = shapes![
+        let shapes = shapes![
             xy_rectangle(
                 (pt_min.x, pt_max.x),
                 (pt_min.y, pt_max.y),
@@ -55,24 +53,16 @@ impl BoxShape {
         Self {
             pt_min,
             pt_max,
-            shapes: ShapeList::from_shapes(sides),
+            shapes,
         }
     }
 }
 
-impl Hittable for BoxShape {
-    fn intersect<'a>(
-        &'a self,
-        ray: &Ray,
-        t_min: FloatType,
-        t_max: FloatType,
-        stats: &mut TracingStats,
-    ) -> Option<HitResult<'a>> {
-        self.shapes.intersect(ray, t_min, t_max, stats)
-    }
+impl GeometryObject for BoxShape {
+    type GeometryIterator = <ShapeList as GeometryObject>::GeometryIterator;
 
-    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
-        BoundingBox::new(self.pt_min, self.pt_max)
+    fn into_geometry_iterator(self) -> Self::GeometryIterator {
+        self.shapes.into_geometry_iterator()
     }
 }
 

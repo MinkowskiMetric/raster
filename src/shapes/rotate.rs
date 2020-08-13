@@ -1,18 +1,17 @@
-use super::{HitResult, Hittable};
+use super::{factories::*, GeometryModifier, GeometryObject, GeometryWrapper, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
-use crate::TracingStats;
 
 macro_rules! generate_rotate {
 
     ($name:ident, $a1:ident, $a2:ident) => {
         #[derive(Debug, Clone)]
-        pub struct $name<T: 'static + Hittable + Clone>(FloatType, FloatType, T);
+        pub struct $name(FloatType, FloatType);
 
-        impl<T: 'static + Hittable + Clone> $name<T> {
-            pub fn new(angle: Rad<FloatType>, child: T) -> Self {
-                Self(angle.sin(), angle.cos(), child)
+        impl $name {
+            pub fn new(angle: Rad<FloatType>) -> Self {
+                Self(angle.sin(), angle.cos())
             }
 
             fn sin_theta(&self) -> FloatType {
@@ -21,10 +20,6 @@ macro_rules! generate_rotate {
 
             fn cos_theta(&self) -> FloatType {
                 self.1
-            }
-
-            fn child(&self) -> &T {
-                &self.2
             }
 
             fn rotate_point(&self, p: Point3) -> Point3 {
@@ -52,31 +47,22 @@ macro_rules! generate_rotate {
             }
         }
 
-        impl<T: 'static + Hittable + Clone> Hittable for $name<T> {
-            fn intersect<'a>(
-                &'a self,
-                ray: &Ray,
-                t_min: FloatType,
-                t_max: FloatType,
-                stats: &mut TracingStats,
-            ) -> Option<HitResult<'a>> {
+        impl GeometryModifier for $name {
+            fn process_input_ray(&self, ray: &Ray) -> Ray {
                 let origin = self.rotate_point(ray.origin.into_point());
                 let direction = self.rotate_vector(ray.direction.into_vector());
 
-                let moved_ray = Ray::new(origin, direction, ray.time);
-                if let Some(mut hit_result) = self.child().intersect(&moved_ray, t_min, t_max, stats) {
-                    hit_result.hit_point = self.unrotate_point(hit_result.hit_point);
-                    hit_result.surface_normal = self.unrotate_vector(hit_result.surface_normal);
-
-                    Some(hit_result)
-                } else {
-                    None
-                }
+                Ray::new(origin, direction, ray.time)
             }
 
-            fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-                let child_bounding_box = self.child().bounding_box(t0, t1);
+            fn process_hit_result<'a>(&self, _original_ray: &Ray, _modified_ray: &Ray, mut hit_result: HitResult<'a>) -> HitResult<'a> {
+                hit_result.hit_point = self.unrotate_point(hit_result.hit_point);
+                hit_result.surface_normal = self.unrotate_vector(hit_result.surface_normal);
 
+                hit_result
+            }
+
+            fn translate_bounding_box(&self, child_bounding_box: BoundingBox) -> BoundingBox {
                 let mut pt_min = Point3::new(
                     constants::INFINITY,
                     constants::INFINITY,
@@ -140,11 +126,11 @@ pub mod factories {
 
     macro_rules! generate_rotate_func {
         ($fn_name:ident, $name:ident) => {
-            pub fn $fn_name<T: 'static + Hittable + Clone>(
+            pub fn $fn_name<T: 'static + GeometryObject + Clone>(
                 angle: Rad<FloatType>,
                 child: T,
-            ) -> $name<T> {
-                $name::new(angle, child)
+            ) -> GeometryWrapper<$name, T> {
+                geometry_wrapper($name::new(angle), child)
             }
         };
     }

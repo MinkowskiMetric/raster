@@ -1,48 +1,37 @@
-use super::{HitResult, Hittable};
-use crate::math::*;
+use super::{factories::*, GeometryModifier, GeometryObject, GeometryWrapper, HitResult};
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
-use crate::TracingStats;
 
 #[derive(Debug, Clone)]
-pub struct InvertNormal<T: Hittable + Clone>(T);
+pub struct InvertNormal();
 
-impl<T: 'static + Hittable + Clone> InvertNormal<T> {
-    pub fn new(child: T) -> Self {
-        Self(child)
+impl GeometryModifier for InvertNormal {
+    fn process_input_ray(&self, ray: &Ray) -> Ray {
+        ray.clone()
     }
 
-    fn child(&self) -> &T {
-        &self.0
-    }
-}
+    fn process_hit_result<'a>(
+        &self,
+        _original_ray: &Ray,
+        _modified_ray: &Ray,
+        mut hit_result: HitResult<'a>,
+    ) -> HitResult<'a> {
+        hit_result.front_face = !hit_result.front_face;
 
-impl<T: 'static + Hittable + Clone> Hittable for InvertNormal<T> {
-    fn intersect<'a>(
-        &'a self,
-        ray: &Ray,
-        t_min: FloatType,
-        t_max: FloatType,
-        stats: &mut TracingStats,
-    ) -> Option<HitResult<'a>> {
-        if let Some(mut hit_result) = self.child().intersect(&ray, t_min, t_max, stats) {
-            hit_result.front_face = !hit_result.front_face;
-
-            Some(hit_result)
-        } else {
-            None
-        }
+        hit_result
     }
 
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.child().bounding_box(t0, t1)
+    fn translate_bounding_box(&self, child_bounding_box: BoundingBox) -> BoundingBox {
+        child_bounding_box
     }
 }
 
 pub mod factories {
     use super::*;
 
-    pub fn invert_normal<T: 'static + Hittable + Clone>(child: T) -> InvertNormal<T> {
-        InvertNormal::new(child)
+    pub fn invert_normal<T: 'static + GeometryObject + Clone>(
+        child: T,
+    ) -> GeometryWrapper<InvertNormal, T> {
+        geometry_wrapper(InvertNormal(), child)
     }
 }

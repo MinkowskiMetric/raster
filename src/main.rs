@@ -5,23 +5,23 @@ use std::convert::TryInto;
 
 use image::RgbImage;
 
-use raster::{prelude::*, shapes, Color, Hittable, ShapeList};
+use raster::{prelude::*, shapes, Color, ShapeList};
 
 fn attenuate_color(color: Color, attenuation: FloatType) -> Color {
     color.attenuate(attenuation)
 }
 
 fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
-    let mut shapes: Vec<Box<dyn Hittable>> = Vec::new();
+    let mut shapes = ShapeList::build();
 
-    shapes.push(Box::new(sphere(
+    shapes.push(sphere(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
         lambertian(checker_texture(
             solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
             solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
         )),
-    )));
+    ));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -33,40 +33,36 @@ fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
             );
 
             if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
-                shapes.push(if choose_mat < 0.8 {
+                if choose_mat < 0.8 {
                     let center2 = center + vec3(0.0, random_in_range(0.0, 0.5), 0.0);
                     let material = lambertian(solid_texture(random_color_in_range(0.0, 1.0)));
-                    Box::new(moving_sphere((center, 0.0), (center2, 1.0), 0.2, material))
+                    shapes.push(moving_sphere((center, 0.0), (center2, 1.0), 0.2, material));
                 } else if choose_mat < 0.95 {
                     let albedo = random_color_in_range(0.5, 1.0);
                     let fuzz = random_in_range(0.0, 1.0);
                     let material = metal(albedo, fuzz);
-                    Box::new(sphere(center, 0.2, material))
+                    shapes.push(sphere(center, 0.2, material))
                 } else {
                     let material = dielectric(1.5);
-                    Box::new(sphere(center, 0.2, material))
-                });
+                    shapes.push(sphere(center, 0.2, material))
+                }
             }
         }
     }
 
-    shapes.push(Box::new(sphere(
-        Point3::new(0.0, 1.0, 0.0),
-        1.0,
-        dielectric(1.5),
-    )));
+    shapes.push(sphere(Point3::new(0.0, 1.0, 0.0), 1.0, dielectric(1.5)));
 
-    shapes.push(Box::new(sphere(
+    shapes.push(sphere(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         lambertian(solid_texture(vec3(0.4, 0.2, 0.1).try_into().unwrap())),
-    )));
+    ));
 
-    shapes.push(Box::new(sphere(
+    shapes.push(sphere(
         Point3::new(3.0, 1.0, 0.0),
         1.0,
         metal(vec3(0.7, 0.6, 0.5).try_into().unwrap(), 0.0),
-    )));
+    ));
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
@@ -84,7 +80,7 @@ fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
         dist_to_focus,
     );
 
-    (camera, regular_sky(), ShapeList::from_shapes(shapes))
+    (camera, regular_sky(), shapes)
 }
 
 fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
@@ -318,7 +314,7 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
         ),
     ];
 
-    let shapes = shapes![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
+    let shapes = shapes![scale(vec3(1.0, 1.0, 1.0), shapes)];
 
     (camera, black_sky(), shapes)
 }
@@ -364,7 +360,7 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
         ),
     ];
 
-    let shapes = shapes![scale(vec3(1.0, 1.0, 1.0), shape_list(shapes))];
+    let shapes = shapes![scale(vec3(1.0, 1.0, 1.0), shapes)];
 
     (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
 }
