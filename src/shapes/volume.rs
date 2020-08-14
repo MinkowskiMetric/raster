@@ -88,6 +88,57 @@ pub struct Volume {
     bounding_box: BoundingBox,
 }
 
+pub struct VolumeIter<'a> {
+    stack: Vec<&'a InnerVolume>,
+}
+
+impl<'a> VolumeIter<'a> {
+    fn from_inner_volume(inner_volume: &'a InnerVolume) -> Self {
+        let mut ret = Self { stack: Vec::new() };
+        ret.push_left_children(inner_volume);
+        ret
+    }
+
+    fn push_left_children(&mut self, inner_volume: &'a InnerVolume) {
+        let mut position = inner_volume;
+        loop {
+            match position {
+                InnerVolume::TwoChild { left, .. } => {
+                    self.stack.push(position);
+                    position = &left.inner_volume;
+                }
+
+                InnerVolume::SingleChild(_) => {
+                    self.stack.push(position);
+                    break;
+                }
+
+                InnerVolume::NoChild => break,
+            }
+        }
+    }
+}
+
+impl<'a> Iterator for VolumeIter<'a> {
+    type Item = &'a Box<dyn Hittable>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(top) = self.stack.pop() {
+            match top {
+                InnerVolume::SingleChild(child) => return Some(child),
+
+                InnerVolume::TwoChild { right, .. } => {
+                    self.push_left_children(&right.inner_volume);
+                }
+
+                InnerVolume::NoChild => debug_assert!(false, "this should not happen, but isn't bad if it does"),
+            }
+        }
+
+        None
+    }
+}
+
 type FixedSizeVolumeStack<'a, 'b> = crate::fixed_size_stack::FixedSizeStack<'a, &'b Volume>;
 
 fn replace_hit_result<'a>(
@@ -187,6 +238,10 @@ impl Volume {
 
         hit_result
     }
+
+    pub fn iter<'a>(&'a self) -> VolumeIter<'a> {
+        VolumeIter::from_inner_volume(&self.inner_volume)
+    }
 }
 
 impl Hittable for Volume {
@@ -214,5 +269,20 @@ pub mod factories {
         t1: FloatType,
     ) -> Volume {
         Volume::from_shapes(shapes, t0, t1)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{ShapeList, prelude::*};
+
+    #[test]
+    fn test_volume_iterators() {
+        let shapes: ShapeList = (0..100).map(|_| sphere(Point3::new(0.0, 0.0, 0.0), 1.0, dielectric(1.5))).collect();
+        let volume = Volume::from_shapes(shapes, 0.0, 1.0);
+
+        let iter = volume.iter();
+        assert_eq!(iter.count(), 100);
     }
 }

@@ -23,6 +23,10 @@ impl ShapeList {
         self.push(shape);
         self
     }
+
+    pub fn iter<'a>(&'a self) -> std::slice::Iter<'a, Box<dyn Hittable>> {
+        self.shapes.iter()
+    }
 }
 
 impl Hittable for ShapeList {
@@ -58,6 +62,15 @@ impl IntoIterator for ShapeList {
 
     fn into_iter(self) -> Self::IntoIter {
         self.shapes.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a ShapeList {
+    type Item = &'a Box<dyn Hittable>;
+    type IntoIter = std::slice::Iter<'a, Box<dyn Hittable>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
