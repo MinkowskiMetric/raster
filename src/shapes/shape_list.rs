@@ -61,6 +61,24 @@ impl IntoIterator for ShapeList {
     }
 }
 
+impl<T: GeometryObject> std::iter::FromIterator<T> for ShapeList {
+    fn from_iter<Iter: IntoIterator<Item = T>>(iter: Iter) -> Self {
+        let shapes = iter
+            .into_iter()
+            .flat_map(|shape| shape.into_geometry_iterator())
+            .collect();
+        Self { shapes }
+    }
+}
+
+impl<T: GeometryObject> Extend<T> for ShapeList {
+    fn extend<Iter: IntoIterator<Item = T>>(&mut self, iter: Iter) {
+        for item in iter {
+            self.push(item);
+        }
+    }
+}
+
 impl GeometryObject for ShapeList {
     type GeometryIterator = std::vec::IntoIter<Box<dyn Hittable>>;
 

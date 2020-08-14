@@ -5,7 +5,7 @@ use std::convert::TryInto;
 
 use image::RgbImage;
 
-use raster::{prelude::*, shapes, Color, RenderStatsSource, ShapeList};
+use raster::{prelude::*, shapes, Color, Material, RenderStatsSource, ShapeList, Texture};
 
 use std::sync::{Arc, RwLock};
 
@@ -190,10 +190,14 @@ fn two_perlin_spheres(width: usize, height: usize) -> (raster::Camera, raster::S
     (camera, regular_sky(), shapes)
 }
 
-fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn earth_map() -> impl Texture + Clone {
     let earth_bytes = include_bytes!("earthmap.jpg");
     let earth_image = image::load_from_memory(earth_bytes).unwrap();
-    let earth_image = image_texture(earth_image);
+    image_texture(earth_image)
+}
+
+fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let earth_image = earth_map();
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
@@ -430,6 +434,124 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
 }
 
+fn book2_boxes_1(boxes_per_side: usize, material: impl Material + Clone + 'static) -> ShapeList {
+    let mut ret = ShapeList::build();
+
+    for i in 0..boxes_per_side {
+        for j in 0..boxes_per_side {
+            let (i, j) = (i as FloatType, j as FloatType);
+            let w = 100.0;
+            let x0 = -1000.0 + (i * w);
+            let z0 = -1000.0 + (j * w);
+            let y0 = 0.0;
+            let x1 = x0 + w;
+            let y1 = random_in_range(1.0, 101.0);
+            let z1 = z0 + w;
+
+            ret.push(box_shape(
+                Point3::new(x0, y0, z0),
+                Point3::new(x1, y1, z1),
+                material.clone(),
+            ));
+        }
+    }
+
+    ret
+}
+
+fn book2_boxes_2(ns: usize, material: impl Material + Clone + 'static) -> ShapeList {
+    (0..ns)
+        .into_iter()
+        .map(|_| {
+            sphere(
+                Point3::new(
+                    random_in_range(0.0, 165.0),
+                    random_in_range(0.0, 165.0),
+                    random_in_range(0.0, 165.0),
+                ),
+                10.0,
+                material.clone(),
+            )
+        })
+        .collect()
+}
+
+fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(478.0, 278.0, -600.0);
+    let lookat = Point3::new(278.0, 278.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = raster::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(40.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let shapes = shapes![
+        book2_boxes_1(
+            20,
+            lambertian(solid_texture(Color([0.48, 0.83, 0.53, 1.0])))
+        ),
+        xz_rectangle(
+            (123.0, 423.0),
+            (147.0, 412.0),
+            554.0,
+            diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
+        ),
+        moving_sphere(
+            (Point3::new(400.0, 400.0, 400.0), 0.0),
+            (Point3::new(430.0, 400.0, 200.0), 1.0),
+            50.0,
+            lambertian(solid_texture(Color([0.7, 0.3, 0.1, 1.0])))
+        ),
+        sphere(Point3::new(260.0, 150.0, 45.0), 50.0, dielectric(1.5)),
+        sphere(
+            Point3::new(0.0, 150.0, 145.0),
+            70.0,
+            metal(Color([0.8, 0.8, 0.9, 1.0]), 10.0)
+        ),
+        sphere(Point3::new(360.0, 150.0, 145.0), 70.0, dielectric(1.5)),
+        constant_medium(
+            0.2,
+            sphere(Point3::new(360.0, 150.0, 145.0), 70.0, dielectric(1.5)),
+            isotropic(solid_texture(Color([0.2, 0.4, 0.9, 1.0])))
+        ),
+        constant_medium(
+            0.0001,
+            sphere(Point3::new(0.0, 0.0, 0.0), 5000.0, dielectric(1.5)),
+            isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(400.0, 200.0, 400.0),
+            100.0,
+            lambertian(earth_map())
+        ),
+        sphere(
+            Point3::new(220.0, 280.0, 300.0),
+            80.0,
+            lambertian(noise_texture(0.1))
+        ),
+        translate(
+            vec3(-100.0, 270.0, 395.0),
+            rotate_y(
+                Deg(15.0).into(),
+                book2_boxes_2(
+                    1000,
+                    lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])))
+                )
+            )
+        ),
+    ];
+
+    (camera, black_sky(), shapes)
+}
+
 const DEFAULT_WIDTH: usize = 1920;
 const DEFAULT_HEIGHT: usize = 1080;
 const DEFAULT_MIN_PASSES: usize = 100;
@@ -439,7 +561,7 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 const BUILTIN_SCENES: [(
     &'static str,
     fn(usize, usize) -> (raster::Camera, raster::Sky, ShapeList),
-); 9] = [
+); 10] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
@@ -449,6 +571,7 @@ const BUILTIN_SCENES: [(
     ("cornell", cornell_box),
     ("cornell_smoke", cornell_smoke),
     ("prism", prism),
+    ("book2", book2),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {
