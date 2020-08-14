@@ -20,7 +20,9 @@ pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
 pub use shapes::{BoundingBox, GeometryObject, HitResult, Hittable, MediumDensity, ShapeList};
 pub use sky::Sky;
-pub use stats::TracingStats;
+pub use stats::{
+    RenderStats, RenderStatsAccumulator, RenderStatsCollector, RenderStatsSource, TracingStats,
+};
 pub use textures::Texture;
 
 pub mod constants {

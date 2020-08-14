@@ -3,7 +3,7 @@ use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 
 #[derive(Debug, Clone)]
 pub struct ShapeList {
@@ -31,7 +31,7 @@ impl Hittable for ShapeList {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         self.shapes
             .iter()

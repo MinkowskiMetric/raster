@@ -1,7 +1,7 @@
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 
 use super::HitResult;
 
@@ -21,7 +21,7 @@ pub trait CoreHittable: HittableClone + Sync + Send + std::fmt::Debug {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>>;
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox;
@@ -33,7 +33,7 @@ pub trait Hittable: HittableClone + Sync + Send + std::fmt::Debug {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>>;
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox;
@@ -57,7 +57,7 @@ impl<T: CoreHittable> Hittable for T {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         self.intersect(ray, t_min, t_max, stats)
     }
@@ -73,7 +73,7 @@ impl Hittable for Box<dyn Hittable> {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         self.as_ref().intersect(ray, t_min, t_max, stats)
     }

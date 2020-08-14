@@ -1,13 +1,13 @@
 use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
 use crate::utils::*;
-use crate::TracingStats;
 use crate::{constants, Color, Hittable, PartialScatterResult, ScatterResult};
+use crate::{RenderStatsAccumulator, RenderStatsCollector, TracingStats};
 use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};
 
 use std::convert::TryInto;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Ray {
@@ -132,7 +132,7 @@ impl std::ops::Add for VectorImage {
     }
 }
 
-pub async fn scan(
+pub async fn scan<StatsAccumulator: 'static + RenderStatsAccumulator + Sync + Send>(
     scene: Scene,
     image_width: usize,
     image_height: usize,
@@ -140,36 +140,38 @@ pub async fn scan(
     t1: FloatType,
     thread_count: usize,
     min_passes: usize,
+    stats: Arc<RwLock<StatsAccumulator>>,
 ) -> VectorImage {
     let thread_count = thread_count.max(1);
     let min_passes = min_passes.max(1);
     let passes_per_thread = (min_passes + thread_count - 1) / thread_count;
 
-    let start_time = std::time::Instant::now();
-
     let scene = Arc::new(PreparedScene::make(scene, t0, t1));
 
     let futures = (0..thread_count).into_iter().map(|_| {
         let thread_scene = scene.clone();
+        let thread_stats = stats.clone();
         tokio::task::spawn_blocking(move || {
-            scan_batch(image_width, image_height, passes_per_thread, &thread_scene)
+            scan_batch(
+                image_width,
+                image_height,
+                passes_per_thread,
+                &thread_scene,
+                thread_stats.as_ref(),
+            )
         })
     });
 
-    let (vector_image, tracing_stats) = join_all(futures)
+    let vector_image = join_all(futures)
         .await
         .into_iter()
         .my_fold_first(|a, b| match (a, b) {
-            (Ok(a), Ok(b)) => Ok((a.0 + b.0, a.1 + b.1)),
+            (Ok(a), Ok(b)) => Ok(a + b),
             (Err(a), _) => Err(a),
             (_, Err(b)) => Err(b),
         })
         .unwrap()
         .unwrap();
-
-    let elapsed = start_time.elapsed().as_secs_f64();
-    println!("Total runtime: {} seconds", elapsed);
-    println!("Tracing stats: {:#?}", tracing_stats);
 
     vector_image
 }
@@ -179,10 +181,11 @@ fn scan_batch(
     image_height: usize,
     pass_count: usize,
     scene: &PreparedScene,
-) -> (VectorImage, TracingStats) {
-    let mut stats = TracingStats::new();
+    stats: &RwLock<impl RenderStatsAccumulator>,
+) -> VectorImage {
     let mut image = VectorImage::new(image_width, image_height);
     let (image_width, image_height) = (image_width as FloatType, image_height as FloatType);
+    let mut pixel_stats = TracingStats::new();
 
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         *pixel = (0..pass_count)
@@ -195,12 +198,21 @@ fn scan_batch(
                 );
                 let ray = scene.camera().make_ray(s, t);
 
-                cgmath::Vector4::from(trace(&ray, scene, &mut stats))
+                let ret = cgmath::Vector4::from(trace(&ray, scene, &mut pixel_stats));
+
+                pixel_stats.count_pixel();
+
+                if let Ok(mut lock) = stats.try_write() {
+                    let next_stats = std::mem::replace(&mut pixel_stats, TracingStats::new());
+                    lock.add_stats(next_stats.into());
+                }
+
+                ret
             })
             .fold(cgmath::vec4(0.0, 0.0, 0.0, 0.0), |sum, v| sum + v);
     }
 
-    (image, stats)
+    image
 }
 
 const MAX_DEPTH: usize = 50;
@@ -237,7 +249,7 @@ fn collapse_color_stack<'a>(mut stack: FixedSizeAttenuationStack<'a>, input_colo
         .unwrap()
 }
 
-pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut TracingStats) -> Color {
+pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut dyn RenderStatsCollector) -> Color {
     let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
 

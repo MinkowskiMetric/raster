@@ -2,7 +2,7 @@ use super::{GeometryObject, HitResult, Hittable};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 
 pub trait GeometryModifier: Sync + Send + std::fmt::Debug {
     fn process_input_ray(&self, ray: &Ray) -> Ray;
@@ -71,7 +71,7 @@ impl<
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         let input_ray = self.modifier.process_input_ray(ray);
 

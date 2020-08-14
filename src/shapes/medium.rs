@@ -2,7 +2,7 @@ use super::{CoreHittable, GeometryObject, HitResult, Hittable, ShapeList};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 use crate::{BoundingBox, Material, PartialScatterResult, ScatterResult, Texture};
 
 pub trait MediumDensity: Send + Sync + std::fmt::Debug {
@@ -32,7 +32,7 @@ impl<Density: MediumDensity + Clone, Phase: Material + Clone> Medium<Density, Ph
     fn double_intersect<'a>(
         &'a self,
         ray: &Ray,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<(HitResult<'a>, HitResult<'a>)> {
         if let Some(hit_1) =
             self.child
@@ -60,7 +60,7 @@ impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         if let Some((hit_result_1, hit_result_2)) = self.double_intersect(ray, stats) {
             let distance_1 = hit_result_1.distance.max(t_min).max(0.0);
@@ -192,7 +192,7 @@ fn test_constant_medium_hit_points() {
 
     let ray = Ray::new(Point3::new(0.0, 0.0, -10.0), vec3(0.0, 0.0, 1.0), 0.0);
 
-    let mut stats = TracingStats::new();
+    let mut stats = crate::TracingStats::new();
 
     let hit_count = (0..1000000)
         .into_iter()
@@ -215,5 +215,5 @@ fn test_constant_medium_hit_points() {
             assert_eq!(hit_point.z, distance - 10.0);
         })
         .count();
-        assert!(hit_count > 100000);
+    assert!(hit_count > 100000);
 }

@@ -1,7 +1,7 @@
 use super::{CoreHittable, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 use crate::{BoundingBox, Material};
 
 fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
@@ -37,7 +37,7 @@ impl<T: 'static + Material + Clone> Sphere<T> {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult> {
         use std::arch::x86_64::*;
 
@@ -152,7 +152,7 @@ impl<T: 'static + Material + Clone> CoreHittable for Sphere<T> {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult> {
         unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }
@@ -221,7 +221,7 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult> {
         use std::arch::x86_64::*;
 
@@ -336,7 +336,7 @@ impl<T: 'static + Material + Clone> CoreHittable for MovingSphere<T> {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult> {
         unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }

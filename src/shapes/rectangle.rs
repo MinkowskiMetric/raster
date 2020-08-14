@@ -1,7 +1,7 @@
 use super::{CoreHittable, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 use crate::{BoundingBox, Material};
 
 macro_rules! generate_rectangle {
@@ -36,7 +36,7 @@ macro_rules! generate_rectangle {
                 ray: &Ray,
                 t_min: FloatType,
                 t_max: FloatType,
-                _stats: &mut TracingStats,
+                _stats: &mut dyn RenderStatsCollector,
             ) -> Option<HitResult<'a>> {
                 let ray_origin = ray.origin.into_point();
                 let ray_direction = ray.direction.into_vector();

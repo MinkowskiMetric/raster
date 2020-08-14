@@ -5,7 +5,9 @@ use std::convert::TryInto;
 
 use image::RgbImage;
 
-use raster::{prelude::*, shapes, Color, ShapeList};
+use raster::{prelude::*, shapes, Color, RenderStatsSource, ShapeList};
+
+use std::sync::{Arc, RwLock};
 
 fn attenuate_color(color: Color, attenuation: FloatType) -> Color {
     color.attenuate(attenuation)
@@ -559,7 +561,40 @@ async fn main() {
         threads, min_passes
     );
 
-    let vector_image = raster::scan(scene, width, height, t0, t1, threads, min_passes).await;
+    let expected_pass_count = ((min_passes + threads - 1) / threads) * threads;
+    let expected_pixel_count = width * height * expected_pass_count;
+
+    let start_time = std::time::Instant::now();
+    let stats = Arc::new(RwLock::new(raster::TracingStats::new()));
+
+    tokio::pin! {
+        let scanner = raster::scan(scene, width, height, t0, t1, threads, min_passes, stats.clone());
+    }
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
+
+    let vector_image = loop {
+        tokio::select! {
+            _ = interval.tick() => {
+                let stats_value = stats.read().unwrap().get_stats();
+                let done_ratio = stats_value.pixels as f64 / expected_pixel_count as f64;
+                let elapsed_time = start_time.elapsed().as_secs_f64();
+                let estimated_time = (elapsed_time / done_ratio) - elapsed_time;
+                println!("Elapsed time: {} seconds", elapsed_time);
+                println!("{}% complete, estimated {} remaining", done_ratio * 100.0, estimated_time);
+                println!("Tracing stats: {:#?}", stats_value);
+            }
+
+            image = &mut scanner => break image,
+        }
+    };
+
+    let stats_value = stats.read().unwrap().get_stats();
+    println!("FINISHED");
+    println!(
+        "Elapsed time: {} seconds",
+        start_time.elapsed().as_secs_f64()
+    );
+    println!("Tracing stats: {:#?}", stats_value);
 
     let mut surf = RgbImage::new(width as u32, height as u32);
 

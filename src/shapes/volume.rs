@@ -2,7 +2,7 @@ use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 use crate::{HitResult, Hittable};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -152,7 +152,7 @@ impl Volume {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         let mut volume_stack_data = [None; 50];
         let mut volume_stack = FixedSizeVolumeStack::new(&mut volume_stack_data);
@@ -195,7 +195,7 @@ impl Hittable for Volume {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }

@@ -4,7 +4,7 @@ use crate::ray_scanner::Ray;
 use crate::shapes::{ShapeList, Volume};
 use crate::sky::Sky;
 use crate::BoundingBox;
-use crate::TracingStats;
+use crate::RenderStatsCollector;
 use crate::{HitResult, Hittable};
 
 #[derive(Debug, Clone)]
@@ -34,7 +34,7 @@ impl Hittable for RootShape {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         match self {
             RootShape::Volume(v) => v.intersect(ray, t_min, t_max, stats),
@@ -108,7 +108,7 @@ impl Hittable for PreparedScene {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut TracingStats,
+        stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         self.root_volume.intersect(ray, t_min, t_max, stats)
     }
