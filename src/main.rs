@@ -319,6 +319,69 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
     (camera, black_sky(), shapes)
 }
 
+fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(278.0, 278.0, -800.0);
+    let lookat = Point3::new(278.0, 278.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = raster::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(40.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let red = lambertian(solid_texture(Color([0.65, 0.05, 0.05, 1.0])));
+    let white = lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])));
+    let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
+    let light = diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])));
+    let unit_cube = box_shape(
+        Point3::new(0.0, 0.0, 0.0),
+        Point3::new(1.0, 1.0, 1.0),
+        white.clone(),
+    );
+
+    let shapes = shapes![
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, red.clone()),
+        xz_rectangle((113.0, 443.0), (127.0, 432.0), 554.0, light.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
+        constant_medium(
+            0.01,
+            translate(
+                vec3(265.0, 0.0, 295.0),
+                rotate_y(
+                    Deg(15.0).into(),
+                    scale(vec3(165.0, 330.0, 160.0), unit_cube.clone()),
+                ),
+            ),
+            isotropic(solid_texture(Color([0.0, 0.0, 0.0, 1.0])))
+        ),
+        constant_medium(
+            0.01,
+            translate(
+                vec3(130.0, 0.0, 65.0),
+                rotate_y(
+                    Deg(-18.0).into(),
+                    scale(vec3(165.0, 165.0, 165.0), unit_cube.clone()),
+                ),
+            ),
+            isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))
+        ),
+    ];
+
+    let shapes = shapes![scale(vec3(1.0, 1.0, 1.0), shapes)];
+
+    (camera, black_sky(), shapes)
+}
+
 fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
@@ -374,7 +437,7 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 const BUILTIN_SCENES: [(
     &'static str,
     fn(usize, usize) -> (raster::Camera, raster::Sky, ShapeList),
-); 8] = [
+); 9] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
@@ -382,6 +445,7 @@ const BUILTIN_SCENES: [(
     ("earth", textured_earth),
     ("simplelight", simple_light),
     ("cornell", cornell_box),
+    ("cornell_smoke", cornell_smoke),
     ("prism", prism),
 ];
 
