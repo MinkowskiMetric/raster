@@ -602,7 +602,7 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
             (-8.0, 8.0),
             (-8.0, 8.0),
             8.0,
-            bump_mapper(brick_normal_map(), lambertian(brick_image()))
+            bump_mapper(brick_normal_map(), metal_with_texture(brick_image(), 0.7))
         ),
         xz_rectangle(
             (-10.0, 10.0),

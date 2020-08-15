@@ -5,6 +5,7 @@ mod noise_texture;
 mod solid_texture;
 mod texture;
 
+pub use solid_texture::SolidTexture;
 pub use texture::Texture;
 
 pub mod factories {
