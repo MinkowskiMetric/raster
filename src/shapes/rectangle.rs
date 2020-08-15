@@ -54,7 +54,10 @@ macro_rules! generate_rectangle {
 
                 let u = ($faxis0 - self.$faxis0.0) / (self.$faxis0.1 - self.$faxis0.0);
                 let v = ($faxis1 - self.$faxis1.0) / (self.$faxis1.1 - self.$faxis1.0);
-                let outward_normal = generate_rectangle!(make_normal $oaxis);
+                let outward_normal = generate_rectangle!(make_axis_aligned_unit_vector $oaxis);
+                // How we define the tangent is up to us. It can be any vector in the plane.
+                // I'm just going to point it along the specified axis
+                let tangent = generate_rectangle!(make_axis_aligned_unit_vector $faxis0);
                 let front_face = ray_direction.dot(outward_normal) < 0.0;
                 let surface_normal = if front_face {
                     outward_normal
@@ -62,12 +65,16 @@ macro_rules! generate_rectangle {
                     -outward_normal
                 };
 
+                let bitangent = surface_normal.cross(tangent);
+
                 let hit_point = ray_origin + (t * ray_direction);
 
                 Some(HitResult {
                     distance: t,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
+                    tangent,
+                    bitangent,
                     front_face,
                     material: &self.material,
                     u,
@@ -84,9 +91,9 @@ macro_rules! generate_rectangle {
         }
     };
 
-    (make_normal x) => { Vector3::new(1.0, 0.0, 0.0) };
-    (make_normal y) => { Vector3::new(0.0, 1.0, 0.0) };
-    (make_normal z) => { Vector3::new(0.0, 0.0, 1.0) };
+    (make_axis_aligned_unit_vector x) => { Vector3::new(1.0, 0.0, 0.0) };
+    (make_axis_aligned_unit_vector y) => { Vector3::new(0.0, 1.0, 0.0) };
+    (make_axis_aligned_unit_vector z) => { Vector3::new(0.0, 0.0, 1.0) };
 
     (make_bb_point $self:ident x $idx:tt $sgn:expr) => { Point3::new($self.x + ($sgn * 0.0001), $self.y.$idx, $self.z.$idx) };
     (make_bb_point $self:ident y $idx:tt $sgn:expr) => { Point3::new($self.x.$idx, $self.y + ($sgn * 0.0001), $self.z.$idx) };

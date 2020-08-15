@@ -131,7 +131,9 @@ impl<'a> Iterator for VolumeIter<'a> {
                     self.push_left_children(&right.inner_volume);
                 }
 
-                InnerVolume::NoChild => debug_assert!(false, "this should not happen, but isn't bad if it does"),
+                InnerVolume::NoChild => {
+                    debug_assert!(false, "this should not happen, but isn't bad if it does")
+                }
             }
         }
 
@@ -275,11 +277,13 @@ pub mod factories {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{ShapeList, prelude::*};
+    use crate::{prelude::*, ShapeList};
 
     #[test]
     fn test_volume_iterators() {
-        let shapes: ShapeList = (0..100).map(|_| sphere(Point3::new(0.0, 0.0, 0.0), 1.0, dielectric(1.5))).collect();
+        let shapes: ShapeList = (0..100)
+            .map(|_| sphere(Point3::new(0.0, 0.0, 0.0), 1.0, dielectric(1.5)))
+            .collect();
         let volume = Volume::from_shapes(shapes, 0.0, 1.0);
 
         let iter = volume.iter();

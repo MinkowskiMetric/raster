@@ -103,6 +103,12 @@ impl TryFrom<cgmath::Vector3<FloatType>> for Color {
     }
 }
 
+impl From<Color> for cgmath::Vector3<FloatType> {
+    fn from(p: Color) -> Self {
+        Self::new(p.0[0], p.0[1], p.0[2])
+    }
+}
+
 pub mod constants {
     use super::*;
 

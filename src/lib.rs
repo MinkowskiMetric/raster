@@ -15,7 +15,7 @@ pub mod utils;
 
 pub use camera::Camera;
 pub use color::Color;
-pub use materials::{Material, PartialScatterResult, ScatterResult};
+pub use materials::{Material, PartialScatterResult, ScatterResult, SurfaceMapper};
 pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
 pub use shapes::{BoundingBox, GeometryObject, HitResult, Hittable, MediumDensity, ShapeList};

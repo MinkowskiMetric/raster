@@ -81,6 +81,8 @@ impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone
                         hit_point: ray.origin.into_point()
                             + (ray.direction.into_vector() * (scatter_distance + distance_1)),
                         surface_normal: vec3(1.0, 0.0, 0.0), // arbitrary
+                        tangent: vec3(0.0, 1.0, 0.0),        // arbitrary
+                        bitangent: vec3(0.0, 0.0, 1.0),      // arbitrary
                         front_face: true,                    // also arbitrary
                         material: &self.phase,
                         u: 0.0,

@@ -73,32 +73,27 @@ impl<T: 'static + Material + Clone> Sphere<T> {
         if discriminant > 0.0 {
             let temp = (-b - discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = _mm256_add_pd(
-                    ray_origin,
-                    _mm256_mul_pd(_mm256_set1_pd(temp), ray_direction),
-                );
-                let outward_normal = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let front_face = _mm256_dot_pd(ray_direction, outward_normal) < 0.0;
+                let center: Point3 = M256Point3::from_v(center).into();
+                let hit_point = ray.origin.into_point() + (temp * ray.direction.into_vector());
+                let outward_normal = (hit_point - center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
+                let front_face = ray.direction.into_vector().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal
                 } else {
-                    _mm256_mul_pd(outward_normal, _mm256_set1_pd(-1.0))
+                    -outward_normal
                 };
+                let bitangent = outward_normal.cross(tangent).normalize();
 
-                let normalized_hitpoint = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let normalized_hitpoint = M256Vector3::from_v(normalized_hitpoint).into();
+                let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
                 return Some(HitResult {
                     distance: temp,
-                    hit_point: M256Point3::from_v(hit_point).into(),
-                    surface_normal: M256Vector3::from_v(surface_normal).into(),
+                    hit_point: hit_point.into(),
+                    surface_normal: surface_normal.into(),
+                    tangent,
+                    bitangent,
                     front_face,
                     material: &self.material,
                     u,
@@ -108,32 +103,27 @@ impl<T: 'static + Material + Clone> Sphere<T> {
 
             let temp = (-b + discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = _mm256_add_pd(
-                    ray_origin,
-                    _mm256_mul_pd(_mm256_set1_pd(temp), ray_direction),
-                );
-                let outward_normal = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let front_face = _mm256_dot_pd(ray_direction, outward_normal) < 0.0;
+                let center: Point3 = M256Point3::from_v(center).into();
+                let hit_point = ray.origin.into_point() + (temp * ray.direction.into_vector());
+                let outward_normal = (hit_point - center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
+                let front_face = ray.direction.into_vector().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal
                 } else {
-                    _mm256_mul_pd(outward_normal, _mm256_set1_pd(-1.0))
+                    -outward_normal
                 };
+                let bitangent = outward_normal.cross(tangent).normalize();
 
-                let normalized_hitpoint = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let normalized_hitpoint = M256Vector3::from_v(normalized_hitpoint).into();
+                let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
                 return Some(HitResult {
                     distance: temp,
-                    hit_point: M256Point3::from_v(hit_point).into(),
-                    surface_normal: M256Vector3::from_v(surface_normal).into(),
+                    hit_point: hit_point.into(),
+                    surface_normal: surface_normal.into(),
+                    tangent,
+                    bitangent,
                     front_face,
                     material: &self.material,
                     u,
@@ -257,32 +247,27 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
         if discriminant > 0.0 {
             let temp = (-b - discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = _mm256_add_pd(
-                    ray_origin,
-                    _mm256_mul_pd(_mm256_set1_pd(temp), ray_direction),
-                );
-                let outward_normal = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let front_face = _mm256_dot_pd(ray_direction, outward_normal) < 0.0;
+                let center: Point3 = M256Point3::from_v(center).into();
+                let hit_point = ray.origin.into_point() + (temp * ray.direction.into_vector());
+                let outward_normal = (hit_point - center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
+                let front_face = ray.direction.into_vector().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal
                 } else {
-                    _mm256_mul_pd(outward_normal, _mm256_set1_pd(-1.0))
+                    -outward_normal
                 };
+                let bitangent = outward_normal.cross(tangent).normalize();
 
-                let normalized_hitpoint = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let normalized_hitpoint = M256Vector3::from_v(normalized_hitpoint).into();
+                let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
                 return Some(HitResult {
                     distance: temp,
-                    hit_point: M256Point3::from_v(hit_point).into(),
-                    surface_normal: M256Vector3::from_v(surface_normal).into(),
+                    hit_point: hit_point.into(),
+                    surface_normal: surface_normal.into(),
+                    tangent,
+                    bitangent,
                     front_face,
                     material: &self.material,
                     u,
@@ -292,32 +277,27 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
 
             let temp = (-b + discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = _mm256_add_pd(
-                    ray_origin,
-                    _mm256_mul_pd(_mm256_set1_pd(temp), ray_direction),
-                );
-                let outward_normal = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let front_face = _mm256_dot_pd(ray_direction, outward_normal) < 0.0;
+                let center: Point3 = M256Point3::from_v(center).into();
+                let hit_point = ray.origin.into_point() + (temp * ray.direction.into_vector());
+                let outward_normal = (hit_point - center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
+                let front_face = ray.direction.into_vector().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal
                 } else {
-                    _mm256_mul_pd(outward_normal, _mm256_set1_pd(-1.0))
+                    -outward_normal
                 };
+                let bitangent = outward_normal.cross(tangent).normalize();
 
-                let normalized_hitpoint = _mm256_div_pd(
-                    _mm256_sub_pd(hit_point, center),
-                    _mm256_set1_pd(self.radius),
-                );
-                let normalized_hitpoint = M256Vector3::from_v(normalized_hitpoint).into();
+                let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
                 return Some(HitResult {
                     distance: temp,
-                    hit_point: M256Point3::from_v(hit_point).into(),
-                    surface_normal: M256Vector3::from_v(surface_normal).into(),
+                    hit_point: hit_point.into(),
+                    surface_normal: surface_normal.into(),
+                    tangent,
+                    bitangent,
                     front_face,
                     material: &self.material,
                     u,
@@ -373,5 +353,32 @@ pub mod factories {
         material: T,
     ) -> MovingSphere<T> {
         MovingSphere::new(center0, center1, radius, material)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::factories::*;
+
+    #[test]
+    fn test_sphere_normals() {
+        let sp = sphere(Point3::new(0.0, 0.0, 0.0), 1.0, dielectric(1.5));
+
+        let mut stats = crate::TracingStats::new();
+        let result = sp.intersect(
+            &Ray::new(Point3::new(0.0, 0.0, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
+            0.0,
+            constants::INFINITY,
+            &mut stats,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result.distance, 9.0);
+        assert_eq!(result.hit_point, Point3::new(0.0, 0.0, -1.0));
+        assert_eq!(result.surface_normal, vec3(0.0, 0.0, -1.0));
+        assert_eq!(result.tangent, vec3(-1.0, 0.0, 0.0));
+        assert_eq!(result.bitangent, vec3(0.0, 1.0, 0.0));
     }
 }
