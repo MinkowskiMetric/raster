@@ -196,6 +196,18 @@ fn earth_map() -> impl Texture + Clone {
     image_texture(earth_image)
 }
 
+fn brick_image() -> impl Texture + Clone {
+    let brick_bytes = include_bytes!("brickwall.jpg");
+    let brick_image = image::load_from_memory(brick_bytes).unwrap();
+    image_texture(brick_image)
+}
+
+fn brick_normal_map() -> impl Texture + Clone {
+    let brick_bytes = include_bytes!("brickwall_normal.jpg");
+    let brick_image = image::load_from_memory(brick_bytes).unwrap();
+    image_texture(brick_image)
+}
+
 fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let earth_image = earth_map();
 
@@ -554,7 +566,7 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
 
 fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
-    let lookfrom = Point3::new(0.0, 0.0, -10.0);
+    let lookfrom = Point3::new(2.0, 2.0, -10.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
@@ -586,15 +598,27 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
                 metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
             )
         ),
+        xy_rectangle(
+            (-8.0, 8.0),
+            (-8.0, 8.0),
+            8.0,
+            bump_mapper(brick_normal_map(), lambertian(brick_image()))
+        ),
         xz_rectangle(
-            (-2.0, 2.0),
-            (-2.0, 2.0),
-            10.0,
+            (-10.0, 10.0),
+            (-10.0, 10.0),
+            -8.0,
+            lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
+        ),
+        xz_rectangle(
+            (-6.0, 6.0),
+            (-6.0, 6.0),
+            7.0,
             diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
         ),
     ];
 
-    (camera, regular_sky(), shapes)
+    (camera, black_sky(), shapes)
 }
 
 const DEFAULT_WIDTH: usize = 1920;
