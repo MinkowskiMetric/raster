@@ -5,6 +5,7 @@ mod hit_result;
 mod hittable;
 mod invert_normal;
 mod medium;
+mod parabola;
 mod rectangle;
 mod rotate;
 mod scale;
@@ -29,6 +30,7 @@ pub mod factories {
     pub use geometry_wrapper::factories::*;
     pub use invert_normal::factories::*;
     pub use medium::factories::*;
+    pub use parabola::factories::*;
     pub use rectangle::factories::*;
     pub use rotate::factories::*;
     pub use scale::factories::*;

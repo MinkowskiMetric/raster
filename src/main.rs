@@ -621,6 +621,103 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
     (camera, black_sky(), shapes)
 }
 
+fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(-20.0, 0.0, -20.0);
+    let lookat = Point3::new(0.0, 0.0, 8.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = raster::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let shapes = shapes![
+        /*sphere(
+            Point3::new(-3.0, 0.0, 0.0),
+            2.0,
+            bump_mapper(
+                noise_normal(10.0, 0.4),
+                lambertian(solid_texture(Color([1.0, 69.0 / 255.0, 0.0, 1.0])))
+            )
+        ),
+        sphere(
+            Point3::new(3.0, 0.0, 0.0),
+            2.0,
+            bump_mapper(
+                noise_normal(10.0, 0.2),
+                metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
+            )
+        ),*/
+        parabola(lambertian(solid_texture(Color([0.0, 0.0, 0.0, 1.0])))),
+        sphere(
+            Point3::new(-1.0, -1.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(-1.0, 0.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(-1.0, 1.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(0.0, -1.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(0.0, 0.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(0.0, 1.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(1.0, -1.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(1.0, 0.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        sphere(
+            Point3::new(1.0, 1.0, 8.0),
+            0.5,
+            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+        ),
+        xz_rectangle(
+            (-100.0, 100.0),
+            (-100.0, 100.0),
+            -3.0,
+            lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
+        ),
+        /*xz_rectangle(
+            (-6.0, 6.0),
+            (-6.0, 6.0),
+            7.0,
+            diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
+        ),*/
+    ];
+
+    (camera, regular_sky(), shapes)
+}
+
 const DEFAULT_WIDTH: usize = 1920;
 const DEFAULT_HEIGHT: usize = 1080;
 const DEFAULT_MIN_PASSES: usize = 100;
@@ -630,7 +727,7 @@ const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 const BUILTIN_SCENES: [(
     &'static str,
     fn(usize, usize) -> (raster::Camera, raster::Sky, ShapeList),
-); 11] = [
+); 12] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
@@ -642,6 +739,7 @@ const BUILTIN_SCENES: [(
     ("prism", prism),
     ("book2", book2),
     ("orange", orange),
+    ("orange_parabola", orange_parabola),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {
