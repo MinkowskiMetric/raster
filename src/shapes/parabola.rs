@@ -5,19 +5,23 @@ use crate::RenderStatsCollector;
 use crate::{BoundingBox, Material};
 
 #[derive(Debug)]
-pub struct ParabolaXY<M: Material + Clone>(M);
+pub struct ParabolaXY<M: Material + Clone> {
+    material: M,
+    extremum_point: Point3,
+    focus_point: Point3,
+    pr: FloatType,
+}
 
 impl<M: 'static + Material + Clone> Clone for ParabolaXY<M> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self {
+            material: self.material.clone(),
+            extremum_point: self.extremum_point,
+            focus_point: self.focus_point,
+            pr: self.pr,
+        }
     }
 }
-
-const pa: FloatType = -(1.0 / 4.0);
-const pb: FloatType = 0.0;
-const pc: FloatType = 8.0;
-
-const pr: FloatType = 2.0;
 
 impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
     fn intersect<'a>(
@@ -34,10 +38,7 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
 
         // We don't actually want to take the focal point as input, mostly because it is inconvenient for positioning.
         // Instead we take the midpoint of the line between the directrix and the focus, which is the extremum point.
-        let extremum_point = Point3::new(0.0, 0.0, 8.0);
-        let focus_point = Point3::new(0.0, 0.0, 7.75);
-        let orientation_vector = focus_point - extremum_point;
-        let directrix_origin = extremum_point - orientation_vector;
+        let orientation_vector = self.focus_point - self.extremum_point;
         let focus_distance = orientation_vector.magnitude();
         let orientation_vector = orientation_vector / focus_distance;
 
@@ -92,16 +93,12 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
 
         // So len(P-C+V*k) = (P-C-V*k)|V
 
-        let oc = ray_origin - extremum_point; // Called X above
+        let oc = ray_origin - self.extremum_point; // Called X above
         let oc_dot_oc = oc.dot(oc);
         let oc_dot_n = oc.dot(orientation_vector);
         let dir_dot_oc = ray_direction.dot(oc);
         let dir_dot_n = ray_direction.dot(orientation_vector);
         let dir_dot_dir = ray_direction.dot(ray_direction);
-
-        if oc_dot_n > 2.0 {
-            return None;
-        }
 
         let a = dir_dot_dir - (dir_dot_n * dir_dot_n);
         let b = 2.0 * (dir_dot_oc - (dir_dot_n * (oc_dot_n + (2.0 * focus_distance))));
@@ -136,7 +133,17 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
         }
 
         let hit_point = ray_origin + t * ray_direction;
-        let outward_normal = (focus_point - hit_point).normalize();
+
+        // Project the hit point onto the axis of the paraboloid
+        let center_to_hit_point = hit_point - self.extremum_point;
+        let axial_point = orientation_vector * center_to_hit_point.dot(orientation_vector);
+        let radial_point = center_to_hit_point - axial_point;
+        // From that we can check the radius
+        if radial_point.magnitude() > self.pr {
+            return None;
+        }
+
+        let outward_normal = (self.focus_point - hit_point).normalize();
         let front_face = ray_direction.dot(outward_normal) < 0.0;
         let surface_normal = if front_face {
             outward_normal
@@ -144,10 +151,13 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
             -outward_normal
         };
 
-        // How do I get the tangent?
-        let tangent = vec3(0.0, 1.0, 0.0);
-        let bitangent = surface_normal.cross(tangent);
-        let (u, v) = (0.0, 0.0); // TODOTODOTODO
+        // We can work out the tangent from the bitangent, and we can get the bitangent from the axial vector and the normal
+        // because it is at right angles to them
+        let tangent = (-radial_point).cross(outward_normal);
+        let bitangent = outward_normal.cross(tangent);
+
+        let u = radial_point.magnitude() / self.pr;
+        let v = 0.0;        // TODOTODOTODO - could use the angle
 
         Some(HitResult {
             distance: t,
@@ -156,7 +166,7 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
             tangent,
             bitangent,
             front_face,
-            material: &self.0,
+            material: &self.material,
             u,
             v,
         })
@@ -174,141 +184,12 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
 pub mod factories {
     use super::*;
 
-    pub fn parabola<M: Material + Clone>(material: M) -> ParabolaXY<M> {
-        ParabolaXY(material)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::factories::*;
-
-    #[test]
-    fn test_parabola_intersection() {
-        let p = parabola(dielectric(1.5));
-        let mut stats = crate::TracingStats::new();
-
-        let hr = p
-            .intersect(
-                &Ray::new(Point3::new(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), 0.0),
-                0.001,
-                constants::INFINITY,
-                &mut stats,
-            )
-            .unwrap();
-        assert_eq!(hr.hit_point, Point3::new(0.0, 0.0, 8.0));
-    }
-
-    /*const EPSILON: FloatType = 1.0;
-    static mut max_error: FloatType = 0.0;
-
-    fn check_error(error: FloatType, msg: String) {
-        unsafe { max_error = max_error.max(error);
-        println!("MAX ERROR: {}", max_error);}
-
-
-        assert!(error < EPSILON, msg);
-    }
-
-    fn test_parabola_hit_point<T: 'static + Material + Clone>(p: &ParabolaXY<T>, ray_origin: Point3, ray_direction: Vector3, hit_point: Option<Point3>) {
-        let ray_direction = ray_direction.normalize();
-        let r = Ray::new(ray_origin, ray_direction, 0.0);
-
-        let mut stats = crate::TracingStats::new();
-        println!("Sending ray from {:?} with direction {:?}", ray_origin, ray_direction);
-        match (hit_point, p.intersect(&r, 0.001, constants::INFINITY, &mut stats)) {
-            (Some(hit_point), Some(hit_result)) => {
-                check_error((hit_point.x - hit_result.hit_point.x).abs(), format!("Expected ray from {:?} in direction {:?} to hit at {:?}, actually hit at {:?} (X ERROR: {})", ray_origin, ray_direction, hit_point, hit_result.hit_point, (hit_point.x - hit_result.hit_point.x).abs()));
-                check_error((hit_point.y - hit_result.hit_point.y).abs(), format!("Expected ray from {:?} in direction {:?} to hit at {:?}, actually hit at {:?} (Y ERROR: {})", ray_origin, ray_direction, hit_point, hit_result.hit_point, (hit_point.y - hit_result.hit_point.y).abs()));
-                check_error((hit_point.z - hit_result.hit_point.z).abs(), format!("Expected ray from {:?} in direction {:?} to hit at {:?}, actually hit at {:?} (Z ERROR: {})", ray_origin, ray_direction, hit_point, hit_result.hit_point, (hit_point.z - hit_result.hit_point.z).abs()));
-            }
-
-            (None, None) => (),         // this is fine - we didn't expect a hit and there wasn't one
-
-            (None, Some(hit_result)) => panic!("Expected ray from {:?} in direction {:?} to miss, actually hit at {:?}", ray_origin, ray_direction, hit_result.hit_point),
-            (Some(hit_point), None) => panic!("Expected ray from {:?} in direction {:?} to hit at {:?}, actually missed", ray_origin, ray_direction, hit_point),
+    pub fn parabola<M: Material + Clone>(extremum_point: Point3, focus_point: Point3, radius: FloatType, material: M) -> ParabolaXY<M> {
+        ParabolaXY {
+            material,
+            extremum_point,
+            focus_point,
+            pr: radius,
         }
     }
-
-    #[test]
-    fn test_parabola_intersection_with_constant_x_and_y() {
-        let p = parabola(dielectric(1.5));
-
-        for degrees in 0..360 {
-            let angle: Rad<_> = Deg(degrees as FloatType).into();
-
-            for r in -100..=100 {
-                let r = 8.0 * (r as FloatType) / 100.0;
-
-                println!("Hitting origin from angle of {} with radius of {} and constant x and y", degrees, r);
-                let ray_origin = Point3::new(r * angle.cos(), r * angle.sin(), 0.0);
-                let ray_target = Point3::new(r * angle.cos(), r * angle.sin(), pa * r * r + pc);
-                let ray_direction = (ray_target - ray_origin).normalize();
-
-                let computed_radius = (ray_target.x.powf(2.0) + ray_target.y.powf(2.0)).sqrt();
-                if (computed_radius - pr).abs() < 0.0001 {
-                    println!("skipping as too close to edge");
-                    continue;
-                }
-
-                let expected = if computed_radius > pr { None } else { Some(ray_target) };
-                test_parabola_hit_point(&p, ray_origin, ray_direction, expected);
-            }
-        }
-    }
-
-    #[test]
-    fn test_parabola_intersection_with_constant_x() {
-        let p = parabola(dielectric(1.5));
-
-        for degrees in 0..360 {
-            let angle: Rad<_> = Deg(degrees as FloatType).into();
-
-            for r in -100..=100 {
-                let r = 8.0 * (r as FloatType) / 100.0;
-                let target_x = r * angle.cos();
-                let target_y: FloatType = 0.0;
-                let target_r = (target_x.powf(2.0) + target_y.powf(2.0)).sqrt();
-                if (target_r - pr).abs() < 0.0001 {
-                    continue;
-                }
-                let target_z = pa * target_r * target_r + pc;
-
-                let ray_origin = Point3::new(r * angle.cos(), r * angle.sin(), 0.0);
-                let ray_target = Point3::new(target_x, target_y, target_z);
-                let ray_direction = (ray_target - ray_origin).normalize();
-                let expected = if target_r > pr { None } else { Some(ray_target) };
-                println!("Hitting {:?} from angle of {} with radius of {} and constant x", ray_target, degrees, r);
-                test_parabola_hit_point(&p, ray_origin, ray_direction, expected);
-            }
-        }
-    }
-
-    #[test]
-    fn test_parabola_intersection() {
-        let p = parabola(dielectric(1.5));
-
-        for degrees in 0..360 {
-            let angle: Rad<_> = Deg(degrees as FloatType).into();
-
-            for r in -100..=100 {
-                let r = 8.0 * (r as FloatType) / 100.0;
-                let target_x = -r * angle.cos();
-                let target_y = -r * angle.sin();
-                let target_r = (target_x.powf(2.0) + target_y.powf(2.0)).sqrt();
-                if (target_r - pr).abs() < 0.0001 {
-                    continue;
-                }
-                let target_z = pa * target_r * target_r + pc;
-
-                let ray_origin = Point3::new(r * angle.cos(), r * angle.sin(), 0.0);
-                let ray_target = Point3::new(target_x, target_y, target_z);
-                let ray_direction = (ray_target - ray_origin).normalize();
-                let expected = if target_r > pr { None } else { Some(ray_target) };
-                println!("Hitting {:?} from angle of {} with radius of {} and constant x", ray_target, degrees, r);
-                test_parabola_hit_point(&p, ray_origin, ray_direction, expected);
-            }
-        }
-    }*/
 }

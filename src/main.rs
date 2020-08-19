@@ -623,8 +623,8 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
 
 fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
-    let lookfrom = Point3::new(-20.0, 0.0, -20.0);
-    let lookat = Point3::new(0.0, 0.0, 8.0);
+    let lookfrom = Point3::new(20.0, 5.0, -5.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
@@ -655,51 +655,12 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
                 metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
             )
         ),*/
-        parabola(lambertian(solid_texture(Color([0.0, 0.0, 0.0, 1.0])))),
+        parabola(Point3::new(0.0, 0.0, 7.5), Point3::new(0.0, 0.0, 7.0), 2.0, metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)),
+        parabola(Point3::new(0.0, 0.0, -8.0), Point3::new(0.0, 0.0, -7.0), 2.0, metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)),
         sphere(
-            Point3::new(-1.0, -1.0, 8.0),
+            Point3::new(0.0, 0.0, 7.0),
             0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(-1.0, 0.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(-1.0, 1.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(0.0, -1.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(0.0, 0.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(0.0, 1.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(1.0, -1.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(1.0, 0.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
-        ),
-        sphere(
-            Point3::new(1.0, 1.0, 8.0),
-            0.5,
-            lambertian(solid_texture(Color([1.0, 0.0, 0.0, 1.0])))
+            diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0]))),
         ),
         xz_rectangle(
             (-100.0, 100.0),
@@ -707,6 +668,12 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
             -3.0,
             lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
         ),
+        yz_rectangle(
+            (-100.0, 100.0),
+            (-100.0, 100.0),
+            -2.0,
+            lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
+        )
         /*xz_rectangle(
             (-6.0, 6.0),
             (-6.0, 6.0),
@@ -715,7 +682,7 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
         ),*/
     ];
 
-    (camera, regular_sky(), shapes)
+    (camera, black_sky(), shapes)
 }
 
 const DEFAULT_WIDTH: usize = 1920;
