@@ -1,13 +1,13 @@
 use crate::camera::{Camera, PreparedCamera};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::shapes::{ShapeList, Volume};
+use crate::shapes::{Shape, ShapeList, Volume};
 use crate::sky::Sky;
 use crate::BoundingBox;
+use crate::HitResult;
 use crate::RenderStatsCollector;
-use crate::{HitResult, Hittable};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 enum RootShape {
     Volume(Volume),
     ShapeList(ShapeList),
@@ -28,7 +28,7 @@ impl RootShape {
     }
 }
 
-impl Hittable for RootShape {
+impl Shape for RootShape {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -74,7 +74,7 @@ impl Scene {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PreparedScene {
     camera: PreparedCamera,
     sky: Sky,
@@ -102,7 +102,7 @@ impl PreparedScene {
     }
 }
 
-impl Hittable for PreparedScene {
+impl Shape for PreparedScene {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,

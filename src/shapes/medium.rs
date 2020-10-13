@@ -1,4 +1,4 @@
-use super::{CoreHittable, GeometryObject, HitResult, Hittable, ShapeList};
+use super::{CompoundShape, HitResult, Shape, ShapeList, SimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
@@ -9,7 +9,7 @@ pub trait MediumDensity: Send + Sync + std::fmt::Debug {
     fn does_scatter(&self, ray: Ray, ray_length: FloatType) -> Option<FloatType>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Medium<Density: MediumDensity + Clone, Phase: Material + Clone> {
     density: Density,
     phase: Phase,
@@ -21,7 +21,7 @@ pub struct Medium<Density: MediumDensity + Clone, Phase: Material + Clone> {
 }
 
 impl<Density: MediumDensity + Clone, Phase: Material + Clone> Medium<Density, Phase> {
-    pub fn new<Child: GeometryObject>(density: Density, child: Child, phase: Phase) -> Self {
+    pub fn new<Child: CompoundShape>(density: Density, child: Child, phase: Phase) -> Self {
         Medium {
             density,
             child: ShapeList::build().extend_with_shape(child),
@@ -52,7 +52,7 @@ impl<Density: MediumDensity + Clone, Phase: Material + Clone> Medium<Density, Ph
     }
 }
 
-impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone> CoreHittable
+impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone> Shape
     for Medium<Density, Phase>
 {
     fn intersect<'a>(
@@ -104,6 +104,11 @@ impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone
     }
 }
 
+impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone> SimpleShape
+    for Medium<Density, Phase>
+{
+}
+
 #[derive(Debug, Clone)]
 pub struct ConstantDensity {
     negative_inverse_density: FloatType,
@@ -152,11 +157,7 @@ impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
 pub mod factories {
     use super::*;
 
-    pub fn medium<
-        Density: MediumDensity + Clone,
-        Phase: Material + Clone,
-        Child: GeometryObject,
-    >(
+    pub fn medium<Density: MediumDensity + Clone, Phase: Material + Clone, Child: CompoundShape>(
         density: Density,
         child: Child,
         phase: Phase,
@@ -164,7 +165,7 @@ pub mod factories {
         Medium::new(density, child, phase)
     }
 
-    pub fn constant_medium<Phase: Material + Clone, Child: GeometryObject>(
+    pub fn constant_medium<Phase: Material + Clone, Child: CompoundShape>(
         density: FloatType,
         child: Child,
         phase: Phase,
@@ -182,7 +183,7 @@ fn test_constant_medium_hit_points() {
     use crate::factories::*;
     use crate::Color;
 
-    let medium: Box<dyn Hittable> = Box::new(constant_medium(
+    let medium: Box<dyn Shape> = Box::new(constant_medium(
         0.5,
         sphere(
             Point3::new(0.0, 0.0, 0.0),

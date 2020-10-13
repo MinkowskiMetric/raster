@@ -1,13 +1,13 @@
-use super::{GeometryObject, HitResult, Hittable};
+use super::{CompoundShape, HitResult, Shape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
 use crate::RenderStatsCollector;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ShapeList {
-    shapes: Vec<Box<dyn Hittable>>,
+    shapes: Vec<Box<dyn Shape>>,
 }
 
 impl ShapeList {
@@ -15,21 +15,21 @@ impl ShapeList {
         Self { shapes: Vec::new() }
     }
 
-    pub fn push<T: GeometryObject>(&mut self, shape: T) {
+    pub fn push<T: CompoundShape>(&mut self, shape: T) {
         self.shapes.extend(shape.into_geometry_iterator());
     }
 
-    pub fn extend_with_shape<T: GeometryObject>(mut self, shape: T) -> Self {
+    pub fn extend_with_shape<T: CompoundShape>(mut self, shape: T) -> Self {
         self.push(shape);
         self
     }
 
-    pub fn iter<'a>(&'a self) -> std::slice::Iter<'a, Box<dyn Hittable>> {
+    pub fn iter<'a>(&'a self) -> std::slice::Iter<'a, Box<dyn Shape>> {
         self.shapes.iter()
     }
 }
 
-impl Hittable for ShapeList {
+impl Shape for ShapeList {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -57,8 +57,8 @@ impl Hittable for ShapeList {
 }
 
 impl IntoIterator for ShapeList {
-    type Item = Box<dyn Hittable>;
-    type IntoIter = std::vec::IntoIter<Box<dyn Hittable>>;
+    type Item = Box<dyn Shape>;
+    type IntoIter = std::vec::IntoIter<Box<dyn Shape>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.shapes.into_iter()
@@ -66,15 +66,15 @@ impl IntoIterator for ShapeList {
 }
 
 impl<'a> IntoIterator for &'a ShapeList {
-    type Item = &'a Box<dyn Hittable>;
-    type IntoIter = std::slice::Iter<'a, Box<dyn Hittable>>;
+    type Item = &'a Box<dyn Shape>;
+    type IntoIter = std::slice::Iter<'a, Box<dyn Shape>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
 
-impl<T: GeometryObject> std::iter::FromIterator<T> for ShapeList {
+impl<T: CompoundShape> std::iter::FromIterator<T> for ShapeList {
     fn from_iter<Iter: IntoIterator<Item = T>>(iter: Iter) -> Self {
         let shapes = iter
             .into_iter()
@@ -84,7 +84,7 @@ impl<T: GeometryObject> std::iter::FromIterator<T> for ShapeList {
     }
 }
 
-impl<T: GeometryObject> Extend<T> for ShapeList {
+impl<T: CompoundShape> Extend<T> for ShapeList {
     fn extend<Iter: IntoIterator<Item = T>>(&mut self, iter: Iter) {
         for item in iter {
             self.push(item);
@@ -92,8 +92,8 @@ impl<T: GeometryObject> Extend<T> for ShapeList {
     }
 }
 
-impl GeometryObject for ShapeList {
-    type GeometryIterator = std::vec::IntoIter<Box<dyn Hittable>>;
+impl CompoundShape for ShapeList {
+    type GeometryIterator = std::vec::IntoIter<Box<dyn Shape>>;
 
     fn into_geometry_iterator(self) -> Self::GeometryIterator {
         self.shapes.into_iter()

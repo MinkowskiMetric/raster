@@ -2,13 +2,13 @@ mod aabb;
 mod box_shape;
 mod geometry_wrapper;
 mod hit_result;
-mod hittable;
 mod invert_normal;
 mod medium;
 mod parabola;
 mod rectangle;
 mod rotate;
 mod scale;
+mod shape;
 mod shape_list;
 mod sphere;
 mod translate;
@@ -16,10 +16,11 @@ mod volume;
 
 pub use crate::shapes;
 pub use aabb::BoundingBox;
+pub use box_shape::BoxShape;
 pub use geometry_wrapper::{GeometryModifier, GeometryWrapper};
 pub use hit_result::HitResult;
-pub use hittable::{CoreHittable, GeometryObject, Hittable};
 pub use medium::MediumDensity;
+pub use shape::{CompoundShape, Shape, SimpleShape};
 pub use shape_list::ShapeList;
 pub use volume::Volume;
 

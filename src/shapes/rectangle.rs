@@ -1,4 +1,4 @@
-use super::{CoreHittable, HitResult};
+use super::{HitResult, Shape, SimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::RenderStatsCollector;
@@ -30,7 +30,7 @@ macro_rules! generate_rectangle {
             }
         }
 
-        impl<T: 'static + Material + Clone> CoreHittable for $name<T> {
+        impl<T: 'static + Material + Clone> Shape for $name<T> {
             fn intersect<'a>(
                 &'a self,
                 ray: &Ray,
@@ -89,6 +89,8 @@ macro_rules! generate_rectangle {
                 )
             }
         }
+
+        impl<T: 'static + Material + Clone> SimpleShape for $name<T> { }
     };
 
     (make_axis_aligned_unit_vector x) => { Vector3::new(1.0, 0.0, 0.0) };

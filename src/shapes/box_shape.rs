@@ -1,8 +1,10 @@
-use super::{factories::*, shapes, GeometryObject, ShapeList};
+use super::{factories::*, shapes, CompoundShape, HitResult, Shape, ShapeList};
 use crate::math::*;
-use crate::Material;
+use crate::ray_scanner::Ray;
+use crate::RenderStatsCollector;
+use crate::{BoundingBox, Material};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BoxShape {
     pt_min: Point3,
     pt_max: Point3,
@@ -58,8 +60,24 @@ impl BoxShape {
     }
 }
 
-impl GeometryObject for BoxShape {
-    type GeometryIterator = <ShapeList as GeometryObject>::GeometryIterator;
+impl Shape for BoxShape {
+    fn intersect<'a>(
+        &'a self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        stats: &mut dyn RenderStatsCollector,
+    ) -> Option<HitResult<'a>> {
+        self.shapes.intersect(ray, t_min, t_max, stats)
+    }
+
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+        self.shapes.bounding_box(t0, t1)
+    }
+}
+
+impl CompoundShape for BoxShape {
+    type GeometryIterator = <ShapeList as CompoundShape>::GeometryIterator;
 
     fn into_geometry_iterator(self) -> Self::GeometryIterator {
         self.shapes.into_geometry_iterator()

@@ -1,4 +1,4 @@
-use super::{factories::*, GeometryModifier, GeometryObject, GeometryWrapper, HitResult};
+use super::{factories::*, CompoundShape, GeometryModifier, GeometryWrapper, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
@@ -63,10 +63,7 @@ impl GeometryModifier for Scale {
 pub mod factories {
     use super::*;
 
-    pub fn scale<T: 'static + GeometryObject + Clone>(
-        scale: Vector3,
-        child: T,
-    ) -> GeometryWrapper<Scale, T> {
+    pub fn scale<T: 'static + CompoundShape>(scale: Vector3, child: T) -> GeometryWrapper<Scale> {
         geometry_wrapper(Scale(scale), child)
     }
 }

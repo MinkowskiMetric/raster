@@ -1,4 +1,4 @@
-use super::{CoreHittable, HitResult};
+use super::{HitResult, Shape, SimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::RenderStatsCollector;
@@ -23,7 +23,7 @@ impl<M: 'static + Material + Clone> Clone for ParabolaXY<M> {
     }
 }
 
-impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
+impl<M: 'static + Material + Clone> Shape for ParabolaXY<M> {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -157,7 +157,7 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
         let bitangent = outward_normal.cross(tangent);
 
         let u = radial_point.magnitude() / self.pr;
-        let v = 0.0;        // TODOTODOTODO - could use the angle
+        let v = 0.0; // TODOTODOTODO - could use the angle
 
         Some(HitResult {
             distance: t,
@@ -181,10 +181,17 @@ impl<M: 'static + Material + Clone> CoreHittable for ParabolaXY<M> {
     }
 }
 
+impl<M: 'static + Material + Clone> SimpleShape for ParabolaXY<M> {}
+
 pub mod factories {
     use super::*;
 
-    pub fn parabola<M: Material + Clone>(extremum_point: Point3, focus_point: Point3, radius: FloatType, material: M) -> ParabolaXY<M> {
+    pub fn parabola<M: Material + Clone>(
+        extremum_point: Point3,
+        focus_point: Point3,
+        radius: FloatType,
+        material: M,
+    ) -> ParabolaXY<M> {
         ParabolaXY {
             material,
             extremum_point,

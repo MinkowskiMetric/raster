@@ -1,4 +1,4 @@
-use super::{factories::*, GeometryModifier, GeometryObject, GeometryWrapper, HitResult};
+use super::{factories::*, CompoundShape, GeometryModifier, GeometryWrapper, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
@@ -43,10 +43,10 @@ impl GeometryModifier for Translator {
 pub mod factories {
     use super::*;
 
-    pub fn translate<T: 'static + GeometryObject + Clone>(
+    pub fn translate<T: 'static + CompoundShape>(
         offset: Vector3,
         child: T,
-    ) -> GeometryWrapper<Translator, T> {
+    ) -> GeometryWrapper<Translator> {
         geometry_wrapper(Translator(offset), child)
     }
 }

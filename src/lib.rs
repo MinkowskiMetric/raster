@@ -18,7 +18,9 @@ pub use color::Color;
 pub use materials::{Material, PartialScatterResult, ScatterResult, SurfaceMapper};
 pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
-pub use shapes::{BoundingBox, GeometryObject, HitResult, Hittable, MediumDensity, ShapeList};
+pub use shapes::{
+    BoundingBox, BoxShape, CompoundShape, HitResult, MediumDensity, Shape, ShapeList,
+};
 pub use sky::Sky;
 pub use stats::{
     RenderStats, RenderStatsAccumulator, RenderStatsCollector, RenderStatsSource, TracingStats,

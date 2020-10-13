@@ -1,4 +1,4 @@
-use super::{factories::*, GeometryModifier, GeometryObject, GeometryWrapper, HitResult};
+use super::{factories::*, CompoundShape, GeometryModifier, GeometryWrapper, HitResult};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
@@ -126,10 +126,10 @@ pub mod factories {
 
     macro_rules! generate_rotate_func {
         ($fn_name:ident, $name:ident) => {
-            pub fn $fn_name<T: 'static + GeometryObject + Clone>(
+            pub fn $fn_name<T: 'static + CompoundShape>(
                 angle: Rad<FloatType>,
                 child: T,
-            ) -> GeometryWrapper<$name, T> {
+            ) -> GeometryWrapper<$name> {
                 geometry_wrapper($name::new(angle), child)
             }
         };

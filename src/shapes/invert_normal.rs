@@ -1,4 +1,4 @@
-use super::{factories::*, GeometryModifier, GeometryObject, GeometryWrapper, HitResult};
+use super::{factories::*, CompoundShape, GeometryModifier, GeometryWrapper, HitResult};
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
 
@@ -29,9 +29,7 @@ impl GeometryModifier for InvertNormal {
 pub mod factories {
     use super::*;
 
-    pub fn invert_normal<T: 'static + GeometryObject + Clone>(
-        child: T,
-    ) -> GeometryWrapper<InvertNormal, T> {
+    pub fn invert_normal<T: 'static + CompoundShape>(child: T) -> GeometryWrapper<InvertNormal> {
         geometry_wrapper(InvertNormal(), child)
     }
 }

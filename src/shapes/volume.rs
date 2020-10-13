@@ -3,7 +3,7 @@ use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
 use crate::RenderStatsCollector;
-use crate::{HitResult, Hittable};
+use crate::{HitResult, Shape};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum ComparatorAxis {
@@ -24,7 +24,7 @@ fn random_axis() -> ComparatorAxis {
 }
 
 fn get_axis_values(
-    hittable: &Option<Box<dyn Hittable>>,
+    hittable: &Option<Box<dyn Shape>>,
     t0: FloatType,
     t1: FloatType,
     axis: ComparatorAxis,
@@ -45,7 +45,7 @@ fn get_axis_values(
 fn random_axis_comparator(
     t0: FloatType,
     t1: FloatType,
-) -> impl Fn(&Option<Box<dyn Hittable>>, &Option<Box<dyn Hittable>>) -> std::cmp::Ordering {
+) -> impl Fn(&Option<Box<dyn Shape>>, &Option<Box<dyn Shape>>) -> std::cmp::Ordering {
     let comparator_axis = random_axis();
 
     move |left, right| {
@@ -58,10 +58,10 @@ fn random_axis_comparator(
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 enum InnerVolume {
     NoChild,
-    SingleChild(Box<dyn Hittable>),
+    SingleChild(Box<dyn Shape>),
     TwoChild {
         left: Box<Volume>,
         right: Box<Volume>,
@@ -82,7 +82,7 @@ fn compute_inner_volume_bounding_box(
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Volume {
     inner_volume: InnerVolume,
     bounding_box: BoundingBox,
@@ -120,7 +120,7 @@ impl<'a> VolumeIter<'a> {
 }
 
 impl<'a> Iterator for VolumeIter<'a> {
-    type Item = &'a Box<dyn Hittable>;
+    type Item = &'a Box<dyn Shape>;
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(top) = self.stack.pop() {
@@ -157,7 +157,7 @@ fn replace_hit_result<'a>(
 
 impl Volume {
     pub fn from_shapes(
-        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+        shapes: impl IntoIterator<Item = Box<dyn Shape>>,
         t0: FloatType,
         t1: FloatType,
     ) -> Self {
@@ -166,7 +166,7 @@ impl Volume {
     }
 
     fn from_shapes_slice(
-        shapes: &mut [Option<Box<dyn Hittable>>],
+        shapes: &mut [Option<Box<dyn Shape>>],
         t0: FloatType,
         t1: FloatType,
     ) -> Self {
@@ -246,7 +246,7 @@ impl Volume {
     }
 }
 
-impl Hittable for Volume {
+impl Shape for Volume {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -266,7 +266,7 @@ pub mod factories {
     use super::*;
 
     pub fn volume(
-        shapes: impl IntoIterator<Item = Box<dyn Hittable>>,
+        shapes: impl IntoIterator<Item = Box<dyn Shape>>,
         t0: FloatType,
         t1: FloatType,
     ) -> Volume {

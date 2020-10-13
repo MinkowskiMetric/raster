@@ -303,11 +303,13 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
     let white = lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])));
     let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
     let light = diffuse_light(solid_texture(Color([15.0, 15.0, 15.0, 1.0])));
-    let unit_cube = box_shape(
-        Point3::new(0.0, 0.0, 0.0),
-        Point3::new(1.0, 1.0, 1.0),
-        white.clone(),
-    );
+    let unit_cube = || {
+        box_shape(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0, 1.0),
+            white.clone(),
+        )
+    };
 
     let shapes = shapes![
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
@@ -320,14 +322,14 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
             vec3(265.0, 0.0, 295.0),
             rotate_y(
                 Deg(15.0).into(),
-                scale(vec3(165.0, 330.0, 160.0), unit_cube.clone()),
+                scale(vec3(165.0, 330.0, 160.0), unit_cube()),
             ),
         ),
         translate(
             vec3(130.0, 0.0, 65.0),
             rotate_y(
                 Deg(-18.0).into(),
-                scale(vec3(165.0, 165.0, 165.0), unit_cube.clone()),
+                scale(vec3(165.0, 165.0, 165.0), unit_cube()),
             ),
         ),
     ];
@@ -358,11 +360,13 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     let white = lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])));
     let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
     let light = diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])));
-    let unit_cube = box_shape(
-        Point3::new(0.0, 0.0, 0.0),
-        Point3::new(1.0, 1.0, 1.0),
-        white.clone(),
-    );
+    let unit_cube = || {
+        box_shape(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0, 1.0),
+            white.clone(),
+        )
+    };
 
     let shapes = shapes![
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
@@ -377,7 +381,7 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
                 vec3(265.0, 0.0, 295.0),
                 rotate_y(
                     Deg(15.0).into(),
-                    scale(vec3(165.0, 330.0, 160.0), unit_cube.clone()),
+                    scale(vec3(165.0, 330.0, 160.0), unit_cube()),
                 ),
             ),
             isotropic(solid_texture(Color([0.0, 0.0, 0.0, 1.0])))
@@ -388,7 +392,7 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
                 vec3(130.0, 0.0, 65.0),
                 rotate_y(
                     Deg(-18.0).into(),
-                    scale(vec3(165.0, 165.0, 165.0), unit_cube.clone()),
+                    scale(vec3(165.0, 165.0, 165.0), unit_cube()),
                 ),
             ),
             isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))
@@ -655,8 +659,18 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
                 metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
             )
         ),*/
-        parabola(Point3::new(0.0, 0.0, 7.5), Point3::new(0.0, 0.0, 7.0), 2.0, metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)),
-        parabola(Point3::new(0.0, 0.0, -8.0), Point3::new(0.0, 0.0, -7.0), 2.0, metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)),
+        parabola(
+            Point3::new(0.0, 0.0, 7.5),
+            Point3::new(0.0, 0.0, 7.0),
+            2.0,
+            metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)
+        ),
+        parabola(
+            Point3::new(0.0, 0.0, -8.0),
+            Point3::new(0.0, 0.0, -7.0),
+            2.0,
+            metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)
+        ),
         sphere(
             Point3::new(0.0, 0.0, 7.0),
             0.5,
@@ -673,13 +687,12 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
             (-100.0, 100.0),
             -2.0,
             lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
-        )
-        /*xz_rectangle(
-            (-6.0, 6.0),
-            (-6.0, 6.0),
-            7.0,
-            diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
-        ),*/
+        ) /*xz_rectangle(
+              (-6.0, 6.0),
+              (-6.0, 6.0),
+              7.0,
+              diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
+          ),*/
     ];
 
     (camera, black_sky(), shapes)
