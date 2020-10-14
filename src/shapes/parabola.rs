@@ -1,36 +1,24 @@
-use super::{HitResult, Shape, SimpleShape};
+use super::{UnskinnedHitResult, UnskinnedShape, UnskinnedSimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::BoundingBox;
 use crate::RenderStatsCollector;
-use crate::{BoundingBox, Material};
 
-#[derive(Debug)]
-pub struct ParabolaXY<M: Material + Clone> {
-    material: M,
+#[derive(Clone, Debug)]
+pub struct ParabolaXY {
     extremum_point: Point3,
     focus_point: Point3,
     pr: FloatType,
 }
 
-impl<M: 'static + Material + Clone> Clone for ParabolaXY<M> {
-    fn clone(&self) -> Self {
-        Self {
-            material: self.material.clone(),
-            extremum_point: self.extremum_point,
-            focus_point: self.focus_point,
-            pr: self.pr,
-        }
-    }
-}
-
-impl<M: 'static + Material + Clone> Shape for ParabolaXY<M> {
-    fn intersect<'a>(
-        &'a self,
+impl UnskinnedShape for ParabolaXY {
+    fn unskinned_intersect(
+        &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
         _stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult<'a>> {
+    ) -> Option<UnskinnedHitResult> {
         // A paraboloid is all the points that are equidistant between the focus of the parabola, and the directrix plane,
         // which is a plane that does not pass through the focus.
 
@@ -159,20 +147,19 @@ impl<M: 'static + Material + Clone> Shape for ParabolaXY<M> {
         let u = radial_point.magnitude() / self.pr;
         let v = 0.0; // TODOTODOTODO - could use the angle
 
-        Some(HitResult {
+        Some(UnskinnedHitResult {
             distance: t,
             hit_point: hit_point.into(),
             surface_normal: surface_normal.into(),
             tangent,
             bitangent,
             front_face,
-            material: &self.material,
             u,
             v,
         })
     }
 
-    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+    fn unskinned_bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
         // For now we'll make this quite big
         BoundingBox::new(
             Point3::new(-1000.0, -1000.0, -1000.0),
@@ -181,19 +168,13 @@ impl<M: 'static + Material + Clone> Shape for ParabolaXY<M> {
     }
 }
 
-impl<M: 'static + Material + Clone> SimpleShape for ParabolaXY<M> {}
+impl UnskinnedSimpleShape for ParabolaXY {}
 
 pub mod factories {
     use super::*;
 
-    pub fn parabola<M: Material + Clone>(
-        extremum_point: Point3,
-        focus_point: Point3,
-        radius: FloatType,
-        material: M,
-    ) -> ParabolaXY<M> {
+    pub fn parabola(extremum_point: Point3, focus_point: Point3, radius: FloatType) -> ParabolaXY {
         ParabolaXY {
-            material,
             extremum_point,
             focus_point,
             pr: radius,

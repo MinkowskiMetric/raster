@@ -10,6 +10,7 @@ mod shape;
 mod shape_list;
 mod sphere;
 mod transform;
+mod unskinned_shape;
 mod volume;
 
 pub use crate::shapes;
@@ -21,6 +22,10 @@ pub use medium::MediumDensity;
 pub use shape::{CompoundShape, Shape, SimpleShape, UntransformedShape};
 pub use shape_list::ShapeList;
 pub use transform::Transformable;
+pub use unskinned_shape::{
+    CompoundUnskinnedShape, SkinnableShape, SkinnedShape, UnskinnedHitResult, UnskinnedShape,
+    UnskinnedSimpleShape,
+};
 pub use volume::Volume;
 
 pub mod factories {
