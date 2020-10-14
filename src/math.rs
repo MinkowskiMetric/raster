@@ -2,6 +2,7 @@ pub type FloatType = f64;
 pub type Point3 = cgmath::Point3<FloatType>;
 pub type Vector3 = cgmath::Vector3<FloatType>;
 pub type Vector4 = cgmath::Vector4<FloatType>;
+pub type Matrix4 = cgmath::Matrix4<FloatType>;
 pub use cgmath::Deg;
 pub use cgmath::Rad;
 

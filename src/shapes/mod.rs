@@ -6,12 +6,10 @@ mod invert_normal;
 mod medium;
 mod parabola;
 mod rectangle;
-mod rotate;
-mod scale;
 mod shape;
 mod shape_list;
 mod sphere;
-mod translate;
+mod transform;
 mod volume;
 
 pub use crate::shapes;
@@ -20,8 +18,9 @@ pub use box_shape::BoxShape;
 pub use geometry_wrapper::{GeometryModifier, GeometryWrapper};
 pub use hit_result::HitResult;
 pub use medium::MediumDensity;
-pub use shape::{CompoundShape, Shape, SimpleShape};
+pub use shape::{CompoundShape, Shape, SimpleShape, UntransformedShape};
 pub use shape_list::ShapeList;
+pub use transform::Transformable;
 pub use volume::Volume;
 
 pub mod factories {
@@ -33,9 +32,6 @@ pub mod factories {
     pub use medium::factories::*;
     pub use parabola::factories::*;
     pub use rectangle::factories::*;
-    pub use rotate::factories::*;
-    pub use scale::factories::*;
     pub use sphere::factories::*;
-    pub use translate::factories::*;
     pub use volume::factories::*;
 }

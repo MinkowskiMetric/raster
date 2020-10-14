@@ -1,4 +1,4 @@
-use super::{factories::*, shapes, CompoundShape, HitResult, Shape, ShapeList};
+use super::{factories::*, shapes, CompoundShape, HitResult, Shape, ShapeList, UntransformedShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::RenderStatsCollector;
@@ -83,6 +83,8 @@ impl CompoundShape for BoxShape {
         self.shapes.into_geometry_iterator()
     }
 }
+
+impl UntransformedShape for BoxShape { }
 
 pub mod factories {
     use super::*;

@@ -1,4 +1,4 @@
-use super::{HitResult, Shape, SimpleShape};
+use super::{HitResult, Shape, SimpleShape, UntransformedShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::RenderStatsCollector;
@@ -156,6 +156,7 @@ impl<T: 'static + Material + Clone> Shape for Sphere<T> {
 }
 
 impl<T: 'static + Material + Clone> SimpleShape for Sphere<T> {}
+impl<T: 'static + Material + Clone> UntransformedShape for Sphere<T> {}
 
 #[derive(Clone, Debug)]
 pub struct MovingSphere<T: 'static + Material + Clone> {
@@ -338,6 +339,7 @@ impl<T: 'static + Material + Clone> Shape for MovingSphere<T> {
 }
 
 impl<T: Material + 'static + Clone> SimpleShape for MovingSphere<T> {}
+impl<T: 'static + Material + Clone> UntransformedShape for MovingSphere<T> {}
 
 pub mod factories {
     use super::*;

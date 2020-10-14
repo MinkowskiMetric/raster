@@ -1,4 +1,4 @@
-use super::{HitResult, Shape, SimpleShape};
+use super::{HitResult, Shape, SimpleShape, UntransformedShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
@@ -48,6 +48,7 @@ impl<Modifier: 'static + GeometryModifier> Shape for GeometryWrapper<Modifier> {
 }
 
 impl<Modifier: 'static + GeometryModifier> SimpleShape for GeometryWrapper<Modifier> {}
+impl<Modifier: 'static + GeometryModifier> UntransformedShape for GeometryWrapper<Modifier> {}
 
 pub mod factories {
     use super::*;

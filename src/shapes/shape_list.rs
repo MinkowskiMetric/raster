@@ -1,4 +1,4 @@
-use super::{CompoundShape, HitResult, Shape};
+use super::{CompoundShape, HitResult, Shape, UntransformedShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
@@ -99,6 +99,8 @@ impl CompoundShape for ShapeList {
         self.shapes.into_iter()
     }
 }
+
+impl UntransformedShape for ShapeList { }
 
 #[macro_export]
 macro_rules! shapes {
