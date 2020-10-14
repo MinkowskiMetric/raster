@@ -84,7 +84,7 @@ impl CompoundShape for BoxShape {
     }
 }
 
-impl UntransformedShape for BoxShape { }
+impl UntransformedShape for BoxShape {}
 
 pub mod factories {
     use super::*;

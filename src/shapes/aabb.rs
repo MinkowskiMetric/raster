@@ -73,6 +73,51 @@ impl BoundingBox {
         &self.pt_max
     }
 
+    pub fn all_corners(&self) -> [Point3; 8] {
+        [
+            Point3::new(
+                self.min_point().into_point().x,
+                self.min_point().into_point().y,
+                self.min_point().into_point().z,
+            ),
+            Point3::new(
+                self.min_point().into_point().x,
+                self.min_point().into_point().y,
+                self.max_point().into_point().z,
+            ),
+            Point3::new(
+                self.min_point().into_point().x,
+                self.max_point().into_point().y,
+                self.min_point().into_point().z,
+            ),
+            Point3::new(
+                self.min_point().into_point().x,
+                self.max_point().into_point().y,
+                self.max_point().into_point().z,
+            ),
+            Point3::new(
+                self.max_point().into_point().x,
+                self.min_point().into_point().y,
+                self.min_point().into_point().z,
+            ),
+            Point3::new(
+                self.max_point().into_point().x,
+                self.min_point().into_point().y,
+                self.max_point().into_point().z,
+            ),
+            Point3::new(
+                self.max_point().into_point().x,
+                self.max_point().into_point().y,
+                self.min_point().into_point().z,
+            ),
+            Point3::new(
+                self.max_point().into_point().x,
+                self.max_point().into_point().y,
+                self.max_point().into_point().z,
+            ),
+        ]
+    }
+
     #[inline]
     #[target_feature(enable = "avx")]
     pub unsafe fn intersect_avx(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> bool {

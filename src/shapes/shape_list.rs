@@ -100,7 +100,7 @@ impl CompoundShape for ShapeList {
     }
 }
 
-impl UntransformedShape for ShapeList { }
+impl UntransformedShape for ShapeList {}
 
 #[macro_export]
 macro_rules! shapes {

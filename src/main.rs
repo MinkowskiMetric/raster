@@ -5,7 +5,9 @@ use std::convert::TryInto;
 
 use image::RgbImage;
 
-use raster::{prelude::*, shapes, Color, Material, RenderStatsSource, ShapeList, Texture, Transformable};
+use raster::{
+    prelude::*, shapes, Color, Material, RenderStatsSource, ShapeList, Texture, Transformable,
+};
 
 use std::sync::{Arc, RwLock};
 
@@ -318,8 +320,14 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
         xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
-        unit_cube().nonuniform_scale(165.0, 330.0, 160.0).rotate_y(Deg(15.0).into()).translate(vec3(265.0, 0.0, 295.0)),
-        unit_cube().nonuniform_scale(165.0, 165.0, 165.0).rotate_y(Deg(-18.0).into()).translate(vec3(130.0, 0.0, 65.0)),
+        unit_cube()
+            .nonuniform_scale(165.0, 330.0, 160.0)
+            .rotate_y(Deg(15.0).into())
+            .translate(vec3(265.0, 0.0, 295.0)),
+        unit_cube()
+            .nonuniform_scale(165.0, 165.0, 165.0)
+            .rotate_y(Deg(-18.0).into())
+            .translate(vec3(130.0, 0.0, 65.0)),
     ];
 
     let shapes = shapes![shapes.nonuniform_scale(1.0, 1.0, 1.0)];
@@ -365,12 +373,18 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
         xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
         constant_medium(
             0.01,
-            unit_cube().nonuniform_scale(165.0, 330.0, 160.0).rotate_y(Deg(15.0).into()).translate(vec3(265.0, 0.0, 295.0)),
+            unit_cube()
+                .nonuniform_scale(165.0, 330.0, 160.0)
+                .rotate_y(Deg(15.0).into())
+                .translate(vec3(265.0, 0.0, 295.0)),
             isotropic(solid_texture(Color([0.0, 0.0, 0.0, 1.0])))
         ),
         constant_medium(
             0.01,
-            unit_cube().nonuniform_scale(165.0, 165.0, 165.0).rotate_y(Deg(-18.0).into()).translate(vec3(130.0, 0.0, 65.0)),
+            unit_cube()
+                .nonuniform_scale(165.0, 165.0, 165.0)
+                .rotate_y(Deg(-18.0).into())
+                .translate(vec3(130.0, 0.0, 65.0)),
             isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))
         ),
     ];
@@ -408,7 +422,13 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
         yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0, white.clone()), // Bottom of the slit
         yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0, white.clone()), // Top of the slit
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()), // Target wall
-        box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(50.0, 100.0, 555.0), glass.clone()).rotate_z(Deg(15.0).into()).translate(vec3(300.0, 250.0, 0.0)),
+        box_shape(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(50.0, 100.0, 555.0),
+            glass.clone()
+        )
+        .rotate_z(Deg(15.0).into())
+        .translate(vec3(300.0, 250.0, 0.0)),
     ];
 
     let shapes = shapes![shapes.nonuniform_scale(1.0, 1.0, 1.0)];
@@ -519,7 +539,12 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
             80.0,
             lambertian(noise_texture(0.1))
         ),
-        book2_boxes_2(1000, lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])))).rotate_y(Deg(15.0).into()).translate(vec3(-100.0, 270.0, 295.0)),
+        book2_boxes_2(
+            1000,
+            lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])))
+        )
+        .rotate_y(Deg(15.0).into())
+        .translate(vec3(-100.0, 270.0, 295.0)),
     ];
 
     (camera, black_sky(), shapes)

@@ -1,5 +1,5 @@
+use super::{CompoundShape, HitResult, Shape, UntransformedShape};
 use crate::math::*;
-use super::{Shape, UntransformedShape, HitResult, CompoundShape};
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
 use crate::RenderStatsCollector;
@@ -23,28 +23,61 @@ impl<S: Shape> Shape for TransformedShape<S> {
         let transformed_direction = self.inverse.transform_vector(ray.direction.into_vector());
         let transformed_ray = Ray::new(transformed_origin, transformed_direction, ray.time);
 
-        self.shape.intersect(&transformed_ray, t_min, t_max, stats).map(|mut hit_result| {
-            hit_result.hit_point = self.transform.transform_point(hit_result.hit_point);
-            hit_result.surface_normal = self.transform.transform_vector(hit_result.surface_normal).normalize();
-            hit_result.tangent = self.transform.transform_vector(hit_result.tangent).normalize();
-            hit_result.bitangent = self.transform.transform_vector(hit_result.bitangent).normalize();
-            hit_result.distance = (hit_result.hit_point - ray.origin.into_point()).magnitude();
-    
-            hit_result
-        })
+        self.shape
+            .intersect(&transformed_ray, t_min, t_max, stats)
+            .map(|mut hit_result| {
+                hit_result.hit_point = self.transform.transform_point(hit_result.hit_point);
+                hit_result.surface_normal = self
+                    .transform
+                    .transform_vector(hit_result.surface_normal)
+                    .normalize();
+                hit_result.tangent = self
+                    .transform
+                    .transform_vector(hit_result.tangent)
+                    .normalize();
+                hit_result.bitangent = self
+                    .transform
+                    .transform_vector(hit_result.bitangent)
+                    .normalize();
+                hit_result.distance = (hit_result.hit_point - ray.origin.into_point()).magnitude();
+
+                hit_result
+            })
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        let shape_bounding_box = self.shape.bounding_box(t0, t1);
-        BoundingBox::new(
-            self.transform.transform_point(shape_bounding_box.min_point().into_point()),
-            self.transform.transform_point(shape_bounding_box.max_point().into_point()),
-        )
+        let shape_bounding_box_corners = self.shape.bounding_box(t0, t1).all_corners();
+
+        let mut pt_min = Point3::new(
+            constants::INFINITY,
+            constants::INFINITY,
+            constants::INFINITY,
+        );
+        let mut pt_max = Point3::new(
+            -constants::INFINITY,
+            -constants::INFINITY,
+            -constants::INFINITY,
+        );
+
+        for corner in shape_bounding_box_corners.iter() {
+            let corner = self.transform.transform_point(*corner);
+
+            pt_min.x = pt_min.x.min(corner.x);
+            pt_min.y = pt_min.y.min(corner.y);
+            pt_min.z = pt_min.z.min(corner.z);
+
+            pt_max.x = pt_max.x.max(corner.x);
+            pt_max.y = pt_max.y.max(corner.y);
+            pt_max.z = pt_max.z.max(corner.z);
+        }
+
+        BoundingBox::new(pt_min, pt_max)
     }
 }
 
-/*pub struct TransformedShapeIterator<Iter: Iterator<Item = Box<dyn Shape>>> {
+pub struct TransformedShapeIterator<Iter: Iterator<Item = Box<dyn Shape>>> {
     transform: Matrix4,
+    inverse: Matrix4,
     iter: Iter,
 }
 
@@ -52,12 +85,12 @@ impl<Iter: Iterator<Item = Box<dyn Shape>>> Iterator for TransformedShapeIterato
     type Item = Box<dyn Shape>;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|child| {
-            let a: u8 = child;
-            let shape = TransformedShape {
+            let b: Box<dyn Shape> = Box::new(TransformedShape {
                 transform: self.transform.clone(),
+                inverse: self.inverse.clone(),
                 shape: child,
-            };
-            todo!()
+            });
+            b
         })
     }
 }
@@ -68,17 +101,9 @@ impl<S: CompoundShape> CompoundShape for TransformedShape<S> {
     fn into_geometry_iterator(self) -> Self::GeometryIterator {
         TransformedShapeIterator {
             transform: self.transform,
+            inverse: self.inverse,
             iter: self.shape.into_geometry_iterator(),
         }
-    }
-}*/
-
-impl<S: 'static + Shape> CompoundShape for TransformedShape<S> {
-    type GeometryIterator = std::iter::Once<Box<dyn Shape>>;
-
-    fn into_geometry_iterator(self) -> Self::GeometryIterator {
-        let b: Box<dyn Shape> = Box::new(self);
-        std::iter::once(b)
     }
 }
 
@@ -103,7 +128,12 @@ pub trait Transformable: Shape + Sized {
         self.transform(Matrix4::from_angle_z(angle))
     }
 
-    fn nonuniform_scale(self, x_scale: FloatType, y_scale: FloatType, z_scale: FloatType) -> Self::Target {
+    fn nonuniform_scale(
+        self,
+        x_scale: FloatType,
+        y_scale: FloatType,
+        z_scale: FloatType,
+    ) -> Self::Target {
         self.transform(Matrix4::from_nonuniform_scale(x_scale, y_scale, z_scale))
     }
 }
@@ -113,7 +143,11 @@ impl<S: UntransformedShape + Sized> Transformable for S {
 
     fn transform(self, transform: Matrix4) -> Self::Target {
         let inverse = transform.inverse_transform().unwrap();
-        Self::Target { transform, inverse, shape: self }
+        Self::Target {
+            transform,
+            inverse,
+            shape: self,
+        }
     }
 }
 
@@ -123,6 +157,10 @@ impl<S: Shape> Transformable for TransformedShape<S> {
     fn transform(self, transform: Matrix4) -> Self::Target {
         let transform = transform.concat(&self.transform);
         let inverse = transform.inverse_transform().unwrap();
-        Self::Target { transform, inverse, shape: self.shape }
+        Self::Target {
+            transform,
+            inverse,
+            shape: self.shape,
+        }
     }
 }

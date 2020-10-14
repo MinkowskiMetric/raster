@@ -20,7 +20,7 @@ pub trait Shape: Send + Sync + std::fmt::Debug {
 pub trait SimpleShape: Shape {}
 pub trait UntransformedShape: Shape {}
 
-impl<S: Shape> Shape for Box<S> {
+impl Shape for Box<dyn Shape> {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -36,8 +36,6 @@ impl<S: Shape> Shape for Box<S> {
     }
 }
 
-//impl<S: SimpleShape> SimpleShape for Box<S> {}
-
 pub trait CompoundShape: Shape {
     type GeometryIterator: Iterator<Item = Box<dyn Shape>>;
 
@@ -50,5 +48,13 @@ impl<S: SimpleShape + 'static> CompoundShape for S {
     fn into_geometry_iterator(self) -> Self::GeometryIterator {
         let b: Box<dyn Shape> = Box::new(self);
         std::iter::once(b)
+    }
+}
+
+impl CompoundShape for Box<dyn Shape> {
+    type GeometryIterator = std::iter::Once<Box<dyn Shape>>;
+
+    fn into_geometry_iterator(self) -> Self::GeometryIterator {
+        std::iter::once(self)
     }
 }
