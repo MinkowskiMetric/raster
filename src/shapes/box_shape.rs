@@ -1,4 +1,6 @@
-use super::{factories::*, shapes, CompoundShape, HitResult, Shape, ShapeList, UntransformedShape};
+use super::{
+    factories::*, shapes, CompoundShape, HitResult, Primitive, Shape, ShapeList, UntransformedShape,
+};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::RenderStatsCollector;
@@ -14,42 +16,18 @@ pub struct BoxShape {
 impl BoxShape {
     pub fn new<T: 'static + Material + Clone>(pt_min: Point3, pt_max: Point3, material: T) -> Self {
         let shapes = shapes![
-            xy_rectangle(
-                (pt_min.x, pt_max.x),
-                (pt_min.y, pt_max.y),
-                pt_max.z,
-                material.clone(),
-            ),
-            xy_rectangle(
-                (pt_min.x, pt_max.x),
-                (pt_min.y, pt_max.y),
-                pt_min.z,
-                material.clone(),
-            ),
-            xz_rectangle(
-                (pt_min.x, pt_max.x),
-                (pt_min.z, pt_max.z),
-                pt_max.y,
-                material.clone(),
-            ),
-            xz_rectangle(
-                (pt_min.x, pt_max.x),
-                (pt_min.z, pt_max.z),
-                pt_min.y,
-                material.clone(),
-            ),
-            yz_rectangle(
-                (pt_min.y, pt_max.y),
-                (pt_min.z, pt_max.z),
-                pt_max.x,
-                material.clone(),
-            ),
-            yz_rectangle(
-                (pt_min.y, pt_max.y),
-                (pt_min.z, pt_max.z),
-                pt_min.x,
-                material.clone(),
-            ),
+            xy_rectangle((pt_min.x, pt_max.x), (pt_min.y, pt_max.y), pt_max.z)
+                .apply_material(material.clone(),),
+            xy_rectangle((pt_min.x, pt_max.x), (pt_min.y, pt_max.y), pt_min.z)
+                .apply_material(material.clone(),),
+            xz_rectangle((pt_min.x, pt_max.x), (pt_min.z, pt_max.z), pt_max.y)
+                .apply_material(material.clone(),),
+            xz_rectangle((pt_min.x, pt_max.x), (pt_min.z, pt_max.z), pt_min.y)
+                .apply_material(material.clone(),),
+            yz_rectangle((pt_min.y, pt_max.y), (pt_min.z, pt_max.z), pt_max.x)
+                .apply_material(material.clone(),),
+            yz_rectangle((pt_min.y, pt_max.y), (pt_min.z, pt_max.z), pt_min.x)
+                .apply_material(material.clone(),),
         ];
 
         Self {

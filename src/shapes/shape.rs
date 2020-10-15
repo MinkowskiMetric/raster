@@ -1,9 +1,21 @@
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
+use crate::Material;
 use crate::RenderStatsCollector;
 
-use super::HitResult;
+#[derive(Debug)]
+pub struct HitResult<'a> {
+    pub distance: FloatType,
+    pub hit_point: Point3,
+    pub surface_normal: Vector3,
+    pub tangent: Vector3,
+    pub bitangent: Vector3,
+    pub front_face: bool,
+    pub material: &'a dyn Material,
+    pub u: FloatType,
+    pub v: FloatType,
+}
 
 pub trait Shape: Send + Sync + std::fmt::Debug {
     fn intersect<'a>(

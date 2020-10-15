@@ -6,7 +6,8 @@ use std::convert::TryInto;
 use image::RgbImage;
 
 use raster::{
-    prelude::*, shapes, Color, Material, RenderStatsSource, ShapeList, Texture, Transformable,
+    prelude::*, shapes, Color, Material, Primitive, RenderStatsSource, ShapeList, Texture,
+    TransformableShape,
 };
 
 use std::sync::{Arc, RwLock};
@@ -267,18 +268,10 @@ fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
             2.0,
             diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
         ),
-        xy_rectangle(
-            (3.0, 5.0),
-            (1.0, 3.0),
-            -2.0,
-            diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
-        ),
-        yz_rectangle(
-            (1.0, 3.0),
-            (3.0, 4.0),
-            -2.0,
-            diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
-        ),
+        xy_rectangle((3.0, 5.0), (1.0, 3.0), -2.0)
+            .apply_material(diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),),
+        yz_rectangle((1.0, 3.0), (3.0, 4.0), -2.0)
+            .apply_material(diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),),
     ];
 
     (camera, black_sky(), shapes)
@@ -314,12 +307,12 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
     };
 
     let shapes = shapes![
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, red.clone()),
-        xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0, light.clone()),
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
-        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red.clone()),
+        xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0).apply_material(light.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
         unit_cube()
             .nonuniform_scale(165.0, 330.0, 160.0)
             .rotate_y(Deg(15.0).into())
@@ -365,12 +358,12 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     };
 
     let shapes = shapes![
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, green.clone()),
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, red.clone()),
-        xz_rectangle((113.0, 443.0), (127.0, 432.0), 554.0, light.clone()),
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()),
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
-        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red.clone()),
+        xz_rectangle((113.0, 443.0), (127.0, 432.0), 554.0).apply_material(light.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()),
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
         constant_medium(
             0.01,
             unit_cube()
@@ -416,12 +409,12 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     let light = diffuse_light(solid_texture(Color([30.0, 30.0, 30.0, 1.0])));
 
     let shapes = shapes![
-        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()), // The floor
-        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0, white.clone()), // The back wall
-        yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0, light.clone()), // The light
-        yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0, white.clone()), // Bottom of the slit
-        yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0, white.clone()), // Top of the slit
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0, white.clone()), // Target wall
+        xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()), // The floor
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()), // The back wall
+        yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0).apply_material(light.clone()), // The light
+        yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0).apply_material(white.clone()), // Bottom of the slit
+        yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0).apply_material(white.clone()), // Top of the slit
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()), // Target wall
         box_shape(
             Point3::new(0.0, 0.0, 0.0),
             Point3::new(50.0, 100.0, 555.0),
@@ -500,12 +493,8 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
             20,
             lambertian(solid_texture(Color([0.48, 0.83, 0.53, 1.0])))
         ),
-        xz_rectangle(
-            (123.0, 423.0),
-            (147.0, 412.0),
-            554.0,
-            diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
-        ),
+        xz_rectangle((123.0, 423.0), (147.0, 412.0), 554.0)
+            .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))),
         moving_sphere(
             (Point3::new(400.0, 400.0, 400.0), 0.0),
             (Point3::new(430.0, 400.0, 200.0), 1.0),
@@ -584,24 +573,14 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
                 metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
             )
         ),
-        xy_rectangle(
-            (-8.0, 8.0),
-            (-8.0, 8.0),
-            8.0,
-            bump_mapper(brick_normal_map(), metal_with_texture(brick_image(), 0.7))
-        ),
-        xz_rectangle(
-            (-10.0, 10.0),
-            (-10.0, 10.0),
-            -8.0,
-            lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
-        ),
-        xz_rectangle(
-            (-6.0, 6.0),
-            (-6.0, 6.0),
-            7.0,
-            diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
-        ),
+        xy_rectangle((-8.0, 8.0), (-8.0, 8.0), 8.0).apply_material(bump_mapper(
+            brick_normal_map(),
+            metal_with_texture(brick_image(), 0.7)
+        )),
+        xz_rectangle((-10.0, 10.0), (-10.0, 10.0), -8.0)
+            .apply_material(lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),),
+        xz_rectangle((-6.0, 6.0), (-6.0, 6.0), 7.0)
+            .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))),
     ];
 
     (camera, black_sky(), shapes)
@@ -658,23 +637,15 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
             0.5,
             diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0]))),
         ),
-        xz_rectangle(
-            (-100.0, 100.0),
-            (-100.0, 100.0),
-            -3.0,
-            lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
-        ),
-        yz_rectangle(
-            (-100.0, 100.0),
-            (-100.0, 100.0),
-            -2.0,
-            lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
-        ) /*xz_rectangle(
-              (-6.0, 6.0),
-              (-6.0, 6.0),
-              7.0,
-              diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
-          ),*/
+        xz_rectangle((-100.0, 100.0), (-100.0, 100.0), -3.0)
+            .apply_material(lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),),
+        yz_rectangle((-100.0, 100.0), (-100.0, 100.0), -2.0)
+            .apply_material(lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),) /*xz_rectangle(
+                                                                                         (-6.0, 6.0),
+                                                                                         (-6.0, 6.0),
+                                                                                         7.0,
+                                                                                         diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))
+                                                                                     ),*/
     ];
 
     (camera, black_sky(), shapes)

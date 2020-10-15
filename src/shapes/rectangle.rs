@@ -1,128 +1,138 @@
-use super::{HitResult, Shape, SimpleShape};
+use super::{Primitive, PrimitiveHitResult, TransformablePrimitive, UntransformedPrimitive};
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::BoundingBox;
 use crate::RenderStatsCollector;
-use crate::{BoundingBox, Material};
 
-macro_rules! generate_rectangle {
-    ($name:ident, $faxis0:ident, $faxis1:ident, $oaxis:ident) => {
-        #[derive(Debug, Clone)]
-        pub struct $name<T: 'static + Material + Clone> {
-            $faxis0: (FloatType, FloatType),
-            $faxis1: (FloatType, FloatType),
-            $oaxis: FloatType,
-            material: T,
-        }
+#[derive(Debug, Clone)]
+pub struct UnitXyRectangle;
 
-        impl<T: 'static + Material + Clone> $name<T> {
-            pub fn new(
-                $faxis0: (FloatType, FloatType),
-                $faxis1: (FloatType, FloatType),
-                $oaxis: FloatType,
-                material: T,
-            ) -> Self {
-                Self {
-                    $faxis0,
-                    $faxis1,
-                    $oaxis,
-                    material,
-                }
-            }
-        }
-
-        impl<T: 'static + Material + Clone> Shape for $name<T> {
-            fn intersect<'a>(
-                &'a self,
-                ray: &Ray,
-                t_min: FloatType,
-                t_max: FloatType,
-                _stats: &mut dyn RenderStatsCollector,
-            ) -> Option<HitResult<'a>> {
-                let ray_origin = ray.origin.into_point();
-                let ray_direction = ray.direction.into_vector();
-
-                let t = (self.$oaxis - ray_origin.$oaxis) / ray_direction.$oaxis;
-                if t < t_min || t > t_max {
-                    return None;
-                }
-
-                let $faxis0 = ray_origin.$faxis0 + (t * ray_direction.$faxis0);
-                let $faxis1 = ray_origin.$faxis1 + (t * ray_direction.$faxis1);
-                if $faxis0 < self.$faxis0.0 || $faxis0 > self.$faxis0.1 || $faxis1 < self.$faxis1.0 || $faxis1 > self.$faxis1.1 {
-                    return None;
-                }
-
-                let u = ($faxis0 - self.$faxis0.0) / (self.$faxis0.1 - self.$faxis0.0);
-                let v = ($faxis1 - self.$faxis1.0) / (self.$faxis1.1 - self.$faxis1.0);
-                let outward_normal = generate_rectangle!(make_axis_aligned_unit_vector $oaxis);
-                // How we define the tangent is up to us. It can be any vector in the plane.
-                // I'm just going to point it along the specified axis
-                let tangent = generate_rectangle!(make_axis_aligned_unit_vector $faxis0);
-                let front_face = ray_direction.dot(outward_normal) < 0.0;
-                let surface_normal = if front_face {
-                    outward_normal
-                } else {
-                    -outward_normal
-                };
-
-                let bitangent = surface_normal.cross(tangent);
-
-                let hit_point = ray_origin + (t * ray_direction);
-
-                Some(HitResult {
-                    distance: t,
-                    hit_point: hit_point.into(),
-                    surface_normal: surface_normal.into(),
-                    tangent,
-                    bitangent,
-                    front_face,
-                    material: &self.material,
-                    u,
-                    v,
-                })
-            }
-
-            fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
-                BoundingBox::new(
-                    generate_rectangle!(make_bb_point self $oaxis 0 -1.0),
-                    generate_rectangle!(make_bb_point self $oaxis 1 1.0),
-                )
-            }
-        }
-
-        impl<T: 'static + Material + Clone> SimpleShape for $name<T> { }
-    };
-
-    (make_axis_aligned_unit_vector x) => { Vector3::new(1.0, 0.0, 0.0) };
-    (make_axis_aligned_unit_vector y) => { Vector3::new(0.0, 1.0, 0.0) };
-    (make_axis_aligned_unit_vector z) => { Vector3::new(0.0, 0.0, 1.0) };
-
-    (make_bb_point $self:ident x $idx:tt $sgn:expr) => { Point3::new($self.x + ($sgn * 0.0001), $self.y.$idx, $self.z.$idx) };
-    (make_bb_point $self:ident y $idx:tt $sgn:expr) => { Point3::new($self.x.$idx, $self.y + ($sgn * 0.0001), $self.z.$idx) };
-    (make_bb_point $self:ident z $idx:tt $sgn:expr) => { Point3::new($self.x.$idx, $self.y.$idx, $self.z + ($sgn * 0.0001)) };
+impl UnitXyRectangle {
+    pub fn new() -> Self {
+        Self
+    }
 }
 
-generate_rectangle!(XyRectangle, x, y, z);
-generate_rectangle!(XzRectangle, x, z, y);
-generate_rectangle!(YzRectangle, y, z, x);
+impl Primitive for UnitXyRectangle {
+    fn intersect(
+        &self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        _stats: &mut dyn RenderStatsCollector,
+    ) -> Option<PrimitiveHitResult> {
+        let ray_origin = ray.origin.into_point();
+        let ray_direction = ray.direction.into_vector();
+
+        let t = -ray_origin.z / ray_direction.z;
+        if t < t_min || t > t_max {
+            return None;
+        }
+
+        let x_intersect = ray_origin.x + (t * ray_direction.x);
+        let y_intersect = ray_origin.y + (t * ray_direction.y);
+        if x_intersect.abs() > 0.5 || y_intersect.abs() > 0.5 {
+            return None;
+        }
+
+        let u = x_intersect + 0.5;
+        let v = y_intersect + 0.5;
+        let outward_normal = vec3(0.0, 0.0, 1.0);
+        // How we define the tangent is up to us. It can be any vector in the plane.
+        // I'm just going to point it along the specified axis
+        let tangent = vec3(1.0, 0.0, 0.0);
+        let front_face = ray_direction.dot(outward_normal) < 0.0;
+        let surface_normal = if front_face {
+            outward_normal
+        } else {
+            -outward_normal
+        };
+
+        let bitangent = surface_normal.cross(tangent);
+
+        let hit_point = ray_origin + (t * ray_direction);
+
+        Some(PrimitiveHitResult {
+            distance: t,
+            hit_point: hit_point.into(),
+            surface_normal: surface_normal.into(),
+            tangent,
+            bitangent,
+            front_face,
+            u,
+            v,
+        })
+    }
+
+    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+        BoundingBox::new(
+            Point3::new(-0.5, -0.5, -0.0001),
+            Point3::new(0.5, 0.5, 0.0001),
+        )
+    }
+}
+
+impl UntransformedPrimitive for UnitXyRectangle {}
 
 pub mod factories {
     use super::*;
 
-    macro_rules! generate_rectangle_func {
-        ($fn_name:ident, $name:ident, $faxis0:ident, $faxis1:ident, $oaxis:ident) => {
-            pub fn $fn_name<T: 'static + Material + Clone>(
-                $faxis0: (FloatType, FloatType),
-                $faxis1: (FloatType, FloatType),
-                $oaxis: FloatType,
-                material: T,
-            ) -> $name<T> {
-                $name::new($faxis0, $faxis1, $oaxis, material)
-            }
-        };
+    type TransformedXyRectangle = <UnitXyRectangle as TransformablePrimitive>::Target;
+
+    pub fn unit_xy_rectangle() -> TransformedXyRectangle {
+        UnitXyRectangle::new().identity()
     }
 
-    generate_rectangle_func!(xy_rectangle, XyRectangle, x, y, z);
-    generate_rectangle_func!(xz_rectangle, XzRectangle, x, z, y);
-    generate_rectangle_func!(yz_rectangle, YzRectangle, y, z, x);
+    pub fn xy_rectangle(
+        x_range: (FloatType, FloatType),
+        y_range: (FloatType, FloatType),
+        z_center: FloatType,
+    ) -> TransformedXyRectangle {
+        let x_scale = x_range.1 - x_range.0;
+        let y_scale = y_range.1 - y_range.0;
+        let x_center = (x_range.1 + x_range.0) / 2.0;
+        let y_center = (y_range.1 + y_range.0) / 2.0;
+
+        unit_xy_rectangle()
+            .nonuniform_scale(x_scale, y_scale, 1.0)
+            .translate(vec3(x_center, y_center, z_center))
+    }
+
+    pub fn unit_xz_rectangle() -> TransformedXyRectangle {
+        unit_xy_rectangle().rotate_x(Deg(90.0).into())
+    }
+
+    pub fn xz_rectangle(
+        x_range: (FloatType, FloatType),
+        z_range: (FloatType, FloatType),
+        y_center: FloatType,
+    ) -> TransformedXyRectangle {
+        let x_scale = x_range.1 - x_range.0;
+        let z_scale = z_range.1 - z_range.0;
+        let x_center = (x_range.1 + x_range.0) / 2.0;
+        let z_center = (z_range.1 + z_range.0) / 2.0;
+
+        unit_xz_rectangle()
+            .nonuniform_scale(x_scale, 1.0, z_scale)
+            .translate(vec3(x_center, y_center, z_center))
+    }
+
+    pub fn unit_yz_rectangle() -> TransformedXyRectangle {
+        unit_xy_rectangle().rotate_y(Deg(90.0).into())
+    }
+
+    pub fn yz_rectangle(
+        y_range: (FloatType, FloatType),
+        z_range: (FloatType, FloatType),
+        x_center: FloatType,
+    ) -> TransformedXyRectangle {
+        let y_scale = y_range.1 - y_range.0;
+        let z_scale = z_range.1 - z_range.0;
+        let y_center = (y_range.1 + y_range.0) / 2.0;
+        let z_center = (z_range.1 + z_range.0) / 2.0;
+
+        unit_yz_rectangle()
+            .nonuniform_scale(1.0, y_scale, z_scale)
+            .translate(vec3(x_center, y_center, z_center))
+    }
 }

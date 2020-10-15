@@ -1,10 +1,10 @@
 mod aabb;
 mod box_shape;
 mod geometry_wrapper;
-mod hit_result;
 mod invert_normal;
 mod medium;
 mod parabola;
+mod primitive;
 mod rectangle;
 mod shape;
 mod shape_list;
@@ -16,11 +16,11 @@ pub use crate::shapes;
 pub use aabb::BoundingBox;
 pub use box_shape::BoxShape;
 pub use geometry_wrapper::{GeometryModifier, GeometryWrapper};
-pub use hit_result::HitResult;
 pub use medium::MediumDensity;
-pub use shape::{CompoundShape, Shape, SimpleShape, UntransformedShape};
+pub use primitive::{Primitive, PrimitiveHitResult, SkinnedPrimitive, UntransformedPrimitive};
+pub use shape::{CompoundShape, HitResult, Shape, SimpleShape, UntransformedShape};
 pub use shape_list::ShapeList;
-pub use transform::Transformable;
+pub use transform::{TransformablePrimitive, TransformableShape};
 pub use volume::Volume;
 
 pub mod factories {
