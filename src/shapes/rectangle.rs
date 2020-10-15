@@ -74,10 +74,10 @@ impl Primitive for UnitXyRectangle {
 
 impl UntransformedPrimitive for UnitXyRectangle {}
 
+pub type TransformedXyRectangle = <UnitXyRectangle as TransformablePrimitive>::Target;
+
 pub mod factories {
     use super::*;
-
-    type TransformedXyRectangle = <UnitXyRectangle as TransformablePrimitive>::Target;
 
     pub fn unit_xy_rectangle() -> TransformedXyRectangle {
         UnitXyRectangle::new().identity()

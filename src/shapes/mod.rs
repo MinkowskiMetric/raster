@@ -14,12 +14,16 @@ mod volume;
 
 pub use crate::shapes;
 pub use aabb::BoundingBox;
-pub use box_shape::BoxShape;
 pub use geometry_wrapper::{GeometryModifier, GeometryWrapper};
 pub use medium::MediumDensity;
-pub use primitive::{Primitive, PrimitiveHitResult, SkinnedPrimitive, UntransformedPrimitive};
+pub use primitive::{
+    CompoundPrimitive, IntoPrimitive, Primitive, PrimitiveHitResult, SkinnablePrimitive,
+    SkinnedPrimitive, UntransformedPrimitive,
+};
+pub use rectangle::TransformedXyRectangle;
 pub use shape::{CompoundShape, HitResult, Shape, SimpleShape, UntransformedShape};
 pub use shape_list::ShapeList;
+pub use sphere::{MovingSphere, Sphere};
 pub use transform::{TransformablePrimitive, TransformableShape};
 pub use volume::Volume;
 

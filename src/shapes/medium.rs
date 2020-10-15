@@ -182,7 +182,7 @@ pub mod factories {
 fn test_constant_medium_hit_points() {
     use crate::factories::*;
     use crate::Color;
-    use crate::Primitive;
+    use crate::SkinnablePrimitive;
 
     let medium: Box<dyn Shape> = Box::new(constant_medium(
         0.5,

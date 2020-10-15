@@ -277,7 +277,7 @@ pub mod factories {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{prelude::*, Primitive, ShapeList};
+    use crate::{prelude::*, ShapeList, SkinnablePrimitive};
 
     #[test]
     fn test_volume_iterators() {

@@ -6,8 +6,9 @@ use std::convert::TryInto;
 use image::RgbImage;
 
 use raster::{
-    prelude::*, shapes, Color, Material, Primitive, RenderStatsSource, ShapeList, Texture,
-    TransformableShape,
+    prelude::*, shapes, Color, CompoundPrimitive, IntoPrimitive, RenderStatsSource, ShapeList,
+    SkinnablePrimitive, Sphere, Texture, TransformablePrimitive, TransformableShape,
+    TransformedXyRectangle,
 };
 
 use std::sync::{Arc, RwLock};
@@ -268,11 +269,8 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
     let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
     let light = diffuse_light(solid_texture(Color([15.0, 15.0, 15.0, 1.0])));
     let unit_cube = || {
-        box_shape(
-            Point3::new(0.0, 0.0, 0.0),
-            Point3::new(1.0, 1.0, 1.0),
-            white.clone(),
-        )
+        box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))
+            .apply_material(white.clone())
     };
 
     let shapes = shapes![
@@ -319,11 +317,8 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
     let light = diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])));
     let unit_cube = || {
-        box_shape(
-            Point3::new(0.0, 0.0, 0.0),
-            Point3::new(1.0, 1.0, 1.0),
-            white.clone(),
-        )
+        box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))
+            .apply_material(white.clone())
     };
 
     let shapes = shapes![
@@ -384,13 +379,10 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
         yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0).apply_material(white.clone()), // Bottom of the slit
         yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0).apply_material(white.clone()), // Top of the slit
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()), // Target wall
-        box_shape(
-            Point3::new(0.0, 0.0, 0.0),
-            Point3::new(50.0, 100.0, 555.0),
-            glass.clone()
-        )
-        .rotate_z(Deg(15.0).into())
-        .translate(vec3(300.0, 250.0, 0.0)),
+        box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(50.0, 100.0, 555.0))
+            .apply_material(glass.clone())
+            .rotate_z(Deg(15.0).into())
+            .translate(vec3(300.0, 250.0, 0.0)),
     ];
 
     let shapes = shapes![shapes.nonuniform_scale(1.0, 1.0, 1.0)];
@@ -398,8 +390,8 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
 }
 
-fn book2_boxes_1(boxes_per_side: usize, material: impl Material + Clone + 'static) -> ShapeList {
-    let mut ret = ShapeList::build();
+fn book2_boxes_1(boxes_per_side: usize) -> CompoundPrimitive<TransformedXyRectangle> {
+    let mut ret = Vec::new();
 
     for i in 0..boxes_per_side {
         for j in 0..boxes_per_side {
@@ -412,18 +404,14 @@ fn book2_boxes_1(boxes_per_side: usize, material: impl Material + Clone + 'stati
             let y1 = random_in_range(1.0, 101.0);
             let z1 = z0 + w;
 
-            ret.push(box_shape(
-                Point3::new(x0, y0, z0),
-                Point3::new(x1, y1, z1),
-                material.clone(),
-            ));
+            ret.extend(box_shape(Point3::new(x0, y0, z0), Point3::new(x1, y1, z1)));
         }
     }
 
-    ret
+    ret.into_primitive()
 }
 
-fn book2_boxes_2(ns: usize, material: impl Material + Clone + 'static) -> ShapeList {
+fn book2_boxes_2(ns: usize) -> CompoundPrimitive<<Sphere as TransformablePrimitive>::Target> {
     (0..ns)
         .into_iter()
         .map(|_| {
@@ -435,9 +423,8 @@ fn book2_boxes_2(ns: usize, material: impl Material + Clone + 'static) -> ShapeL
                 ),
                 10.0,
             )
-            .apply_material(material.clone())
         })
-        .collect()
+        .into_primitive()
 }
 
 fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
@@ -458,10 +445,7 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     );
 
     let shapes = shapes![
-        book2_boxes_1(
-            20,
-            lambertian(solid_texture(Color([0.48, 0.83, 0.53, 1.0])))
-        ),
+        book2_boxes_1(20).apply_material(lambertian(solid_texture(Color([0.48, 0.83, 0.53, 1.0])))),
         xz_rectangle((123.0, 423.0), (147.0, 412.0), 554.0)
             .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))),
         moving_sphere(
@@ -487,12 +471,10 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
         sphere(Point3::new(400.0, 200.0, 400.0), 100.0).apply_material(lambertian(earth_map())),
         sphere(Point3::new(220.0, 280.0, 300.0), 80.0)
             .apply_material(lambertian(noise_texture(0.1))),
-        book2_boxes_2(
-            1000,
-            lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])))
-        )
-        .rotate_y(Deg(15.0).into())
-        .translate(vec3(-100.0, 270.0, 295.0)),
+        book2_boxes_2(1000)
+            .apply_material(lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0]))))
+            .rotate_y(Deg(15.0).into())
+            .translate(vec3(-100.0, 270.0, 295.0)),
     ];
 
     (camera, black_sky(), shapes)

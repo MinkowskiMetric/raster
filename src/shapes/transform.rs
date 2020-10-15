@@ -1,10 +1,11 @@
 use super::{
-    CompoundShape, HitResult, Primitive, PrimitiveHitResult, Shape, UntransformedPrimitive,
-    UntransformedShape,
+    CompoundShape, HitResult, Primitive, PrimitiveHitResult, Shape, SkinnablePrimitive,
+    SkinnedPrimitive, UntransformedPrimitive, UntransformedShape,
 };
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::BoundingBox;
+use crate::Material;
 use crate::RenderStatsCollector;
 
 fn transform_bounding_box(bounding_box: BoundingBox, transform: &Matrix4) -> BoundingBox {
@@ -79,6 +80,14 @@ impl<P: Primitive> Primitive for TransformedPrimitive<P> {
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         transform_bounding_box(self.primitive.bounding_box(t0, t1), &self.transform)
+    }
+}
+
+impl<M: Material, P: Primitive> SkinnablePrimitive<M> for TransformedPrimitive<P> {
+    type Target = SkinnedPrimitive<TransformedPrimitive<P>, M>;
+
+    fn apply_material(self, material: M) -> Self::Target {
+        SkinnedPrimitive::new(material, vec![self])
     }
 }
 
