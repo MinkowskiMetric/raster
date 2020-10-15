@@ -277,12 +277,12 @@ pub mod factories {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{prelude::*, ShapeList, SkinnableShape};
+    use crate::{prelude::*, ShapeList};
 
     #[test]
     fn test_volume_iterators() {
         let shapes: ShapeList = (0..100)
-            .map(|_| sphere(Point3::new(0.0, 0.0, 0.0), 1.0).apply_material(dielectric(1.5)))
+            .map(|_| sphere(Point3::new(0.0, 0.0, 0.0), 1.0, dielectric(1.5)))
             .collect();
         let volume = Volume::from_shapes(shapes, 0.0, 1.0);
 

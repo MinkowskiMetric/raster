@@ -1,8 +1,8 @@
-use super::{UnskinnedHitResult, UnskinnedShape, UnskinnedSimpleShape};
+use super::{HitResult, Shape, SimpleShape, UntransformedShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::BoundingBox;
 use crate::RenderStatsCollector;
+use crate::{BoundingBox, Material};
 
 fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
     let phi = p.z.atan2(p.x);
@@ -15,16 +15,18 @@ fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
 }
 
 #[derive(Clone, Debug)]
-pub struct Sphere {
+pub struct Sphere<T: 'static + Material + Clone> {
     center: M256Point3,
     radius: FloatType,
+    material: T,
 }
 
-impl Sphere {
-    pub fn new(center: Point3, radius: FloatType) -> Self {
+impl<T: 'static + Material + Clone> Sphere<T> {
+    pub fn new(center: Point3, radius: FloatType, material: T) -> Self {
         Self {
             center: center.into(),
             radius,
+            material,
         }
     }
 
@@ -36,7 +38,7 @@ impl Sphere {
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<UnskinnedHitResult> {
+    ) -> Option<HitResult> {
         use std::arch::x86_64::*;
 
         stats.count_sphere_test();
@@ -86,13 +88,14 @@ impl Sphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(UnskinnedHitResult {
+                return Some(HitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
+                    material: &self.material,
                     u,
                     v,
                 });
@@ -115,13 +118,14 @@ impl Sphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(UnskinnedHitResult {
+                return Some(HitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
+                    material: &self.material,
                     u,
                     v,
                 });
@@ -132,18 +136,18 @@ impl Sphere {
     }
 }
 
-impl UnskinnedShape for Sphere {
-    fn unskinned_intersect(
+impl<T: 'static + Material + Clone> Shape for Sphere<T> {
+    fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<UnskinnedHitResult> {
+    ) -> Option<HitResult> {
         unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }
 
-    fn unskinned_bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
         BoundingBox::new(
             self.center.into_point() - vec3(self.radius, self.radius, self.radius),
             self.center.into_point() + vec3(self.radius, self.radius, self.radius),
@@ -151,21 +155,24 @@ impl UnskinnedShape for Sphere {
     }
 }
 
-impl UnskinnedSimpleShape for Sphere {}
+impl<T: 'static + Material + Clone> SimpleShape for Sphere<T> {}
+impl<T: 'static + Material + Clone> UntransformedShape for Sphere<T> {}
 
 #[derive(Clone, Debug)]
-pub struct MovingSphere {
+pub struct MovingSphere<T: 'static + Material + Clone> {
     space_origin: M256Point3,
     time_origin: M256Point3,
     velocity: M256Vector3,
     radius: FloatType,
+    material: T,
 }
 
-impl MovingSphere {
+impl<T: 'static + Material + Clone> MovingSphere<T> {
     pub fn new(
         center0: (Point3, FloatType),
         center1: (Point3, FloatType),
         radius: FloatType,
+        material: T,
     ) -> Self {
         let space_origin = center0.0.into();
         let time_origin = Point3::new(center0.1, center0.1, center0.1).into();
@@ -175,6 +182,7 @@ impl MovingSphere {
             time_origin,
             velocity,
             radius,
+            material,
         }
     }
 
@@ -207,7 +215,7 @@ impl MovingSphere {
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<UnskinnedHitResult> {
+    ) -> Option<HitResult> {
         use std::arch::x86_64::*;
 
         stats.count_moving_sphere_test();
@@ -257,13 +265,14 @@ impl MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(UnskinnedHitResult {
+                return Some(HitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
+                    material: &self.material,
                     u,
                     v,
                 });
@@ -286,13 +295,14 @@ impl MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(UnskinnedHitResult {
+                return Some(HitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
+                    material: &self.material,
                     u,
                     v,
                 });
@@ -303,18 +313,18 @@ impl MovingSphere {
     }
 }
 
-impl UnskinnedShape for MovingSphere {
-    fn unskinned_intersect(
+impl<T: 'static + Material + Clone> Shape for MovingSphere<T> {
+    fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<UnskinnedHitResult> {
+    ) -> Option<HitResult> {
         unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }
 
-    fn unskinned_bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         let box0 = BoundingBox::new(
             self.center(t0).into_point() - vec3(self.radius, self.radius, self.radius),
             self.center(t0).into_point() + vec3(self.radius, self.radius, self.radius),
@@ -328,21 +338,27 @@ impl UnskinnedShape for MovingSphere {
     }
 }
 
-impl UnskinnedSimpleShape for MovingSphere {}
+impl<T: Material + 'static + Clone> SimpleShape for MovingSphere<T> {}
+impl<T: 'static + Material + Clone> UntransformedShape for MovingSphere<T> {}
 
 pub mod factories {
     use super::*;
 
-    pub fn sphere(center: Point3, radius: FloatType) -> Sphere {
-        Sphere::new(center, radius)
+    pub fn sphere<T: 'static + Material + Clone>(
+        center: Point3,
+        radius: FloatType,
+        material: T,
+    ) -> Sphere<T> {
+        Sphere::new(center, radius, material)
     }
 
-    pub fn moving_sphere(
+    pub fn moving_sphere<T: 'static + Material + Clone>(
         center0: (Point3, FloatType),
         center1: (Point3, FloatType),
         radius: FloatType,
-    ) -> MovingSphere {
-        MovingSphere::new(center0, center1, radius)
+        material: T,
+    ) -> MovingSphere<T> {
+        MovingSphere::new(center0, center1, radius, material)
     }
 }
 
@@ -353,10 +369,10 @@ mod test {
 
     #[test]
     fn test_sphere_normals() {
-        let sp = sphere(Point3::new(0.0, 0.0, 0.0), 1.0);
+        let sp = sphere(Point3::new(0.0, 0.0, 0.0), 1.0, dielectric(1.5));
 
         let mut stats = crate::TracingStats::new();
-        let result = sp.unskinned_intersect(
+        let result = sp.intersect(
             &Ray::new(Point3::new(0.0, 0.0, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
             0.0,
             constants::INFINITY,

@@ -1,40 +1,43 @@
-use super::{UnskinnedHitResult, UnskinnedShape, UnskinnedSimpleShape};
+use super::{HitResult, Shape, SimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::BoundingBox;
 use crate::RenderStatsCollector;
+use crate::{BoundingBox, Material};
 
 macro_rules! generate_rectangle {
     ($name:ident, $faxis0:ident, $faxis1:ident, $oaxis:ident) => {
         #[derive(Debug, Clone)]
-        pub struct $name {
+        pub struct $name<T: 'static + Material + Clone> {
             $faxis0: (FloatType, FloatType),
             $faxis1: (FloatType, FloatType),
             $oaxis: FloatType,
+            material: T,
         }
 
-        impl $name {
+        impl<T: 'static + Material + Clone> $name<T> {
             pub fn new(
                 $faxis0: (FloatType, FloatType),
                 $faxis1: (FloatType, FloatType),
                 $oaxis: FloatType,
+                material: T,
             ) -> Self {
                 Self {
                     $faxis0,
                     $faxis1,
                     $oaxis,
+                    material,
                 }
             }
         }
 
-        impl UnskinnedShape for $name {
-            fn unskinned_intersect(
-                &self,
+        impl<T: 'static + Material + Clone> Shape for $name<T> {
+            fn intersect<'a>(
+                &'a self,
                 ray: &Ray,
                 t_min: FloatType,
                 t_max: FloatType,
                 _stats: &mut dyn RenderStatsCollector,
-            ) -> Option<UnskinnedHitResult> {
+            ) -> Option<HitResult<'a>> {
                 let ray_origin = ray.origin.into_point();
                 let ray_direction = ray.direction.into_vector();
 
@@ -66,19 +69,20 @@ macro_rules! generate_rectangle {
 
                 let hit_point = ray_origin + (t * ray_direction);
 
-                Some(UnskinnedHitResult {
+                Some(HitResult {
                     distance: t,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
+                    material: &self.material,
                     u,
                     v,
                 })
             }
 
-            fn unskinned_bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+            fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
                 BoundingBox::new(
                     generate_rectangle!(make_bb_point self $oaxis 0 -1.0),
                     generate_rectangle!(make_bb_point self $oaxis 1 1.0),
@@ -86,7 +90,7 @@ macro_rules! generate_rectangle {
             }
         }
 
-        impl UnskinnedSimpleShape for $name { }
+        impl<T: 'static + Material + Clone> SimpleShape for $name<T> { }
     };
 
     (make_axis_aligned_unit_vector x) => { Vector3::new(1.0, 0.0, 0.0) };
@@ -107,12 +111,13 @@ pub mod factories {
 
     macro_rules! generate_rectangle_func {
         ($fn_name:ident, $name:ident, $faxis0:ident, $faxis1:ident, $oaxis:ident) => {
-            pub fn $fn_name(
+            pub fn $fn_name<T: 'static + Material + Clone>(
                 $faxis0: (FloatType, FloatType),
                 $faxis1: (FloatType, FloatType),
                 $oaxis: FloatType,
-            ) -> $name {
-                $name::new($faxis0, $faxis1, $oaxis)
+                material: T,
+            ) -> $name<T> {
+                $name::new($faxis0, $faxis1, $oaxis, material)
             }
         };
     }

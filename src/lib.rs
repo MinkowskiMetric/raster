@@ -19,8 +19,7 @@ pub use materials::{Material, PartialScatterResult, ScatterResult, SurfaceMapper
 pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
 pub use shapes::{
-    BoundingBox, BoxShape, CompoundShape, HitResult, MediumDensity, Shape, ShapeList,
-    SkinnableShape, Transformable,
+    BoundingBox, BoxShape, CompoundShape, HitResult, MediumDensity, Shape, ShapeList, Transformable,
 };
 pub use sky::Sky;
 pub use stats::{
