@@ -187,6 +187,10 @@ macro_rules! defined_transforms {
             self.transform(Matrix4::from_nonuniform_scale(x_scale, y_scale, z_scale))
         }
 
+        fn scale(self, scale: FloatType) -> Self::Target {
+            self.transform(Matrix4::from_scale(scale))
+        }
+
         fn identity(self) -> Self::Target {
             self.transform(Matrix4::identity())
         }

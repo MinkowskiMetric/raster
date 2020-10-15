@@ -182,14 +182,12 @@ pub mod factories {
 fn test_constant_medium_hit_points() {
     use crate::factories::*;
     use crate::Color;
+    use crate::Primitive;
 
     let medium: Box<dyn Shape> = Box::new(constant_medium(
         0.5,
-        sphere(
-            Point3::new(0.0, 0.0, 0.0),
-            1.0,
-            lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
-        ),
+        sphere(Point3::new(0.0, 0.0, 0.0), 1.0)
+            .apply_material(lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))),
         isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
     ));
 

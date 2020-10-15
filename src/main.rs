@@ -19,14 +19,12 @@ fn attenuate_color(color: Color, attenuation: FloatType) -> Color {
 fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
     let mut shapes = ShapeList::build();
 
-    shapes.push(sphere(
-        Point3::new(0.0, -1000.0, 0.0),
-        1000.0,
-        lambertian(checker_texture(
+    shapes.push(
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(checker_texture(
             solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
             solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
-        )),
-    ));
+        ))),
+    );
 
     for a in -11..11 {
         for b in -11..11 {
@@ -41,33 +39,34 @@ fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
                 if choose_mat < 0.8 {
                     let center2 = center + vec3(0.0, random_in_range(0.0, 0.5), 0.0);
                     let material = lambertian(solid_texture(random_color_in_range(0.0, 1.0)));
-                    shapes.push(moving_sphere((center, 0.0), (center2, 1.0), 0.2, material));
+                    shapes.push(
+                        moving_sphere((center, 0.0), (center2, 1.0), 0.2).apply_material(material),
+                    );
                 } else if choose_mat < 0.95 {
                     let albedo = random_color_in_range(0.5, 1.0);
                     let fuzz = random_in_range(0.0, 1.0);
                     let material = metal(albedo, fuzz);
-                    shapes.push(sphere(center, 0.2, material))
+                    shapes.push(sphere(center, 0.2).apply_material(material))
                 } else {
                     let material = dielectric(1.5);
-                    shapes.push(sphere(center, 0.2, material))
+                    shapes.push(sphere(center, 0.2).apply_material(material))
                 }
             }
         }
     }
 
-    shapes.push(sphere(Point3::new(0.0, 1.0, 0.0), 1.0, dielectric(1.5)));
+    shapes.push(sphere(Point3::new(0.0, 1.0, 0.0), 1.0).apply_material(dielectric(1.5)));
 
-    shapes.push(sphere(
-        Point3::new(-4.0, 1.0, 0.0),
-        1.0,
-        lambertian(solid_texture(vec3(0.4, 0.2, 0.1).try_into().unwrap())),
-    ));
+    shapes.push(
+        sphere(Point3::new(-4.0, 1.0, 0.0), 1.0).apply_material(lambertian(solid_texture(
+            vec3(0.4, 0.2, 0.1).try_into().unwrap(),
+        ))),
+    );
 
-    shapes.push(sphere(
-        Point3::new(3.0, 1.0, 0.0),
-        1.0,
-        metal(vec3(0.7, 0.6, 0.5).try_into().unwrap(), 0.0),
-    ));
+    shapes.push(
+        sphere(Point3::new(3.0, 1.0, 0.0), 1.0)
+            .apply_material(metal(vec3(0.7, 0.6, 0.5).try_into().unwrap(), 0.0)),
+    );
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
@@ -105,23 +104,15 @@ fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
         dist_to_focus,
     );
     let shapes = shapes![
-        sphere(Point3::new(-0.5, 0.0, -3.0), 1.0, dielectric(1.5)),
-        invert_normal(sphere(Point3::new(-0.5, 0.0, -3.0), 0.999, dielectric(1.5))),
-        sphere(
-            Point3::new(0.5, 0.0, -5.0),
-            1.0,
-            metal(attenuate_color(constants::MAGENTA, 0.8), 0.2),
-        ),
-        sphere(
-            Point3::new(-0.5, 0.0, -5.0),
-            1.0,
-            metal(attenuate_color(constants::WHITE, 0.8), 0.0),
-        ),
-        sphere(
-            Point3::new(0.0, -51.0, -5.0),
-            50.0,
-            lambertian(solid_texture(attenuate_color(constants::YELLOW, 0.5))),
-        ),
+        sphere(Point3::new(-0.5, 0.0, -3.0), 1.0).apply_material(dielectric(1.5)),
+        invert_normal(sphere(Point3::new(-0.5, 0.0, -3.0), 0.999).apply_material(dielectric(1.5))),
+        sphere(Point3::new(0.5, 0.0, -5.0), 1.0)
+            .apply_material(metal(attenuate_color(constants::MAGENTA, 0.8), 0.2),),
+        sphere(Point3::new(-0.5, 0.0, -5.0), 1.0)
+            .apply_material(metal(attenuate_color(constants::WHITE, 0.8), 0.0),),
+        sphere(Point3::new(0.0, -51.0, -5.0), 50.0).apply_material(lambertian(solid_texture(
+            attenuate_color(constants::YELLOW, 0.5)
+        )),),
     ];
     (camera, regular_sky(), shapes)
 }
@@ -143,22 +134,14 @@ fn two_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
         dist_to_focus,
     );
     let shapes = shapes![
-        sphere(
-            Point3::new(0.0, -10.0, 0.0),
-            10.0,
-            lambertian(checker_texture(
-                solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
-                solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
-            )),
-        ),
-        sphere(
-            Point3::new(0.0, 10.0, 0.0),
-            10.0,
-            lambertian(checker_texture(
-                solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
-                solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
-            )),
-        ),
+        sphere(Point3::new(0.0, -10.0, 0.0), 10.0).apply_material(lambertian(checker_texture(
+            solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
+            solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
+        )),),
+        sphere(Point3::new(0.0, 10.0, 0.0), 10.0).apply_material(lambertian(checker_texture(
+            solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
+            solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
+        )),),
     ];
     (camera, regular_sky(), shapes)
 }
@@ -182,12 +165,8 @@ fn two_perlin_spheres(width: usize, height: usize) -> (raster::Camera, raster::S
         dist_to_focus,
     );
     let shapes = shapes![
-        sphere(
-            Point3::new(0.0, -1000.0, 0.0),
-            1000.0,
-            lambertian(pertext.clone()),
-        ),
-        sphere(Point3::new(0.0, 2.0, 0.0), 2.0, lambertian(pertext.clone())),
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(pertext.clone()),),
+        sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext.clone())),
     ];
 
     (camera, regular_sky(), shapes)
@@ -229,11 +208,8 @@ fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, 
         aperture,
         dist_to_focus,
     );
-    let shapes = shapes![sphere(
-        Point3::new(0.0, 0.0, 0.0),
-        2.0,
-        lambertian(earth_image),
-    )];
+    let shapes =
+        shapes![sphere(Point3::new(0.0, 0.0, 0.0), 2.0).apply_material(lambertian(earth_image),)];
 
     (camera, regular_sky(), shapes)
 }
@@ -257,17 +233,10 @@ fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
         dist_to_focus,
     );
     let shapes = shapes![
-        sphere(
-            Point3::new(0.0, -1000.0, 0.0),
-            1000.0,
-            lambertian(pertext.clone()),
-        ),
-        sphere(Point3::new(0.0, 2.0, 0.0), 2.0, lambertian(pertext.clone())),
-        sphere(
-            Point3::new(0.0, 7.0, 0.0),
-            2.0,
-            diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),
-        ),
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(pertext.clone()),),
+        sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext.clone())),
+        sphere(Point3::new(0.0, 7.0, 0.0), 2.0)
+            .apply_material(diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),),
         xy_rectangle((3.0, 5.0), (1.0, 3.0), -2.0)
             .apply_material(diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),),
         yz_rectangle((1.0, 3.0), (3.0, 4.0), -2.0)
@@ -465,8 +434,8 @@ fn book2_boxes_2(ns: usize, material: impl Material + Clone + 'static) -> ShapeL
                     random_in_range(0.0, 165.0),
                 ),
                 10.0,
-                material.clone(),
             )
+            .apply_material(material.clone())
         })
         .collect()
 }
@@ -498,36 +467,26 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
         moving_sphere(
             (Point3::new(400.0, 400.0, 400.0), 0.0),
             (Point3::new(430.0, 400.0, 200.0), 1.0),
-            50.0,
-            lambertian(solid_texture(Color([0.7, 0.3, 0.1, 1.0])))
-        ),
-        sphere(Point3::new(260.0, 150.0, 45.0), 50.0, dielectric(1.5)),
-        sphere(
-            Point3::new(0.0, 150.0, 145.0),
-            70.0,
-            metal(Color([0.8, 0.8, 0.9, 1.0]), 10.0)
-        ),
-        sphere(Point3::new(360.0, 150.0, 145.0), 70.0, dielectric(1.5)),
+            50.0
+        )
+        .apply_material(lambertian(solid_texture(Color([0.7, 0.3, 0.1, 1.0])))),
+        sphere(Point3::new(260.0, 150.0, 45.0), 50.0).apply_material(dielectric(1.5)),
+        sphere(Point3::new(0.0, 150.0, 145.0), 70.0)
+            .apply_material(metal(Color([0.8, 0.8, 0.9, 1.0]), 10.0)),
+        sphere(Point3::new(360.0, 150.0, 145.0), 70.0).apply_material(dielectric(1.5)),
         constant_medium(
             0.2,
-            sphere(Point3::new(360.0, 150.0, 145.0), 70.0, dielectric(1.5)),
+            sphere(Point3::new(360.0, 150.0, 145.0), 70.0).apply_material(dielectric(1.5)),
             isotropic(solid_texture(Color([0.2, 0.4, 0.9, 1.0])))
         ),
         constant_medium(
             0.0001,
-            sphere(Point3::new(0.0, 0.0, 0.0), 5000.0, dielectric(1.5)),
+            sphere(Point3::new(0.0, 0.0, 0.0), 5000.0).apply_material(dielectric(1.5)),
             isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))
         ),
-        sphere(
-            Point3::new(400.0, 200.0, 400.0),
-            100.0,
-            lambertian(earth_map())
-        ),
-        sphere(
-            Point3::new(220.0, 280.0, 300.0),
-            80.0,
-            lambertian(noise_texture(0.1))
-        ),
+        sphere(Point3::new(400.0, 200.0, 400.0), 100.0).apply_material(lambertian(earth_map())),
+        sphere(Point3::new(220.0, 280.0, 300.0), 80.0)
+            .apply_material(lambertian(noise_texture(0.1))),
         book2_boxes_2(
             1000,
             lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])))
@@ -557,22 +516,14 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
     );
 
     let shapes = shapes![
-        sphere(
-            Point3::new(-3.0, 0.0, 0.0),
-            2.0,
-            bump_mapper(
-                noise_normal(10.0, 0.4),
-                lambertian(solid_texture(Color([1.0, 69.0 / 255.0, 0.0, 1.0])))
-            )
-        ),
-        sphere(
-            Point3::new(3.0, 0.0, 0.0),
-            2.0,
-            bump_mapper(
-                noise_normal(10.0, 0.2),
-                metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
-            )
-        ),
+        sphere(Point3::new(-3.0, 0.0, 0.0), 2.0).apply_material(bump_mapper(
+            noise_normal(10.0, 0.4),
+            lambertian(solid_texture(Color([1.0, 69.0 / 255.0, 0.0, 1.0])))
+        )),
+        sphere(Point3::new(3.0, 0.0, 0.0), 2.0).apply_material(bump_mapper(
+            noise_normal(10.0, 0.2),
+            metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
+        )),
         xy_rectangle((-8.0, 8.0), (-8.0, 8.0), 8.0).apply_material(bump_mapper(
             brick_normal_map(),
             metal_with_texture(brick_image(), 0.7)
@@ -632,11 +583,8 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
             2.0,
             metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)
         ),
-        sphere(
-            Point3::new(0.0, 0.0, 7.0),
-            0.5,
-            diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0]))),
-        ),
+        sphere(Point3::new(0.0, 0.0, 7.0), 0.5)
+            .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0]))),),
         xz_rectangle((-100.0, 100.0), (-100.0, 100.0), -3.0)
             .apply_material(lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),),
         yz_rectangle((-100.0, 100.0), (-100.0, 100.0), -2.0)

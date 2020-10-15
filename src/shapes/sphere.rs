@@ -1,8 +1,8 @@
-use super::{HitResult, Shape, SimpleShape, UntransformedShape};
+use super::{Primitive, PrimitiveHitResult, TransformablePrimitive, UntransformedPrimitive};
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::BoundingBox;
 use crate::RenderStatsCollector;
-use crate::{BoundingBox, Material};
 
 fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
     let phi = p.z.atan2(p.x);
@@ -15,18 +15,16 @@ fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
 }
 
 #[derive(Clone, Debug)]
-pub struct Sphere<T: 'static + Material + Clone> {
+pub struct Sphere {
     center: M256Point3,
     radius: FloatType,
-    material: T,
 }
 
-impl<T: 'static + Material + Clone> Sphere<T> {
-    pub fn new(center: Point3, radius: FloatType, material: T) -> Self {
+impl Sphere {
+    pub fn new(center: Point3, radius: FloatType) -> Self {
         Self {
             center: center.into(),
             radius,
-            material,
         }
     }
 
@@ -38,7 +36,7 @@ impl<T: 'static + Material + Clone> Sphere<T> {
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult> {
+    ) -> Option<PrimitiveHitResult> {
         use std::arch::x86_64::*;
 
         stats.count_sphere_test();
@@ -88,14 +86,13 @@ impl<T: 'static + Material + Clone> Sphere<T> {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(HitResult {
+                return Some(PrimitiveHitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    material: &self.material,
                     u,
                     v,
                 });
@@ -118,14 +115,13 @@ impl<T: 'static + Material + Clone> Sphere<T> {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(HitResult {
+                return Some(PrimitiveHitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    material: &self.material,
                     u,
                     v,
                 });
@@ -136,14 +132,14 @@ impl<T: 'static + Material + Clone> Sphere<T> {
     }
 }
 
-impl<T: 'static + Material + Clone> Shape for Sphere<T> {
+impl Primitive for Sphere {
     fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult> {
+    ) -> Option<PrimitiveHitResult> {
         unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }
 
@@ -155,24 +151,21 @@ impl<T: 'static + Material + Clone> Shape for Sphere<T> {
     }
 }
 
-impl<T: 'static + Material + Clone> SimpleShape for Sphere<T> {}
-impl<T: 'static + Material + Clone> UntransformedShape for Sphere<T> {}
+impl UntransformedPrimitive for Sphere {}
 
 #[derive(Clone, Debug)]
-pub struct MovingSphere<T: 'static + Material + Clone> {
+pub struct MovingSphere {
     space_origin: M256Point3,
     time_origin: M256Point3,
     velocity: M256Vector3,
     radius: FloatType,
-    material: T,
 }
 
-impl<T: 'static + Material + Clone> MovingSphere<T> {
+impl MovingSphere {
     pub fn new(
         center0: (Point3, FloatType),
         center1: (Point3, FloatType),
         radius: FloatType,
-        material: T,
     ) -> Self {
         let space_origin = center0.0.into();
         let time_origin = Point3::new(center0.1, center0.1, center0.1).into();
@@ -182,7 +175,6 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
             time_origin,
             velocity,
             radius,
-            material,
         }
     }
 
@@ -215,7 +207,7 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult> {
+    ) -> Option<PrimitiveHitResult> {
         use std::arch::x86_64::*;
 
         stats.count_moving_sphere_test();
@@ -265,14 +257,13 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(HitResult {
+                return Some(PrimitiveHitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    material: &self.material,
                     u,
                     v,
                 });
@@ -295,14 +286,13 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(HitResult {
+                return Some(PrimitiveHitResult {
                     distance: temp,
                     hit_point: hit_point.into(),
                     surface_normal: surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    material: &self.material,
                     u,
                     v,
                 });
@@ -313,14 +303,14 @@ impl<T: 'static + Material + Clone> MovingSphere<T> {
     }
 }
 
-impl<T: 'static + Material + Clone> Shape for MovingSphere<T> {
+impl Primitive for MovingSphere {
     fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult> {
+    ) -> Option<PrimitiveHitResult> {
         unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
     }
 
@@ -338,27 +328,27 @@ impl<T: 'static + Material + Clone> Shape for MovingSphere<T> {
     }
 }
 
-impl<T: Material + 'static + Clone> SimpleShape for MovingSphere<T> {}
-impl<T: 'static + Material + Clone> UntransformedShape for MovingSphere<T> {}
+impl UntransformedPrimitive for MovingSphere {}
 
 pub mod factories {
     use super::*;
 
-    pub fn sphere<T: 'static + Material + Clone>(
-        center: Point3,
-        radius: FloatType,
-        material: T,
-    ) -> Sphere<T> {
-        Sphere::new(center, radius, material)
+    pub fn unit_sphere() -> <Sphere as TransformablePrimitive>::Target {
+        Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.0).identity()
     }
 
-    pub fn moving_sphere<T: 'static + Material + Clone>(
+    pub fn sphere(center: Point3, radius: FloatType) -> <Sphere as TransformablePrimitive>::Target {
+        unit_sphere()
+            .scale(radius)
+            .translate(center - Point3::new(0.0, 0.0, 0.0))
+    }
+
+    pub fn moving_sphere(
         center0: (Point3, FloatType),
         center1: (Point3, FloatType),
         radius: FloatType,
-        material: T,
-    ) -> MovingSphere<T> {
-        MovingSphere::new(center0, center1, radius, material)
+    ) -> MovingSphere {
+        MovingSphere::new(center0, center1, radius)
     }
 }
 
@@ -369,7 +359,7 @@ mod test {
 
     #[test]
     fn test_sphere_normals() {
-        let sp = sphere(Point3::new(0.0, 0.0, 0.0), 1.0, dielectric(1.5));
+        let sp = sphere(Point3::new(0.0, 0.0, 0.0), 1.0);
 
         let mut stats = crate::TracingStats::new();
         let result = sp.intersect(
