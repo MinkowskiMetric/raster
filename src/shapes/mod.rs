@@ -14,11 +14,11 @@ pub use crate::shapes;
 pub use aabb::BoundingBox;
 pub use medium::MediumDensity;
 pub use primitive::{
-    CompoundPrimitive, IntoPrimitive, Primitive, PrimitiveHitResult, SkinnablePrimitive,
-    SkinnedPrimitive, UntransformedPrimitive,
+    CompoundPrimitive, IntoAggregatePrimitive, IntoPrimitive, Primitive, PrimitiveHitResult,
+    SkinnablePrimitive, SkinnedPrimitive, UntransformedPrimitive,
 };
 pub use rectangle::TransformedXyRectangle;
-pub use shape::{CompoundShape, HitResult, Shape, SimpleShape, UntransformedShape};
+pub use shape::{CollectionShape, CompoundShape, HitResult, Shape, SimpleShape};
 pub use shape_list::ShapeList;
 pub use sphere::{MovingSphere, Sphere};
 pub use transform::{TransformablePrimitive, TransformableShape};

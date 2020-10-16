@@ -1,18 +1,19 @@
-use super::{CompoundShape, HitResult, Shape, UntransformedShape};
+use super::{CollectionShape, CompoundShape, HitResult, Shape, TransformableShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::utils::*;
 use crate::BoundingBox;
 use crate::RenderStatsCollector;
 
 #[derive(Debug)]
 pub struct ShapeList {
-    shapes: Vec<Box<dyn Shape>>,
+    shapes: CollectionShape<Box<dyn Shape>>,
 }
 
 impl ShapeList {
     pub fn build() -> Self {
-        Self { shapes: Vec::new() }
+        Self {
+            shapes: CollectionShape::new(),
+        }
     }
 
     pub fn push<T: CompoundShape>(&mut self, shape: T) {
@@ -37,22 +38,28 @@ impl Shape for ShapeList {
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
-        self.shapes
-            .iter()
-            .filter_map(|shape| shape.intersect(&ray, t_min, t_max, stats))
-            .min_by(|xr, yr| {
-                xr.distance
-                    .partial_cmp(&yr.distance)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
+        self.shapes.intersect(ray, t_min, t_max, stats)
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.shapes
-            .iter()
-            .map(|a| a.bounding_box(t0, t1).clone())
-            .my_fold_first(|a, b| BoundingBox::surrounding_box(&a, &b))
-            .unwrap_or(BoundingBox::empty_box())
+        self.shapes.bounding_box(t0, t1)
+    }
+}
+
+impl TransformableShape for ShapeList {
+    type Target = ShapeList;
+
+    fn transform(self, transform: Matrix4) -> Self::Target {
+        Self {
+            shapes: self
+                .shapes
+                .into_iter()
+                .map(|shape| {
+                    let b: Box<dyn Shape> = Box::new(shape.transform(transform));
+                    b
+                })
+                .collect(),
+        }
     }
 }
 
@@ -99,8 +106,6 @@ impl CompoundShape for ShapeList {
         self.shapes.into_iter()
     }
 }
-
-impl UntransformedShape for ShapeList {}
 
 #[macro_export]
 macro_rules! shapes {

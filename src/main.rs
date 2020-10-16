@@ -290,8 +290,6 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
             .translate(vec3(130.0, 0.0, 65.0)),
     ];
 
-    let shapes = shapes![shapes.nonuniform_scale(1.0, 1.0, 1.0)];
-
     (camera, black_sky(), shapes)
 }
 
@@ -343,8 +341,6 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
         ),
     ];
 
-    let shapes = shapes![shapes.nonuniform_scale(1.0, 1.0, 1.0)];
-
     (camera, black_sky(), shapes)
 }
 
@@ -381,8 +377,6 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
             .rotate_z(Deg(15.0).into())
             .translate(vec3(300.0, 250.0, 0.0)),
     ];
-
-    let shapes = shapes![shapes.nonuniform_scale(1.0, 1.0, 1.0)];
 
     (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
 }

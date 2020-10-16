@@ -1,6 +1,6 @@
 use super::{
     CompoundShape, HitResult, Primitive, PrimitiveHitResult, Shape, SkinnablePrimitive,
-    SkinnedPrimitive, UntransformedPrimitive, UntransformedShape,
+    SkinnedPrimitive, UntransformedPrimitive,
 };
 use crate::math::*;
 use crate::ray_scanner::Ray;
@@ -222,8 +222,10 @@ pub trait TransformablePrimitive: Primitive + Sized {
     defined_transforms!();
 }
 
-impl<S: UntransformedShape + Sized> TransformableShape for S {
-    type Target = TransformedShape<S>;
+impl TransformableShape for Box<dyn Shape> {
+    // This is pretty unfortunate. What is happening here is that we're transforming the shape after
+    // we've discarded it's type, so we are probably double transforming.
+    type Target = TransformedShape<Self>;
 
     fn transform(self, transform: Matrix4) -> Self::Target {
         let inverse = transform.inverse_transform().unwrap();

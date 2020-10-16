@@ -19,8 +19,8 @@ pub use materials::{Material, PartialScatterResult, ScatterResult, SurfaceMapper
 pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
 pub use shapes::{
-    BoundingBox, CompoundPrimitive, CompoundShape, HitResult, IntoPrimitive, MediumDensity,
-    Primitive, Shape, ShapeList, SkinnablePrimitive, Sphere, TransformablePrimitive,
+    BoundingBox, CollectionShape, CompoundPrimitive, CompoundShape, HitResult, IntoPrimitive,
+    MediumDensity, Primitive, Shape, ShapeList, SkinnablePrimitive, Sphere, TransformablePrimitive,
     TransformableShape, TransformedXyRectangle,
 };
 pub use sky::Sky;
