@@ -553,18 +553,14 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
                 metal(Color([1.0, 69.0 / 255.0, 0.0, 1.0]), 0.4)
             )
         ),*/
-        parabola(
-            Point3::new(0.0, 0.0, 7.5),
-            Point3::new(0.0, 0.0, 7.0),
-            2.0,
-            metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)
-        ),
+        parabola(Point3::new(0.0, 0.0, 7.5), Point3::new(0.0, 0.0, 7.0), 2.0)
+            .apply_material(metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)),
         parabola(
             Point3::new(0.0, 0.0, -8.0),
             Point3::new(0.0, 0.0, -7.0),
-            2.0,
-            metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)
-        ),
+            2.0
+        )
+        .apply_material(metal(Color([1.0, 1.0, 1.0, 1.0]), 0.1)),
         sphere(Point3::new(0.0, 0.0, 7.0), 0.5)
             .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0]))),),
         xz_rectangle((-100.0, 100.0), (-100.0, 100.0), -3.0)

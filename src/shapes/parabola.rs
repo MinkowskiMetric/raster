@@ -1,36 +1,24 @@
-use super::{HitResult, Shape, SimpleShape};
+use super::{Primitive, PrimitiveHitResult, UntransformedPrimitive};
 use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::BoundingBox;
 use crate::RenderStatsCollector;
-use crate::{BoundingBox, Material};
 
-#[derive(Debug)]
-pub struct ParabolaXY<M: Material + Clone> {
-    material: M,
+#[derive(Debug, Clone)]
+pub struct ParabolaXY {
     extremum_point: Point3,
     focus_point: Point3,
     pr: FloatType,
 }
 
-impl<M: 'static + Material + Clone> Clone for ParabolaXY<M> {
-    fn clone(&self) -> Self {
-        Self {
-            material: self.material.clone(),
-            extremum_point: self.extremum_point,
-            focus_point: self.focus_point,
-            pr: self.pr,
-        }
-    }
-}
-
-impl<M: 'static + Material + Clone> Shape for ParabolaXY<M> {
-    fn intersect<'a>(
-        &'a self,
+impl Primitive for ParabolaXY {
+    fn intersect(
+        &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
         _stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult<'a>> {
+    ) -> Option<PrimitiveHitResult> {
         // A paraboloid is all the points that are equidistant between the focus of the parabola, and the directrix plane,
         // which is a plane that does not pass through the focus.
 
@@ -159,14 +147,13 @@ impl<M: 'static + Material + Clone> Shape for ParabolaXY<M> {
         let u = radial_point.magnitude() / self.pr;
         let v = 0.0; // TODOTODOTODO - could use the angle
 
-        Some(HitResult {
+        Some(PrimitiveHitResult {
             distance: t,
             hit_point: hit_point.into(),
             surface_normal: surface_normal.into(),
             tangent,
             bitangent,
             front_face,
-            material: &self.material,
             u,
             v,
         })
@@ -181,19 +168,13 @@ impl<M: 'static + Material + Clone> Shape for ParabolaXY<M> {
     }
 }
 
-impl<M: 'static + Material + Clone> SimpleShape for ParabolaXY<M> {}
+impl UntransformedPrimitive for ParabolaXY {}
 
 pub mod factories {
     use super::*;
 
-    pub fn parabola<M: Material + Clone>(
-        extremum_point: Point3,
-        focus_point: Point3,
-        radius: FloatType,
-        material: M,
-    ) -> ParabolaXY<M> {
+    pub fn parabola(extremum_point: Point3, focus_point: Point3, radius: FloatType) -> ParabolaXY {
         ParabolaXY {
-            material,
             extremum_point,
             focus_point,
             pr: radius,
