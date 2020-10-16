@@ -1,4 +1,4 @@
-use super::{GeometryHitResult, PrimitiveHitResult, TransformableShape};
+use super::{PrimitiveHitResult, TransformableShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
@@ -31,58 +31,56 @@ impl<'a> HitResult<'a> {
     pub fn split(self) -> (PrimitiveHitResult, &'a dyn Material) {
         (self.primitive_hit_result, self.material)
     }
-}
 
-impl<'a> GeometryHitResult for HitResult<'a> {
-    fn distance(&self) -> FloatType {
+    pub fn distance(&self) -> FloatType {
         self.primitive_hit_result.distance()
     }
 
-    fn set_distance(&mut self, distance: FloatType) {
+    pub fn set_distance(&mut self, distance: FloatType) {
         self.primitive_hit_result.set_distance(distance)
     }
 
-    fn hit_point(&self) -> Point3 {
+    pub fn hit_point(&self) -> Point3 {
         self.primitive_hit_result.hit_point()
     }
 
-    fn set_hit_point(&mut self, hit_point: Point3) {
+    pub fn set_hit_point(&mut self, hit_point: Point3) {
         self.primitive_hit_result.set_hit_point(hit_point)
     }
 
-    fn surface_normal(&self) -> Vector3 {
+    pub fn surface_normal(&self) -> Vector3 {
         self.primitive_hit_result.surface_normal()
     }
 
-    fn set_surface_normal(&mut self, surface_normal: Vector3) {
+    pub fn set_surface_normal(&mut self, surface_normal: Vector3) {
         self.primitive_hit_result.set_surface_normal(surface_normal)
     }
 
-    fn tangent(&self) -> Vector3 {
+    pub fn tangent(&self) -> Vector3 {
         self.primitive_hit_result.tangent()
     }
 
-    fn set_tangent(&mut self, tangent: Vector3) {
+    pub fn set_tangent(&mut self, tangent: Vector3) {
         self.primitive_hit_result.set_tangent(tangent)
     }
 
-    fn bitangent(&self) -> Vector3 {
+    pub fn bitangent(&self) -> Vector3 {
         self.primitive_hit_result.bitangent()
     }
 
-    fn set_bitangent(&mut self, bitangent: Vector3) {
+    pub fn set_bitangent(&mut self, bitangent: Vector3) {
         self.primitive_hit_result.set_bitangent(bitangent)
     }
 
-    fn front_face(&self) -> bool {
+    pub fn front_face(&self) -> bool {
         self.primitive_hit_result.front_face()
     }
 
-    fn set_front_face(&mut self, front_face: bool) {
+    pub fn set_front_face(&mut self, front_face: bool) {
         self.primitive_hit_result.set_front_face(front_face)
     }
 
-    fn uv(&self) -> (FloatType, FloatType) {
+    pub fn uv(&self) -> (FloatType, FloatType) {
         self.primitive_hit_result.uv()
     }
 }

@@ -1,7 +1,7 @@
 use super::surface_mapper::SurfaceMappingMaterial;
 use crate::{
-    factories::*, math::*, utils::*, Color, GeometryHitResult, Material, PartialScatterResult,
-    PrimitiveHitResult, Ray, ScatterResult, SurfaceMapper, Texture,
+    factories::*, math::*, utils::*, Color, Material, PartialScatterResult, PrimitiveHitResult,
+    Ray, ScatterResult, SurfaceMapper, Texture,
 };
 use std::convert::TryInto;
 

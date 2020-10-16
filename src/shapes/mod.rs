@@ -14,8 +14,8 @@ pub use crate::shapes;
 pub use aabb::BoundingBox;
 pub use medium::MediumDensity;
 pub use primitive::{
-    CompoundPrimitive, GeometryHitResult, IntoAggregatePrimitive, IntoPrimitive, Primitive,
-    PrimitiveHitResult, SkinnablePrimitive, SkinnedPrimitive, UntransformedPrimitive,
+    CompoundPrimitive, IntoAggregatePrimitive, IntoPrimitive, Primitive, PrimitiveHitResult,
+    SkinnablePrimitive, SkinnedPrimitive, UntransformedPrimitive,
 };
 pub use rectangle::TransformedXyRectangle;
 pub use shape::{CollectionShape, CompoundShape, HitResult, Shape, SimpleShape};

@@ -1,6 +1,6 @@
 use super::{Material, PartialScatterResult, ScatterResult};
 use crate::utils::*;
-use crate::{GeometryHitResult, PrimitiveHitResult, Ray, Texture};
+use crate::{PrimitiveHitResult, Ray, Texture};
 
 #[derive(Clone, Debug)]
 pub struct Lambertian<T: 'static + Texture + Clone>(T);

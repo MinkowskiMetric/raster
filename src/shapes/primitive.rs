@@ -6,28 +6,6 @@ use crate::BoundingBox;
 use crate::Material;
 use crate::RenderStatsCollector;
 
-pub trait GeometryHitResult {
-    fn distance(&self) -> FloatType;
-    fn set_distance(&mut self, distance: FloatType);
-
-    fn hit_point(&self) -> Point3;
-    fn set_hit_point(&mut self, hit_point: Point3);
-
-    fn surface_normal(&self) -> Vector3;
-    fn set_surface_normal(&mut self, surface_normal: Vector3);
-
-    fn tangent(&self) -> Vector3;
-    fn set_tangent(&mut self, tangent: Vector3);
-
-    fn bitangent(&self) -> Vector3;
-    fn set_bitangent(&mut self, bitangent: Vector3);
-
-    fn front_face(&self) -> bool;
-    fn set_front_face(&mut self, front_face: bool);
-
-    fn uv(&self) -> (FloatType, FloatType);
-}
-
 #[derive(Debug, Clone)]
 pub struct PrimitiveHitResult {
     distance: FloatType,
@@ -59,58 +37,56 @@ impl PrimitiveHitResult {
             uv,
         }
     }
-}
 
-impl GeometryHitResult for PrimitiveHitResult {
-    fn distance(&self) -> FloatType {
+    pub fn distance(&self) -> FloatType {
         self.distance
     }
 
-    fn set_distance(&mut self, distance: FloatType) {
+    pub fn set_distance(&mut self, distance: FloatType) {
         self.distance = distance
     }
 
-    fn hit_point(&self) -> Point3 {
+    pub fn hit_point(&self) -> Point3 {
         self.hit_point
     }
 
-    fn set_hit_point(&mut self, hit_point: Point3) {
+    pub fn set_hit_point(&mut self, hit_point: Point3) {
         self.hit_point = hit_point
     }
 
-    fn surface_normal(&self) -> Vector3 {
+    pub fn surface_normal(&self) -> Vector3 {
         self.surface_normal
     }
 
-    fn set_surface_normal(&mut self, surface_normal: Vector3) {
+    pub fn set_surface_normal(&mut self, surface_normal: Vector3) {
         self.surface_normal = surface_normal
     }
 
-    fn tangent(&self) -> Vector3 {
+    pub fn tangent(&self) -> Vector3 {
         self.tangent
     }
 
-    fn set_tangent(&mut self, tangent: Vector3) {
+    pub fn set_tangent(&mut self, tangent: Vector3) {
         self.tangent = tangent
     }
 
-    fn bitangent(&self) -> Vector3 {
+    pub fn bitangent(&self) -> Vector3 {
         self.bitangent
     }
 
-    fn set_bitangent(&mut self, bitangent: Vector3) {
+    pub fn set_bitangent(&mut self, bitangent: Vector3) {
         self.bitangent = bitangent
     }
 
-    fn front_face(&self) -> bool {
+    pub fn front_face(&self) -> bool {
         self.front_face
     }
 
-    fn set_front_face(&mut self, front_face: bool) {
+    pub fn set_front_face(&mut self, front_face: bool) {
         self.front_face = front_face
     }
 
-    fn uv(&self) -> (FloatType, FloatType) {
+    pub fn uv(&self) -> (FloatType, FloatType) {
         self.uv
     }
 }

@@ -3,7 +3,7 @@ use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
 use crate::RenderStatsCollector;
-use crate::{GeometryHitResult, HitResult, Shape};
+use crate::{HitResult, Shape};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum ComparatorAxis {

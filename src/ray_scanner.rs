@@ -1,7 +1,7 @@
 use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
 use crate::utils::*;
-use crate::{constants, Color, GeometryHitResult, PartialScatterResult, ScatterResult, Shape};
+use crate::{constants, Color, PartialScatterResult, ScatterResult, Shape};
 use crate::{RenderStatsAccumulator, RenderStatsCollector, TracingStats};
 use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};

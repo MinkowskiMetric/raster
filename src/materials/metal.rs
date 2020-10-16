@@ -2,7 +2,7 @@ use super::utils::*;
 use super::{Material, PartialScatterResult, ScatterResult};
 use crate::math::*;
 use crate::utils::*;
-use crate::{Color, GeometryHitResult, PrimitiveHitResult, Ray, Texture};
+use crate::{Color, PrimitiveHitResult, Ray, Texture};
 
 #[derive(Debug)]
 pub struct Metal<T: Texture>(T, FloatType);

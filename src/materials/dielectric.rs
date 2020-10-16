@@ -2,7 +2,7 @@ use super::utils::*;
 use super::{Material, PartialScatterResult, ScatterResult};
 use crate::math::*;
 use crate::utils::*;
-use crate::{GeometryHitResult, PrimitiveHitResult, Ray};
+use crate::{PrimitiveHitResult, Ray};
 
 #[derive(Clone, Debug)]
 pub struct Dielectric(FloatType);

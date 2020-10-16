@@ -1,4 +1,4 @@
-use super::{GeometryHitResult, HitResult, Primitive, PrimitiveHitResult, Shape, SimpleShape};
+use super::{HitResult, Primitive, PrimitiveHitResult, Shape, SimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;

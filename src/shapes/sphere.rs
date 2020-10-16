@@ -350,7 +350,7 @@ pub mod factories {
 
 #[cfg(test)]
 mod test {
-    use super::{super::GeometryHitResult, *};
+    use super::*;
     use crate::factories::*;
 
     #[test]

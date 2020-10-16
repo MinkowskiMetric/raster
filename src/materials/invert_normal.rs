@@ -1,5 +1,5 @@
 use super::{Material, ScatterResult};
-use crate::{GeometryHitResult, PrimitiveHitResult, Ray};
+use crate::{PrimitiveHitResult, Ray};
 
 #[derive(Debug, Clone)]
 #[repr(transparent)]

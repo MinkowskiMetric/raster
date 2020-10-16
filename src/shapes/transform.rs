@@ -1,6 +1,6 @@
 use super::{
-    CompoundShape, GeometryHitResult, HitResult, Primitive, PrimitiveHitResult, Shape,
-    SkinnablePrimitive, SkinnedPrimitive, UntransformedPrimitive,
+    CompoundShape, HitResult, Primitive, PrimitiveHitResult, Shape, SkinnablePrimitive,
+    SkinnedPrimitive, UntransformedPrimitive,
 };
 use crate::math::*;
 use crate::ray_scanner::Ray;
@@ -39,8 +39,11 @@ fn transform_bounding_box(bounding_box: BoundingBox, transform: &Matrix4) -> Bou
 
 pub trait GeometryTransform: Send + Sync + std::fmt::Debug {
     fn transform_ray(&self, ray: &Ray) -> Ray;
-    fn transform_hit_result<HR: GeometryHitResult>(&self, original_ray: &Ray, hit_result: HR)
-        -> HR;
+    fn transform_hit_result(
+        &self,
+        original_ray: &Ray,
+        hit_result: PrimitiveHitResult,
+    ) -> PrimitiveHitResult;
     fn transform_bounding_box(
         &self,
         t0: FloatType,
@@ -76,11 +79,11 @@ impl GeometryTransform for StaticTransform {
         transformed_ray
     }
 
-    fn transform_hit_result<HR: GeometryHitResult>(
+    fn transform_hit_result(
         &self,
         original_ray: &Ray,
-        mut hit_result: HR,
-    ) -> HR {
+        mut hit_result: PrimitiveHitResult,
+    ) -> PrimitiveHitResult {
         hit_result.set_hit_point(self.transform.transform_point(hit_result.hit_point()));
         hit_result.set_surface_normal(
             self.transform
@@ -168,7 +171,11 @@ impl<S: Shape, T: GeometryTransform> Shape for TransformedShape<S, T> {
 
         self.shape
             .intersect(&transformed_ray, t_min, t_max, stats)
-            .map(|hit_result| self.transform.transform_hit_result(ray, hit_result))
+            .map(|hit_result| {
+                let (hit_result, material) = hit_result.split();
+                let hit_result = self.transform.transform_hit_result(ray, hit_result);
+                HitResult::new(hit_result, material)
+            })
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
