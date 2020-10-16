@@ -52,16 +52,15 @@ impl Primitive for UnitXyRectangle {
 
         let hit_point = ray_origin + (t * ray_direction);
 
-        Some(PrimitiveHitResult {
-            distance: t,
-            hit_point: hit_point.into(),
-            surface_normal: surface_normal.into(),
+        Some(PrimitiveHitResult::new(
+            t,
+            hit_point.into(),
+            surface_normal.into(),
             tangent,
             bitangent,
             front_face,
-            u,
-            v,
-        })
+            (u, v),
+        ))
     }
 
     fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {

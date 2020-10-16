@@ -147,16 +147,15 @@ impl Primitive for ParabolaXY {
         let u = radial_point.magnitude() / self.pr;
         let v = 0.0; // TODOTODOTODO - could use the angle
 
-        Some(PrimitiveHitResult {
-            distance: t,
-            hit_point: hit_point.into(),
-            surface_normal: surface_normal.into(),
+        Some(PrimitiveHitResult::new(
+            t,
+            hit_point.into(),
+            surface_normal.into(),
             tangent,
             bitangent,
             front_face,
-            u,
-            v,
-        })
+            (u, v),
+        ))
     }
 
     fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {

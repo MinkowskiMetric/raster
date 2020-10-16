@@ -15,7 +15,7 @@ impl SolidTexture {
 }
 
 impl Texture for SolidTexture {
-    fn value(&self, _p: Point3, _u: FloatType, _v: FloatType) -> Color {
+    fn value(&self, _p: Point3, _uv: (FloatType, FloatType)) -> Color {
         *self.color()
     }
 }

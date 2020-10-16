@@ -1,4 +1,4 @@
-use super::{HitResult, Primitive, PrimitiveHitResult, Shape, SimpleShape};
+use super::{GeometryHitResult, HitResult, Primitive, PrimitiveHitResult, Shape, SimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
@@ -43,7 +43,7 @@ impl<Density: MediumDensity + Clone, Phase: Material + Clone, Child: Primitive +
         {
             if let Some(hit_2) =
                 self.child
-                    .intersect(ray, hit_1.distance + 0.0001, constants::INFINITY, stats)
+                    .intersect(ray, hit_1.distance() + 0.0001, constants::INFINITY, stats)
             {
                 Some((hit_1, hit_2))
             } else {
@@ -69,8 +69,8 @@ impl<
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
         if let Some((hit_result_1, hit_result_2)) = self.double_intersect(ray, stats) {
-            let distance_1 = hit_result_1.distance.max(t_min).max(0.0);
-            let distance_2 = hit_result_2.distance.min(t_max);
+            let distance_1 = hit_result_1.distance().max(t_min).max(0.0);
+            let distance_2 = hit_result_2.distance().min(t_max);
 
             if distance_1 < distance_2 {
                 let internal_ray_origin =
@@ -82,18 +82,19 @@ impl<
                 if let Some(scatter_distance) =
                     self.density.does_scatter(internal_ray, internal_ray_length)
                 {
-                    Some(HitResult {
-                        distance: scatter_distance + distance_1,
-                        hit_point: ray.origin.into_point()
-                            + (ray.direction.into_vector() * (scatter_distance + distance_1)),
-                        surface_normal: vec3(1.0, 0.0, 0.0), // arbitrary
-                        tangent: vec3(0.0, 1.0, 0.0),        // arbitrary
-                        bitangent: vec3(0.0, 0.0, 1.0),      // arbitrary
-                        front_face: true,                    // also arbitrary
-                        material: &self.phase,
-                        u: 0.0,
-                        v: 0.0,
-                    })
+                    Some(HitResult::new(
+                        PrimitiveHitResult::new(
+                            scatter_distance + distance_1,
+                            ray.origin.into_point()
+                                + (ray.direction.into_vector() * (scatter_distance + distance_1)),
+                            vec3(1.0, 0.0, 0.0), // arbitrary
+                            vec3(0.0, 1.0, 0.0), // arbitrary
+                            vec3(0.0, 0.0, 1.0), // arbitrary
+                            true,                // also arbitrary
+                            (0.0, 0.0),
+                        ),
+                        &self.phase,
+                    ))
                 } else {
                     None
                 }
@@ -146,17 +147,13 @@ impl MediumDensity for ConstantDensity {
 pub struct Isotropic<Albedo: Texture + Clone>(Albedo);
 
 impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
-        let attenuation = cgmath::Vector4::from(self.0.value(
-            hit_record.hit_point,
-            hit_record.u,
-            hit_record.v,
-        ))
-        .truncate();
+    fn scatter(&self, ray_in: &Ray, hit_record: HitResult) -> Option<ScatterResult> {
+        let attenuation =
+            cgmath::Vector4::from(self.0.value(hit_record.hit_point(), hit_record.uv())).truncate();
 
         let ret = Some(ScatterResult {
             partial: PartialScatterResult { attenuation },
-            scattered: Ray::new(hit_record.hit_point, random_in_unit_sphere(), ray_in.time),
+            scattered: Ray::new(hit_record.hit_point(), random_in_unit_sphere(), ray_in.time),
         });
 
         ret
@@ -210,8 +207,8 @@ fn test_constant_medium_hit_points() {
         .into_iter()
         .filter_map(|_| medium.intersect(&ray, 0.0001, constants::INFINITY, &mut stats))
         .map(|intersect| {
-            let hit_point = &intersect.hit_point;
-            let distance = intersect.distance;
+            let hit_point = intersect.hit_point();
+            let distance = intersect.distance();
 
             assert_eq!(hit_point.x, 0.0);
             assert_eq!(hit_point.y, 0.0);

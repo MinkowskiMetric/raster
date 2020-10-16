@@ -37,7 +37,7 @@ impl NoiseNormal {
 }
 
 impl Texture for NoiseNormal {
-    fn value(&self, p: Point3, _u: FloatType, _v: FloatType) -> Color {
+    fn value(&self, p: Point3, _uv: (FloatType, FloatType)) -> Color {
         let perlin = self.perlin_random_unit_vector(p) * self.depth();
         let normal = (vec3(0.0, 0.0, 1.0) + perlin).normalize();
         ((normal / 2.0) + vec3(0.5, 0.5, 0.5)).try_into().unwrap()

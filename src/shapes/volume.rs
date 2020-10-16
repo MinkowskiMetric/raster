@@ -3,7 +3,7 @@ use crate::ray_scanner::Ray;
 use crate::utils::*;
 use crate::BoundingBox;
 use crate::RenderStatsCollector;
-use crate::{HitResult, Shape};
+use crate::{GeometryHitResult, HitResult, Shape};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum ComparatorAxis {
@@ -148,7 +148,7 @@ fn replace_hit_result<'a>(
     new_value: Option<HitResult<'a>>,
 ) -> Option<HitResult<'a>> {
     match (hit_result, new_value) {
-        (Some(left), Some(right)) if left.distance < right.distance => Some(left),
+        (Some(left), Some(right)) if left.distance() < right.distance() => Some(left),
         (_, Some(right)) => Some(right),
         (Some(left), _) => Some(left),
         _ => None,

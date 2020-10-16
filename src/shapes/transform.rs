@@ -1,6 +1,6 @@
 use super::{
-    CompoundShape, HitResult, Primitive, PrimitiveHitResult, Shape, SkinnablePrimitive,
-    SkinnedPrimitive, UntransformedPrimitive,
+    CompoundShape, GeometryHitResult, HitResult, Primitive, PrimitiveHitResult, Shape,
+    SkinnablePrimitive, SkinnedPrimitive, UntransformedPrimitive,
 };
 use crate::math::*;
 use crate::ray_scanner::Ray;
@@ -37,14 +37,89 @@ fn transform_bounding_box(bounding_box: BoundingBox, transform: &Matrix4) -> Bou
     BoundingBox::new(pt_min, pt_max)
 }
 
-#[derive(Clone, Debug)]
-pub struct TransformedPrimitive<P: Primitive> {
-    transform: Matrix4,
-    inverse: Matrix4,
-    primitive: P,
+pub trait GeometryTransform: Send + Sync + std::fmt::Debug {
+    fn transform_ray(&self, ray: &Ray) -> Ray;
+    fn transform_hit_result<HR: GeometryHitResult>(&self, original_ray: &Ray, hit_result: HR)
+        -> HR;
+    fn transform_bounding_box(
+        &self,
+        t0: FloatType,
+        t1: FloatType,
+        bounding_box: BoundingBox,
+    ) -> BoundingBox;
 }
 
-impl<P: Primitive> Primitive for TransformedPrimitive<P> {
+#[derive(Clone, Debug)]
+pub struct StaticTransform {
+    transform: Matrix4,
+    inverse: Matrix4,
+}
+
+impl StaticTransform {
+    pub fn new(transform: Matrix4) -> Self {
+        let inverse = transform.inverse_transform().unwrap();
+        Self { transform, inverse }
+    }
+
+    pub fn concat(self, transform: Matrix4) -> Self {
+        let transform = transform.concat(&self.transform);
+        let inverse = transform.inverse_transform().unwrap();
+        Self { transform, inverse }
+    }
+}
+
+impl GeometryTransform for StaticTransform {
+    fn transform_ray(&self, ray: &Ray) -> Ray {
+        let transformed_origin = self.inverse.transform_point(ray.origin.into_point());
+        let transformed_direction = self.inverse.transform_vector(ray.direction.into_vector());
+        let transformed_ray = Ray::new(transformed_origin, transformed_direction, ray.time);
+        transformed_ray
+    }
+
+    fn transform_hit_result<HR: GeometryHitResult>(
+        &self,
+        original_ray: &Ray,
+        mut hit_result: HR,
+    ) -> HR {
+        hit_result.set_hit_point(self.transform.transform_point(hit_result.hit_point()));
+        hit_result.set_surface_normal(
+            self.transform
+                .transform_vector(hit_result.surface_normal())
+                .normalize(),
+        );
+        hit_result.set_tangent(
+            self.transform
+                .transform_vector(hit_result.tangent())
+                .normalize(),
+        );
+        hit_result.set_bitangent(
+            self.transform
+                .transform_vector(hit_result.bitangent())
+                .normalize(),
+        );
+        hit_result
+            .set_distance((hit_result.hit_point() - original_ray.origin.into_point()).magnitude());
+
+        hit_result
+    }
+
+    fn transform_bounding_box(
+        &self,
+        _t0: FloatType,
+        _t1: FloatType,
+        bounding_box: BoundingBox,
+    ) -> BoundingBox {
+        transform_bounding_box(bounding_box, &self.transform)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TransformedPrimitive<P: Primitive, T: GeometryTransform> {
+    primitive: P,
+    transform: T,
+}
+
+impl<P: Primitive, T: GeometryTransform> Primitive for TransformedPrimitive<P, T> {
     fn intersect(
         &self,
         ray: &Ray,
@@ -52,39 +127,23 @@ impl<P: Primitive> Primitive for TransformedPrimitive<P> {
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<PrimitiveHitResult> {
-        let transformed_origin = self.inverse.transform_point(ray.origin.into_point());
-        let transformed_direction = self.inverse.transform_vector(ray.direction.into_vector());
-        let transformed_ray = Ray::new(transformed_origin, transformed_direction, ray.time);
+        let transformed_ray = self.transform.transform_ray(ray);
 
         self.primitive
             .intersect(&transformed_ray, t_min, t_max, stats)
-            .map(|mut hit_result| {
-                hit_result.hit_point = self.transform.transform_point(hit_result.hit_point);
-                hit_result.surface_normal = self
-                    .transform
-                    .transform_vector(hit_result.surface_normal)
-                    .normalize();
-                hit_result.tangent = self
-                    .transform
-                    .transform_vector(hit_result.tangent)
-                    .normalize();
-                hit_result.bitangent = self
-                    .transform
-                    .transform_vector(hit_result.bitangent)
-                    .normalize();
-                hit_result.distance = (hit_result.hit_point - ray.origin.into_point()).magnitude();
-
-                hit_result
-            })
+            .map(|hit_result| self.transform.transform_hit_result(ray, hit_result))
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        transform_bounding_box(self.primitive.bounding_box(t0, t1), &self.transform)
+        self.transform
+            .transform_bounding_box(t0, t1, self.primitive.bounding_box(t0, t1))
     }
 }
 
-impl<M: Material, P: Primitive> SkinnablePrimitive<M> for TransformedPrimitive<P> {
-    type Target = SkinnedPrimitive<TransformedPrimitive<P>, M>;
+impl<M: Material, P: Primitive, T: GeometryTransform> SkinnablePrimitive<M>
+    for TransformedPrimitive<P, T>
+{
+    type Target = SkinnedPrimitive<TransformedPrimitive<P, T>, M>;
 
     fn apply_material(self, material: M) -> Self::Target {
         SkinnedPrimitive::new(material, vec![self])
@@ -92,13 +151,12 @@ impl<M: Material, P: Primitive> SkinnablePrimitive<M> for TransformedPrimitive<P
 }
 
 #[derive(Clone, Debug)]
-pub struct TransformedShape<S: Shape> {
-    transform: Matrix4,
-    inverse: Matrix4,
+pub struct TransformedShape<S: Shape, T: GeometryTransform> {
+    transform: T,
     shape: S,
 }
 
-impl<S: Shape> Shape for TransformedShape<S> {
+impl<S: Shape, T: GeometryTransform> Shape for TransformedShape<S, T> {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -106,50 +164,35 @@ impl<S: Shape> Shape for TransformedShape<S> {
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
-        let transformed_origin = self.inverse.transform_point(ray.origin.into_point());
-        let transformed_direction = self.inverse.transform_vector(ray.direction.into_vector());
-        let transformed_ray = Ray::new(transformed_origin, transformed_direction, ray.time);
+        let transformed_ray = self.transform.transform_ray(ray);
 
         self.shape
             .intersect(&transformed_ray, t_min, t_max, stats)
-            .map(|mut hit_result| {
-                hit_result.hit_point = self.transform.transform_point(hit_result.hit_point);
-                hit_result.surface_normal = self
-                    .transform
-                    .transform_vector(hit_result.surface_normal)
-                    .normalize();
-                hit_result.tangent = self
-                    .transform
-                    .transform_vector(hit_result.tangent)
-                    .normalize();
-                hit_result.bitangent = self
-                    .transform
-                    .transform_vector(hit_result.bitangent)
-                    .normalize();
-                hit_result.distance = (hit_result.hit_point - ray.origin.into_point()).magnitude();
-
-                hit_result
-            })
+            .map(|hit_result| self.transform.transform_hit_result(ray, hit_result))
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        transform_bounding_box(self.shape.bounding_box(t0, t1), &self.transform)
+        self.transform
+            .transform_bounding_box(t0, t1, self.shape.bounding_box(t0, t1))
     }
 }
 
-pub struct TransformedShapeIterator<Iter: Iterator<Item = Box<dyn Shape>>> {
-    transform: Matrix4,
-    inverse: Matrix4,
+pub struct TransformedShapeIterator<
+    T: GeometryTransform + Clone,
+    Iter: Iterator<Item = Box<dyn Shape>>,
+> {
+    transform: T,
     iter: Iter,
 }
 
-impl<Iter: Iterator<Item = Box<dyn Shape>>> Iterator for TransformedShapeIterator<Iter> {
+impl<T: 'static + GeometryTransform + Clone, Iter: Iterator<Item = Box<dyn Shape>>> Iterator
+    for TransformedShapeIterator<T, Iter>
+{
     type Item = Box<dyn Shape>;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|child| {
             let b: Box<dyn Shape> = Box::new(TransformedShape {
                 transform: self.transform.clone(),
-                inverse: self.inverse.clone(),
                 shape: child,
             });
             b
@@ -157,13 +200,14 @@ impl<Iter: Iterator<Item = Box<dyn Shape>>> Iterator for TransformedShapeIterato
     }
 }
 
-impl<S: CompoundShape> CompoundShape for TransformedShape<S> {
-    type GeometryIterator = TransformedShapeIterator<S::GeometryIterator>;
+impl<S: CompoundShape, T: 'static + GeometryTransform + Clone> CompoundShape
+    for TransformedShape<S, T>
+{
+    type GeometryIterator = TransformedShapeIterator<T, S::GeometryIterator>;
 
     fn into_geometry_iterator(self) -> Self::GeometryIterator {
         TransformedShapeIterator {
             transform: self.transform,
-            inverse: self.inverse,
             iter: self.shape.into_geometry_iterator(),
         }
     }
@@ -225,54 +269,44 @@ pub trait TransformablePrimitive: Primitive + Sized {
 impl TransformableShape for Box<dyn Shape> {
     // This is pretty unfortunate. What is happening here is that we're transforming the shape after
     // we've discarded it's type, so we are probably double transforming.
-    type Target = TransformedShape<Self>;
+    type Target = TransformedShape<Self, StaticTransform>;
 
     fn transform(self, transform: Matrix4) -> Self::Target {
-        let inverse = transform.inverse_transform().unwrap();
         Self::Target {
-            transform,
-            inverse,
+            transform: StaticTransform::new(transform),
             shape: self,
         }
     }
 }
 
 impl<P: UntransformedPrimitive + Sized> TransformablePrimitive for P {
-    type Target = TransformedPrimitive<P>;
+    type Target = TransformedPrimitive<P, StaticTransform>;
 
     fn transform(self, transform: Matrix4) -> Self::Target {
-        let inverse = transform.inverse_transform().unwrap();
         Self::Target {
-            transform,
-            inverse,
+            transform: StaticTransform::new(transform),
             primitive: self,
         }
     }
 }
 
-impl<P: Primitive> TransformablePrimitive for TransformedPrimitive<P> {
+impl<P: Primitive> TransformablePrimitive for TransformedPrimitive<P, StaticTransform> {
     type Target = Self;
 
     fn transform(self, transform: Matrix4) -> Self::Target {
-        let transform = transform.concat(&self.transform);
-        let inverse = transform.inverse_transform().unwrap();
         Self::Target {
-            transform,
-            inverse,
+            transform: self.transform.concat(transform),
             primitive: self.primitive,
         }
     }
 }
 
-impl<S: Shape> TransformableShape for TransformedShape<S> {
+impl<S: Shape> TransformableShape for TransformedShape<S, StaticTransform> {
     type Target = Self;
 
     fn transform(self, transform: Matrix4) -> Self::Target {
-        let transform = transform.concat(&self.transform);
-        let inverse = transform.inverse_transform().unwrap();
         Self::Target {
-            transform,
-            inverse,
+            transform: self.transform.concat(transform),
             shape: self.shape,
         }
     }

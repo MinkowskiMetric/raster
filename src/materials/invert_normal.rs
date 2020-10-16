@@ -1,5 +1,5 @@
 use super::{Material, ScatterResult};
-use crate::{HitResult, Ray};
+use crate::{GeometryHitResult, HitResult, Ray};
 
 #[derive(Debug, Clone)]
 #[repr(transparent)]
@@ -12,10 +12,9 @@ impl<M: Material + Clone> InvertNormal<M> {
 }
 
 impl<M: Material + Clone> Material for InvertNormal<M> {
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
-        let mut modified_result = hit_record.clone();
-        modified_result.front_face = !hit_record.front_face;
-        self.0.scatter(ray_in, &modified_result)
+    fn scatter(&self, ray_in: &Ray, mut hit_record: HitResult) -> Option<ScatterResult> {
+        hit_record.set_front_face(!hit_record.front_face());
+        self.0.scatter(ray_in, hit_record)
     }
 }
 

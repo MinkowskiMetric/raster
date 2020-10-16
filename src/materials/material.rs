@@ -16,9 +16,9 @@ pub struct ScatterResult {
 }
 
 pub trait Material: Sync + Send + std::fmt::Debug {
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult>;
+    fn scatter(&self, ray_in: &Ray, hit_record: HitResult) -> Option<ScatterResult>;
 
-    fn emitted(&self, _p: Point3, _u: FloatType, _v: FloatType) -> Color {
+    fn emitted(&self, _p: Point3, _uv: (FloatType, FloatType)) -> Color {
         constants::BLACK
     }
 }

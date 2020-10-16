@@ -16,11 +16,11 @@ impl<T: 'static + Texture + Clone> DiffuseLight<T> {
 }
 
 impl<T: 'static + Texture + Clone> Material for DiffuseLight<T> {
-    fn emitted(&self, p: Point3, u: FloatType, v: FloatType) -> Color {
-        self.emit().value(p, u, v)
+    fn emitted(&self, p: Point3, uv: (FloatType, FloatType)) -> Color {
+        self.emit().value(p, uv)
     }
 
-    fn scatter(&self, _ray_in: &Ray, _hit_record: &HitResult) -> Option<ScatterResult> {
+    fn scatter(&self, _ray_in: &Ray, _hit_record: HitResult) -> Option<ScatterResult> {
         None
     }
 }

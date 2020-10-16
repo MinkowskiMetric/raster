@@ -2,7 +2,7 @@ use super::utils::*;
 use super::{Material, PartialScatterResult, ScatterResult};
 use crate::math::*;
 use crate::utils::*;
-use crate::{Color, HitResult, Ray, Texture};
+use crate::{Color, GeometryHitResult, HitResult, Ray, Texture};
 
 #[derive(Debug)]
 pub struct Metal<T: Texture>(T, FloatType);
@@ -28,20 +28,20 @@ impl<T: Texture + Clone> Clone for Metal<T> {
 }
 
 impl<T: Texture> Material for Metal<T> {
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: HitResult) -> Option<ScatterResult> {
         let reflected = reflect(
             ray_in.direction.into_vector().normalize(),
-            hit_record.surface_normal,
+            hit_record.surface_normal(),
         ) + self.fuzz() * random_in_unit_sphere();
         let color = self
             .texture()
-            .value(hit_record.hit_point, hit_record.u, hit_record.v);
-        if reflected.dot(hit_record.surface_normal) > 0.0 {
+            .value(hit_record.hit_point(), hit_record.uv());
+        if reflected.dot(hit_record.surface_normal()) > 0.0 {
             Some(ScatterResult {
                 partial: PartialScatterResult {
                     attenuation: cgmath::Vector4::from(color).truncate(),
                 },
-                scattered: Ray::new(hit_record.hit_point, reflected.normalize(), ray_in.time),
+                scattered: Ray::new(hit_record.hit_point(), reflected.normalize(), ray_in.time),
             })
         } else {
             None

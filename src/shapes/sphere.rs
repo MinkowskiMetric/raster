@@ -86,16 +86,15 @@ impl Sphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult {
-                    distance: temp,
-                    hit_point: hit_point.into(),
-                    surface_normal: surface_normal.into(),
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point.into(),
+                    surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    u,
-                    v,
-                });
+                    (u, v),
+                ));
             }
 
             let temp = (-b + discriminant.sqrt()) / a;
@@ -115,16 +114,15 @@ impl Sphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult {
-                    distance: temp,
-                    hit_point: hit_point.into(),
-                    surface_normal: surface_normal.into(),
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point.into(),
+                    surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    u,
-                    v,
-                });
+                    (u, v),
+                ));
             }
         }
 
@@ -257,16 +255,15 @@ impl MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult {
-                    distance: temp,
-                    hit_point: hit_point.into(),
-                    surface_normal: surface_normal.into(),
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point.into(),
+                    surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    u,
-                    v,
-                });
+                    (u, v),
+                ));
             }
 
             let temp = (-b + discriminant.sqrt()) / a;
@@ -286,16 +283,15 @@ impl MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let (u, v) = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult {
-                    distance: temp,
-                    hit_point: hit_point.into(),
-                    surface_normal: surface_normal.into(),
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point.into(),
+                    surface_normal.into(),
                     tangent,
                     bitangent,
                     front_face,
-                    u,
-                    v,
-                });
+                    (u, v),
+                ));
             }
         }
 
@@ -354,7 +350,7 @@ pub mod factories {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::{super::GeometryHitResult, *};
     use crate::factories::*;
 
     #[test]
@@ -371,10 +367,10 @@ mod test {
         assert!(result.is_some());
         let result = result.unwrap();
 
-        assert_eq!(result.distance, 9.0);
-        assert_eq!(result.hit_point, Point3::new(0.0, 0.0, -1.0));
-        assert_eq!(result.surface_normal, vec3(0.0, 0.0, -1.0));
-        assert_eq!(result.tangent, vec3(-1.0, 0.0, 0.0));
-        assert_eq!(result.bitangent, vec3(0.0, 1.0, 0.0));
+        assert_eq!(result.distance(), 9.0);
+        assert_eq!(result.hit_point(), Point3::new(0.0, 0.0, -1.0));
+        assert_eq!(result.surface_normal(), vec3(0.0, 0.0, -1.0));
+        assert_eq!(result.tangent(), vec3(-1.0, 0.0, 0.0));
+        assert_eq!(result.bitangent(), vec3(0.0, 1.0, 0.0));
     }
 }

@@ -1,4 +1,4 @@
-use super::TransformableShape;
+use super::{GeometryHitResult, PrimitiveHitResult, TransformableShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
@@ -6,17 +6,77 @@ use crate::BoundingBox;
 use crate::Material;
 use crate::RenderStatsCollector;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct HitResult<'a> {
-    pub distance: FloatType,
-    pub hit_point: Point3,
-    pub surface_normal: Vector3,
-    pub tangent: Vector3,
-    pub bitangent: Vector3,
-    pub front_face: bool,
+    pub primitive_hit_result: PrimitiveHitResult,
     pub material: &'a dyn Material,
-    pub u: FloatType,
-    pub v: FloatType,
+}
+
+impl<'a> HitResult<'a> {
+    pub fn new(primitive_hit_result: PrimitiveHitResult, material: &'a dyn Material) -> Self {
+        Self {
+            primitive_hit_result,
+            material,
+        }
+    }
+
+    pub fn material(&self) -> &'a dyn Material {
+        self.material
+    }
+}
+
+impl<'a> GeometryHitResult for HitResult<'a> {
+    fn distance(&self) -> FloatType {
+        self.primitive_hit_result.distance()
+    }
+
+    fn set_distance(&mut self, distance: FloatType) {
+        self.primitive_hit_result.set_distance(distance)
+    }
+
+    fn hit_point(&self) -> Point3 {
+        self.primitive_hit_result.hit_point()
+    }
+
+    fn set_hit_point(&mut self, hit_point: Point3) {
+        self.primitive_hit_result.set_hit_point(hit_point)
+    }
+
+    fn surface_normal(&self) -> Vector3 {
+        self.primitive_hit_result.surface_normal()
+    }
+
+    fn set_surface_normal(&mut self, surface_normal: Vector3) {
+        self.primitive_hit_result.set_surface_normal(surface_normal)
+    }
+
+    fn tangent(&self) -> Vector3 {
+        self.primitive_hit_result.tangent()
+    }
+
+    fn set_tangent(&mut self, tangent: Vector3) {
+        self.primitive_hit_result.set_tangent(tangent)
+    }
+
+    fn bitangent(&self) -> Vector3 {
+        self.primitive_hit_result.bitangent()
+    }
+
+    fn set_bitangent(&mut self, bitangent: Vector3) {
+        self.primitive_hit_result.set_bitangent(bitangent)
+    }
+
+    fn front_face(&self) -> bool {
+        self.primitive_hit_result.front_face()
+    }
+
+    fn set_front_face(&mut self, front_face: bool) {
+        self.primitive_hit_result.set_front_face(front_face)
+    }
+
+    fn uv(&self) -> (FloatType, FloatType) {
+        self.primitive_hit_result.uv()
+    }
 }
 
 pub trait Shape: Send + Sync + std::fmt::Debug {
@@ -133,8 +193,8 @@ impl<S: Shape> Shape for CollectionShape<S> {
             .iter()
             .filter_map(|shape| shape.intersect(&ray, t_min, t_max, stats))
             .min_by(|xr, yr| {
-                xr.distance
-                    .partial_cmp(&yr.distance)
+                xr.distance()
+                    .partial_cmp(&yr.distance())
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
     }

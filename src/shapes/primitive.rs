@@ -6,16 +6,113 @@ use crate::BoundingBox;
 use crate::Material;
 use crate::RenderStatsCollector;
 
+pub trait GeometryHitResult {
+    fn distance(&self) -> FloatType;
+    fn set_distance(&mut self, distance: FloatType);
+
+    fn hit_point(&self) -> Point3;
+    fn set_hit_point(&mut self, hit_point: Point3);
+
+    fn surface_normal(&self) -> Vector3;
+    fn set_surface_normal(&mut self, surface_normal: Vector3);
+
+    fn tangent(&self) -> Vector3;
+    fn set_tangent(&mut self, tangent: Vector3);
+
+    fn bitangent(&self) -> Vector3;
+    fn set_bitangent(&mut self, bitangent: Vector3);
+
+    fn front_face(&self) -> bool;
+    fn set_front_face(&mut self, front_face: bool);
+
+    fn uv(&self) -> (FloatType, FloatType);
+}
+
 #[derive(Debug)]
 pub struct PrimitiveHitResult {
-    pub distance: FloatType,
-    pub hit_point: Point3,
-    pub surface_normal: Vector3,
-    pub tangent: Vector3,
-    pub bitangent: Vector3,
-    pub front_face: bool,
-    pub u: FloatType,
-    pub v: FloatType,
+    distance: FloatType,
+    hit_point: Point3,
+    surface_normal: Vector3,
+    tangent: Vector3,
+    bitangent: Vector3,
+    front_face: bool,
+    uv: (FloatType, FloatType),
+}
+
+impl PrimitiveHitResult {
+    pub fn new(
+        distance: FloatType,
+        hit_point: Point3,
+        surface_normal: Vector3,
+        tangent: Vector3,
+        bitangent: Vector3,
+        front_face: bool,
+        uv: (FloatType, FloatType),
+    ) -> Self {
+        Self {
+            distance,
+            hit_point,
+            surface_normal,
+            tangent,
+            bitangent,
+            front_face,
+            uv,
+        }
+    }
+}
+
+impl GeometryHitResult for PrimitiveHitResult {
+    fn distance(&self) -> FloatType {
+        self.distance
+    }
+
+    fn set_distance(&mut self, distance: FloatType) {
+        self.distance = distance
+    }
+
+    fn hit_point(&self) -> Point3 {
+        self.hit_point
+    }
+
+    fn set_hit_point(&mut self, hit_point: Point3) {
+        self.hit_point = hit_point
+    }
+
+    fn surface_normal(&self) -> Vector3 {
+        self.surface_normal
+    }
+
+    fn set_surface_normal(&mut self, surface_normal: Vector3) {
+        self.surface_normal = surface_normal
+    }
+
+    fn tangent(&self) -> Vector3 {
+        self.tangent
+    }
+
+    fn set_tangent(&mut self, tangent: Vector3) {
+        self.tangent = tangent
+    }
+
+    fn bitangent(&self) -> Vector3 {
+        self.bitangent
+    }
+
+    fn set_bitangent(&mut self, bitangent: Vector3) {
+        self.bitangent = bitangent
+    }
+
+    fn front_face(&self) -> bool {
+        self.front_face
+    }
+
+    fn set_front_face(&mut self, front_face: bool) {
+        self.front_face = front_face
+    }
+
+    fn uv(&self) -> (FloatType, FloatType) {
+        self.uv
+    }
 }
 
 pub trait Primitive: Send + Sync + std::fmt::Debug {
@@ -119,17 +216,7 @@ impl<P: Primitive, M: Material> Shape for SkinnedPrimitive<P, M> {
             .iter()
             .into_aggregate_primitive()
             .intersect(ray, t_min, t_max, stats)
-            .map(|hit_result| HitResult {
-                distance: hit_result.distance,
-                hit_point: hit_result.hit_point,
-                surface_normal: hit_result.surface_normal,
-                tangent: hit_result.tangent,
-                bitangent: hit_result.bitangent,
-                front_face: hit_result.front_face,
-                material: &self.material,
-                u: hit_result.u,
-                v: hit_result.v,
-            })
+            .map(|hit_result| HitResult::new(hit_result, &self.material))
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {

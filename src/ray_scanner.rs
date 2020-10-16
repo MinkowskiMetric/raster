@@ -1,7 +1,7 @@
 use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
 use crate::utils::*;
-use crate::{constants, Color, PartialScatterResult, ScatterResult, Shape};
+use crate::{constants, Color, GeometryHitResult, PartialScatterResult, ScatterResult, Shape};
 use crate::{RenderStatsAccumulator, RenderStatsCollector, TracingStats};
 use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};
@@ -266,12 +266,11 @@ pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut dyn RenderStatsCollec
                 scene.intersect(&current_ray, 0.001, constants::INFINITY, stats)
             {
                 // We hit an object. First see if it emitted any light
-                let emitted =
-                    hit_result
-                        .material
-                        .emitted(hit_result.hit_point, hit_result.u, hit_result.v);
+                let emitted = hit_result
+                    .material
+                    .emitted(hit_result.hit_point(), hit_result.uv());
                 if let Some(ScatterResult { partial, scattered }) =
-                    hit_result.material.scatter(&current_ray, &hit_result)
+                    hit_result.material.scatter(&current_ray, hit_result)
                 {
                     attenuation_stack.push(ScatterStackRecord { partial, emitted });
                     current_ray = scattered;
