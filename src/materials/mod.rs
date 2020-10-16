@@ -1,6 +1,7 @@
 mod bump_mapper;
 mod dielectric;
 mod diffuse_light;
+mod invert_normal;
 mod lambertian;
 mod material;
 mod metal;
@@ -16,6 +17,7 @@ pub mod factories {
     pub use bump_mapper::factories::*;
     pub use dielectric::factories::*;
     pub use diffuse_light::factories::*;
+    pub use invert_normal::factories::*;
     pub use lambertian::factories::*;
     pub use metal::factories::*;
     pub use surface_mapper::factories::*;

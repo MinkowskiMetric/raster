@@ -106,7 +106,7 @@ fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     );
     let shapes = shapes![
         sphere(Point3::new(-0.5, 0.0, -3.0), 1.0).apply_material(dielectric(1.5)),
-        invert_normal(sphere(Point3::new(-0.5, 0.0, -3.0), 0.999).apply_material(dielectric(1.5))),
+        sphere(Point3::new(-0.5, 0.0, -3.0), 0.999).apply_material(invert_normal(dielectric(1.5))),
         sphere(Point3::new(0.5, 0.0, -5.0), 1.0)
             .apply_material(metal(attenuate_color(constants::MAGENTA, 0.8), 0.2),),
         sphere(Point3::new(-0.5, 0.0, -5.0), 1.0)

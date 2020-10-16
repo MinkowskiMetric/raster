@@ -4,7 +4,7 @@ use crate::BoundingBox;
 use crate::Material;
 use crate::RenderStatsCollector;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HitResult<'a> {
     pub distance: FloatType,
     pub hit_point: Point3,
