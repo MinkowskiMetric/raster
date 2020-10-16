@@ -316,10 +316,7 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     let white = lambertian(solid_texture(Color([0.73, 0.73, 0.73, 1.0])));
     let green = lambertian(solid_texture(Color([0.12, 0.45, 0.15, 1.0])));
     let light = diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])));
-    let unit_cube = || {
-        box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))
-            .apply_material(white.clone())
-    };
+    let unit_cube = || box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
 
     let shapes = shapes![
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green.clone()),
@@ -460,12 +457,12 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
         sphere(Point3::new(360.0, 150.0, 145.0), 70.0).apply_material(dielectric(1.5)),
         constant_medium(
             0.2,
-            sphere(Point3::new(360.0, 150.0, 145.0), 70.0).apply_material(dielectric(1.5)),
+            sphere(Point3::new(360.0, 150.0, 145.0), 70.0),
             isotropic(solid_texture(Color([0.2, 0.4, 0.9, 1.0])))
         ),
         constant_medium(
             0.0001,
-            sphere(Point3::new(0.0, 0.0, 0.0), 5000.0).apply_material(dielectric(1.5)),
+            sphere(Point3::new(0.0, 0.0, 0.0), 5000.0),
             isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))
         ),
         sphere(Point3::new(400.0, 200.0, 400.0), 100.0).apply_material(lambertian(earth_map())),

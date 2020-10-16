@@ -1,4 +1,4 @@
-use super::{CompoundShape, HitResult, Shape, ShapeList, SimpleShape};
+use super::{HitResult, Primitive, PrimitiveHitResult, Shape, SimpleShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
@@ -10,30 +10,33 @@ pub trait MediumDensity: Send + Sync + std::fmt::Debug {
 }
 
 #[derive(Debug)]
-pub struct Medium<Density: MediumDensity + Clone, Phase: Material + Clone> {
+pub struct Medium<Density: MediumDensity + Clone, Phase: Material + Clone, Child: Primitive + Clone>
+{
     density: Density,
     phase: Phase,
 
     // We specifically do not want to decompose whatever geometry is passed in here because,
     // unlike in other places, we want to use it as a complete volume which means we care about it
     // being one thing. So, instead of smashing it up, we put it in a shape list
-    child: ShapeList,
+    child: Child,
 }
 
-impl<Density: MediumDensity + Clone, Phase: Material + Clone> Medium<Density, Phase> {
-    pub fn new<Child: CompoundShape>(density: Density, child: Child, phase: Phase) -> Self {
+impl<Density: MediumDensity + Clone, Phase: Material + Clone, Child: Primitive + Clone>
+    Medium<Density, Phase, Child>
+{
+    pub fn new(density: Density, child: Child, phase: Phase) -> Self {
         Medium {
             density,
-            child: ShapeList::build().extend_with_shape(child),
+            child,
             phase,
         }
     }
 
-    fn double_intersect<'a>(
-        &'a self,
+    fn double_intersect(
+        &self,
         ray: &Ray,
         stats: &mut dyn RenderStatsCollector,
-    ) -> Option<(HitResult<'a>, HitResult<'a>)> {
+    ) -> Option<(PrimitiveHitResult, PrimitiveHitResult)> {
         if let Some(hit_1) =
             self.child
                 .intersect(ray, -constants::INFINITY, constants::INFINITY, stats)
@@ -52,8 +55,11 @@ impl<Density: MediumDensity + Clone, Phase: Material + Clone> Medium<Density, Ph
     }
 }
 
-impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone> Shape
-    for Medium<Density, Phase>
+impl<
+        Density: 'static + MediumDensity + Clone,
+        Phase: 'static + Material + Clone,
+        Child: Primitive + Clone,
+    > Shape for Medium<Density, Phase, Child>
 {
     fn intersect<'a>(
         &'a self,
@@ -104,8 +110,11 @@ impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone
     }
 }
 
-impl<Density: 'static + MediumDensity + Clone, Phase: 'static + Material + Clone> SimpleShape
-    for Medium<Density, Phase>
+impl<
+        Density: 'static + MediumDensity + Clone,
+        Phase: 'static + Material + Clone,
+        Child: Primitive + Clone,
+    > SimpleShape for Medium<Density, Phase, Child>
 {
 }
 
@@ -157,19 +166,23 @@ impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
 pub mod factories {
     use super::*;
 
-    pub fn medium<Density: MediumDensity + Clone, Phase: Material + Clone, Child: CompoundShape>(
+    pub fn medium<
+        Density: MediumDensity + Clone,
+        Phase: Material + Clone,
+        Child: Primitive + Clone,
+    >(
         density: Density,
         child: Child,
         phase: Phase,
-    ) -> Medium<Density, Phase> {
+    ) -> Medium<Density, Phase, Child> {
         Medium::new(density, child, phase)
     }
 
-    pub fn constant_medium<Phase: Material + Clone, Child: CompoundShape>(
+    pub fn constant_medium<Phase: Material + Clone, Child: Primitive + Clone>(
         density: FloatType,
         child: Child,
         phase: Phase,
-    ) -> Medium<ConstantDensity, Phase> {
+    ) -> Medium<ConstantDensity, Phase, Child> {
         medium(ConstantDensity::new(density), child, phase)
     }
 
@@ -182,12 +195,10 @@ pub mod factories {
 fn test_constant_medium_hit_points() {
     use crate::factories::*;
     use crate::Color;
-    use crate::SkinnablePrimitive;
 
     let medium: Box<dyn Shape> = Box::new(constant_medium(
         0.5,
-        sphere(Point3::new(0.0, 0.0, 0.0), 1.0)
-            .apply_material(lambertian(solid_texture(Color([1.0, 1.0, 1.0, 1.0])))),
+        sphere(Point3::new(0.0, 0.0, 0.0), 1.0),
         isotropic(solid_texture(Color([1.0, 1.0, 1.0, 1.0]))),
     ));
 
