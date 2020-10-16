@@ -147,7 +147,7 @@ impl MediumDensity for ConstantDensity {
 pub struct Isotropic<Albedo: Texture + Clone>(Albedo);
 
 impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
-    fn scatter(&self, ray_in: &Ray, hit_record: HitResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: PrimitiveHitResult) -> Option<ScatterResult> {
         let attenuation =
             cgmath::Vector4::from(self.0.value(hit_record.hit_point(), hit_record.uv())).truncate();
 

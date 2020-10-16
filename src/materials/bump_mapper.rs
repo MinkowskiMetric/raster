@@ -1,7 +1,7 @@
 use super::surface_mapper::SurfaceMappingMaterial;
 use crate::{
-    factories::*, math::*, utils::*, Color, GeometryHitResult, HitResult, Material,
-    PartialScatterResult, Ray, ScatterResult, SurfaceMapper, Texture,
+    factories::*, math::*, utils::*, Color, GeometryHitResult, Material, PartialScatterResult,
+    PrimitiveHitResult, Ray, ScatterResult, SurfaceMapper, Texture,
 };
 use std::convert::TryInto;
 
@@ -15,7 +15,7 @@ impl<T: Texture + Clone> Clone for BumpMapper<T> {
 }
 
 impl<T: Texture> SurfaceMapper for BumpMapper<T> {
-    fn process_hit_result<'a>(&self, mut hit_result: HitResult<'a>) -> HitResult<'a> {
+    fn process_hit_result<'a>(&self, mut hit_result: PrimitiveHitResult) -> PrimitiveHitResult {
         let t = hit_result.tangent();
         let b = hit_result.bitangent();
         let n = hit_result.surface_normal();
@@ -35,7 +35,7 @@ impl<T: Texture> SurfaceMapper for BumpMapper<T> {
 pub struct SurfaceNormalDebugMaterial();
 
 impl Material for SurfaceNormalDebugMaterial {
-    fn scatter(&self, ray_in: &Ray, hit_record: HitResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: PrimitiveHitResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point() + hit_record.surface_normal() + random_unit_vector();
         let color = (hit_record.surface_normal() * 2.0) + vec3(1.0, 1.0, 1.0);
         let color: Color = color.extend(1.0).try_into().unwrap();

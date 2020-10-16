@@ -2,7 +2,7 @@ use super::utils::*;
 use super::{Material, PartialScatterResult, ScatterResult};
 use crate::math::*;
 use crate::utils::*;
-use crate::{Color, GeometryHitResult, HitResult, Ray, Texture};
+use crate::{Color, GeometryHitResult, PrimitiveHitResult, Ray, Texture};
 
 #[derive(Debug)]
 pub struct Metal<T: Texture>(T, FloatType);
@@ -28,7 +28,7 @@ impl<T: Texture + Clone> Clone for Metal<T> {
 }
 
 impl<T: Texture> Material for Metal<T> {
-    fn scatter(&self, ray_in: &Ray, hit_record: HitResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: PrimitiveHitResult) -> Option<ScatterResult> {
         let reflected = reflect(
             ray_in.direction.into_vector().normalize(),
             hit_record.surface_normal(),

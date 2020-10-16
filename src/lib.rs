@@ -20,8 +20,8 @@ pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
 pub use shapes::{
     BoundingBox, CollectionShape, CompoundPrimitive, CompoundShape, GeometryHitResult, HitResult,
-    IntoPrimitive, MediumDensity, Primitive, Shape, ShapeList, SkinnablePrimitive, Sphere,
-    TransformablePrimitive, TransformableShape, TransformedXyRectangle,
+    IntoPrimitive, MediumDensity, Primitive, PrimitiveHitResult, Shape, ShapeList,
+    SkinnablePrimitive, Sphere, TransformablePrimitive, TransformableShape, TransformedXyRectangle,
 };
 pub use sky::Sky;
 pub use stats::{

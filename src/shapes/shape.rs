@@ -8,8 +8,8 @@ use crate::RenderStatsCollector;
 
 #[derive(Debug)]
 pub struct HitResult<'a> {
-    pub primitive_hit_result: PrimitiveHitResult,
-    pub material: &'a dyn Material,
+    primitive_hit_result: PrimitiveHitResult,
+    material: &'a dyn Material,
 }
 
 impl<'a> HitResult<'a> {
@@ -22,6 +22,14 @@ impl<'a> HitResult<'a> {
 
     pub fn material(&self) -> &'a dyn Material {
         self.material
+    }
+
+    pub fn primitive_hit_result(&self) -> &PrimitiveHitResult {
+        &self.primitive_hit_result
+    }
+
+    pub fn split(self) -> (PrimitiveHitResult, &'a dyn Material) {
+        (self.primitive_hit_result, self.material)
     }
 }
 

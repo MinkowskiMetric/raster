@@ -28,7 +28,7 @@ pub trait GeometryHitResult {
     fn uv(&self) -> (FloatType, FloatType);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PrimitiveHitResult {
     distance: FloatType,
     hit_point: Point3,
