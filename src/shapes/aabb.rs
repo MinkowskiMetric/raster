@@ -1,7 +1,7 @@
 use crate::math::*;
 use crate::ray_scanner::Ray;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct BoundingBox {
     pt_min: M256Point3,
     pt_max: M256Point3,

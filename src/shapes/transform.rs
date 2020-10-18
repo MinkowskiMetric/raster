@@ -37,19 +37,21 @@ fn transform_bounding_box(bounding_box: BoundingBox, transform: &Matrix4) -> Bou
     BoundingBox::new(pt_min, pt_max)
 }
 
-pub trait GeometryTransform: Send + Sync + std::fmt::Debug {
+pub trait InstantGeometryTransform: Send + Sync + std::fmt::Debug {
     fn transform_ray(&self, ray: &Ray) -> Ray;
     fn transform_hit_result(
         &self,
         original_ray: &Ray,
         hit_result: PrimitiveHitResult,
     ) -> PrimitiveHitResult;
-    fn transform_bounding_box(
-        &self,
-        t0: FloatType,
-        t1: FloatType,
-        bounding_box: BoundingBox,
-    ) -> BoundingBox;
+    fn transform_bounding_box(&self, bounding_box: BoundingBox) -> BoundingBox;
+}
+
+pub trait GeometryTransform: Send + Sync + std::fmt::Debug {
+    type Instant: InstantGeometryTransform;
+
+    fn transform_at_t(&self, t: FloatType) -> Self::Instant;
+    fn snap_transform(&self) -> Self::Instant;
 }
 
 #[derive(Clone, Debug)]
@@ -71,7 +73,7 @@ impl StaticTransform {
     }
 }
 
-impl GeometryTransform for StaticTransform {
+impl InstantGeometryTransform for StaticTransform {
     fn transform_ray(&self, ray: &Ray) -> Ray {
         let transformed_origin = self.inverse.transform_point(ray.origin.into_point());
         let transformed_direction = self.inverse.transform_vector(ray.direction.into_vector());
@@ -106,13 +108,19 @@ impl GeometryTransform for StaticTransform {
         hit_result
     }
 
-    fn transform_bounding_box(
-        &self,
-        _t0: FloatType,
-        _t1: FloatType,
-        bounding_box: BoundingBox,
-    ) -> BoundingBox {
+    fn transform_bounding_box(&self, bounding_box: BoundingBox) -> BoundingBox {
         transform_bounding_box(bounding_box, &self.transform)
+    }
+}
+
+impl GeometryTransform for StaticTransform {
+    type Instant = Self;
+
+    fn transform_at_t(&self, _t: FloatType) -> Self::Instant {
+        self.clone()
+    }
+    fn snap_transform(&self) -> Self::Instant {
+        self.clone()
     }
 }
 
@@ -130,16 +138,27 @@ impl<P: Primitive, T: GeometryTransform> Primitive for TransformedPrimitive<P, T
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<PrimitiveHitResult> {
-        let transformed_ray = self.transform.transform_ray(ray);
+        let instant = self.transform.snap_transform();
+        let transformed_ray = instant.transform_ray(ray);
 
         self.primitive
             .intersect(&transformed_ray, t_min, t_max, stats)
-            .map(|hit_result| self.transform.transform_hit_result(ray, hit_result))
+            .map(|hit_result| instant.transform_hit_result(ray, hit_result))
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.transform
-            .transform_bounding_box(t0, t1, self.primitive.bounding_box(t0, t1))
+        let primitive_box = self.primitive.bounding_box(t0, t1);
+
+        let box0 = self
+            .transform
+            .transform_at_t(t0)
+            .transform_bounding_box(primitive_box);
+        let box1 = self
+            .transform
+            .transform_at_t(t1)
+            .transform_bounding_box(primitive_box);
+
+        BoundingBox::surrounding_box(&box0, &box1)
     }
 }
 
@@ -167,20 +186,31 @@ impl<S: Shape, T: GeometryTransform> Shape for TransformedShape<S, T> {
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<HitResult<'a>> {
-        let transformed_ray = self.transform.transform_ray(ray);
+        let instant = self.transform.snap_transform();
+        let transformed_ray = instant.transform_ray(ray);
 
         self.shape
             .intersect(&transformed_ray, t_min, t_max, stats)
             .map(|hit_result| {
                 let (hit_result, material) = hit_result.split();
-                let hit_result = self.transform.transform_hit_result(ray, hit_result);
+                let hit_result = instant.transform_hit_result(ray, hit_result);
                 HitResult::new(hit_result, material)
             })
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.transform
-            .transform_bounding_box(t0, t1, self.shape.bounding_box(t0, t1))
+        let shape_box = self.shape.bounding_box(t0, t1);
+
+        let box0 = self
+            .transform
+            .transform_at_t(t0)
+            .transform_bounding_box(shape_box);
+        let box1 = self
+            .transform
+            .transform_at_t(t1)
+            .transform_bounding_box(shape_box);
+
+        BoundingBox::surrounding_box(&box0, &box1)
     }
 }
 
