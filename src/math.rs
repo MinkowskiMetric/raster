@@ -12,7 +12,7 @@ pub fn vec3<T>(x: T, y: T, z: T) -> cgmath::Vector3<T> {
     cgmath::vec3(x, y, z)
 }
 
-trait MyConstants {
+trait MyConstants: Copy {
     const INFINITY: Self;
     const PI: Self;
 }
@@ -55,6 +55,9 @@ impl From<M256Point3> for Point3 {
 }
 
 impl M256Point3 {
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     pub unsafe fn load_v(&self) -> std::arch::x86_64::__m256d {
@@ -62,6 +65,9 @@ impl M256Point3 {
         _mm256_load_pd(&self.val[0])
     }
 
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     pub unsafe fn from_v(v: std::arch::x86_64::__m256d) -> Self {
@@ -130,6 +136,9 @@ impl From<M256Vector3> for Vector4 {
 }
 
 impl M256Vector3 {
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     pub unsafe fn load_v(&self) -> std::arch::x86_64::__m256d {
@@ -137,6 +146,9 @@ impl M256Vector3 {
         _mm256_load_pd(&self.val[0])
     }
 
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     pub unsafe fn from_v(v: std::arch::x86_64::__m256d) -> Self {
@@ -170,6 +182,9 @@ impl M256Vector3 {
     }
 }
 
+/// # Safety
+///
+/// only call this if the CPU supports AVX
 #[inline]
 #[target_feature(enable = "avx")]
 pub unsafe fn _mm256_dot_pd(x: std::arch::x86_64::__m256d, y: std::arch::x86_64::__m256d) -> f64 {

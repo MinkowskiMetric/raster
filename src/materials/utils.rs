@@ -1,7 +1,7 @@
 use crate::math::*;
 
 pub fn reflect(v: Vector3, n: Vector3) -> Vector3 {
-    return v - (2.0 * v.dot(n) * n);
+    v - (2.0 * v.dot(n) * n)
 }
 
 pub fn refract(v: Vector3, n: Vector3, etai_over_etat: FloatType) -> Vector3 {

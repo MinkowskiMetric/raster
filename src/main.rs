@@ -167,7 +167,7 @@ fn two_perlin_spheres(width: usize, height: usize) -> (raster::Camera, raster::S
     );
     let shapes = shapes![
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(pertext.clone()),),
-        sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext.clone())),
+        sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext)),
     ];
 
     (camera, regular_sky(), shapes)
@@ -235,7 +235,7 @@ fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
     );
     let shapes = shapes![
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(pertext.clone()),),
-        sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext.clone())),
+        sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext)),
         sphere(Point3::new(0.0, 7.0, 0.0), 2.0)
             .apply_material(diffuse_light(solid_texture(Color([4.0, 4.0, 4.0, 1.0]))),),
         xy_rectangle((3.0, 5.0), (1.0, 3.0), -2.0)
@@ -274,9 +274,9 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
     };
 
     let shapes = shapes![
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green.clone()),
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red.clone()),
-        xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0).apply_material(light.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red),
+        xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0).apply_material(light),
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()),
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
         xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
@@ -317,12 +317,12 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     let unit_cube = || box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
 
     let shapes = shapes![
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green.clone()),
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red.clone()),
-        xz_rectangle((113.0, 443.0), (127.0, 432.0), 554.0).apply_material(light.clone()),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green),
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red),
+        xz_rectangle((113.0, 443.0), (127.0, 432.0), 554.0).apply_material(light),
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()),
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
-        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()),
+        xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white),
         constant_medium(
             0.01,
             unit_cube()
@@ -368,12 +368,12 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     let shapes = shapes![
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()), // The floor
         xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()), // The back wall
-        yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0).apply_material(light.clone()), // The light
+        yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0).apply_material(light),      // The light
         yz_rectangle((0.0, 270.0), (0.0, 555.0), 500.0).apply_material(white.clone()), // Bottom of the slit
         yz_rectangle((290.0, 555.0), (0.0, 555.0), 500.0).apply_material(white.clone()), // Top of the slit
-        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()), // Target wall
+        yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white), // Target wall
         box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(50.0, 100.0, 555.0))
-            .apply_material(glass.clone())
+            .apply_material(glass)
             .rotate_z(Deg(15.0).into())
             .translate(vec3(300.0, 250.0, 0.0)),
     ];
@@ -574,10 +574,11 @@ const DEFAULT_MIN_PASSES: usize = 100;
 const DEFAULT_THREADS: usize = 8;
 const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
-const BUILTIN_SCENES: [(
-    &'static str,
-    fn(usize, usize) -> (raster::Camera, raster::Sky, ShapeList),
-); 12] = [
+type SceneResult = (raster::Camera, raster::Sky, ShapeList);
+type SceneFactory = fn(usize, usize) -> SceneResult;
+type BuiltinScene = (&'static str, SceneFactory);
+
+const BUILTIN_SCENES: [BuiltinScene; 12] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
@@ -709,7 +710,7 @@ async fn main() {
     let stats = Arc::new(RwLock::new(raster::TracingStats::new()));
 
     tokio::pin! {
-        let scanner = raster::scan(scene, width, height, t0, t1, threads, min_passes, stats.clone());
+        let scanner = raster::scan(scene, (width, height), t0, t1, threads, min_passes, stats.clone());
     }
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
 
@@ -742,7 +743,7 @@ async fn main() {
     vector_image
         .pixels()
         .zip(surf.pixels_mut())
-        .fold({}, |_, (src, dst)| {
+        .fold((), |_, (src, dst)| {
             let color = src / src.w;
             let color: Color = color.try_into().unwrap();
             *dst = color.gamma(2.0).into();

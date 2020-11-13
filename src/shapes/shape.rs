@@ -182,8 +182,14 @@ impl<S: Shape> CollectionShape<S> {
         self
     }
 
-    pub fn iter<'a>(&'a self) -> std::slice::Iter<'a, S> {
+    pub fn iter(&self) -> std::slice::Iter<'_, S> {
         self.0.iter()
+    }
+}
+
+impl<S: Shape> Default for CollectionShape<S> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -208,9 +214,9 @@ impl<S: Shape> Shape for CollectionShape<S> {
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         self.0
             .iter()
-            .map(|a| a.bounding_box(t0, t1).clone())
+            .map(|a| a.bounding_box(t0, t1))
             .my_fold_first(|a, b| BoundingBox::surrounding_box(&a, &b))
-            .unwrap_or(BoundingBox::empty_box())
+            .unwrap_or_else(BoundingBox::empty_box)
     }
 }
 

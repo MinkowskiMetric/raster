@@ -30,8 +30,8 @@ impl Perlin {
     fn generate_perm() -> [i32; POINT_COUNT] {
         let mut ret = [0; POINT_COUNT];
 
-        for i in 0..POINT_COUNT {
-            ret[i] = i as i32;
+        for (i, ret_i) in ret.iter_mut().enumerate() {
+            *ret_i = i as i32;
         }
 
         Self::permute(&mut ret);
@@ -47,13 +47,13 @@ impl Perlin {
     }
 
     pub fn noise(&self, p: Point3) -> FloatType {
-        let u = p.x - p.x.floor();
-        let v = p.y - p.y.floor();
-        let w = p.z - p.z.floor();
+        let uu = p.x - p.x.floor();
+        let vv = p.y - p.y.floor();
+        let ww = p.z - p.z.floor();
 
-        let i = p.x.floor() as i32;
-        let j = p.y.floor() as i32;
-        let k = p.z.floor() as i32;
+        let ii = p.x.floor() as i32;
+        let jj = p.y.floor() as i32;
+        let kk = p.z.floor() as i32;
 
         let mut c = [[[Vector3::new(0.0, 0.0, 0.0); 2]; 2]; 2];
 
@@ -61,15 +61,15 @@ impl Perlin {
             for dj in 0i32..2i32 {
                 for dk in 0i32..2i32 {
                     c[di as usize][dj as usize][dk as usize] = self.ranvec[(self.perm_x
-                        [((i + di) & 255) as usize]
-                        ^ self.perm_y[((j + dj) & 255) as usize]
-                        ^ self.perm_z[((k + dk) & 255) as usize])
+                        [((ii + di) & 255) as usize]
+                        ^ self.perm_y[((jj + dj) & 255) as usize]
+                        ^ self.perm_z[((kk + dk) & 255) as usize])
                         as usize];
                 }
             }
         }
 
-        Self::perlin_interp(&c, u, v, w)
+        Self::perlin_interp(&c, uu, vv, ww)
     }
 
     pub fn turbulence(&self, p: Point3, depth: usize) -> f64 {
@@ -78,9 +78,9 @@ impl Perlin {
         let mut weight = 1.0;
 
         for _ in 0..depth {
-            accum = accum + (weight * self.noise(temp_p));
-            weight = weight * 0.5;
-            temp_p = temp_p * 2.0;
+            accum += weight * self.noise(temp_p);
+            weight *= 0.5;
+            temp_p *= 2.0;
         }
 
         accum.abs()
@@ -91,23 +91,28 @@ impl Perlin {
         let vv = v * v * (3.0 - 2.0 * v);
         let ww = w * w * (3.0 - 2.0 * w);
         let mut accum = 0.0;
-        for i in 0..2 {
+        for (i, i_item) in c.iter().enumerate() {
             let fi = i as f64;
-            for j in 0..2 {
+            for (j, j_item) in i_item.iter().enumerate() {
                 let fj = j as f64;
-                for k in 0..2 {
+                for (k, k_item) in j_item.iter().enumerate() {
                     let fk = k as f64;
                     let weight = Vector3::new(u - fi, v - fj, w - fk);
 
-                    accum = accum
-                        + (((fi * uu) + ((1.0 - fi) * (1.0 - uu)))
-                            * ((fj * vv) + ((1.0 - fj) * (1.0 - vv)))
-                            * ((fk * ww) + ((1.0 - fk) * (1.0 - ww)))
-                            * c[i][j][k].dot(weight));
+                    accum += ((fi * uu) + ((1.0 - fi) * (1.0 - uu)))
+                        * ((fj * vv) + ((1.0 - fj) * (1.0 - vv)))
+                        * ((fk * ww) + ((1.0 - fk) * (1.0 - ww)))
+                        * k_item.dot(weight);
                 }
             }
         }
         accum
+    }
+}
+
+impl Default for Perlin {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

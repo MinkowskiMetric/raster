@@ -60,7 +60,7 @@ fn random_axis_comparator(
 
 #[derive(Debug)]
 enum InnerVolume {
-    NoChild,
+    None,
     SingleChild(Box<dyn Shape>),
     TwoChild {
         left: Box<Volume>,
@@ -74,7 +74,7 @@ fn compute_inner_volume_bounding_box(
     t1: FloatType,
 ) -> BoundingBox {
     match inner_volume {
-        InnerVolume::NoChild => BoundingBox::empty_box(),
+        InnerVolume::None => BoundingBox::empty_box(),
         InnerVolume::SingleChild(child) => child.bounding_box(t0, t1),
         InnerVolume::TwoChild { left, right } => {
             BoundingBox::surrounding_box(&left.bounding_box(t0, t1), &right.bounding_box(t0, t1))
@@ -113,7 +113,7 @@ impl<'a> VolumeIter<'a> {
                     break;
                 }
 
-                InnerVolume::NoChild => break,
+                InnerVolume::None => break,
             }
         }
     }
@@ -131,7 +131,7 @@ impl<'a> Iterator for VolumeIter<'a> {
                     self.push_left_children(&right.inner_volume);
                 }
 
-                InnerVolume::NoChild => {
+                InnerVolume::None => {
                     debug_assert!(false, "this should not happen, but isn't bad if it does")
                 }
             }
@@ -161,7 +161,7 @@ impl Volume {
         t0: FloatType,
         t1: FloatType,
     ) -> Self {
-        let mut shapes: Vec<_> = shapes.into_iter().map(|s| Some(s)).collect();
+        let mut shapes: Vec<_> = shapes.into_iter().map(Some).collect();
         Self::from_shapes_slice(&mut shapes, t0, t1)
     }
 
@@ -170,8 +170,8 @@ impl Volume {
         t0: FloatType,
         t1: FloatType,
     ) -> Self {
-        if shapes.len() == 0 {
-            Self::from_inner_volume(InnerVolume::NoChild, t0, t1)
+        if shapes.is_empty() {
+            Self::from_inner_volume(InnerVolume::None, t0, t1)
         } else if shapes.len() == 1 {
             Self::from_inner_volume(InnerVolume::SingleChild(shapes[0].take().unwrap()), t0, t1)
         } else {
@@ -199,6 +199,9 @@ impl Volume {
         }
     }
 
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[target_feature(enable = "avx")]
     unsafe fn intersect_avx<'a>(
         &'a self,
@@ -241,7 +244,7 @@ impl Volume {
         hit_result
     }
 
-    pub fn iter<'a>(&'a self) -> VolumeIter<'a> {
+    pub fn iter(&self) -> VolumeIter<'_> {
         VolumeIter::from_inner_volume(&self.inner_volume)
     }
 }
@@ -258,7 +261,7 @@ impl Shape for Volume {
     }
 
     fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
-        self.bounding_box.clone()
+        self.bounding_box
     }
 }
 

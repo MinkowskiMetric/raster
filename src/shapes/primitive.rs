@@ -146,9 +146,9 @@ impl<
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         self.iter
             .clone()
-            .map(|a| a.bounding_box(t0, t1).clone())
+            .map(|a| a.bounding_box(t0, t1))
             .my_fold_first(|a, b| BoundingBox::surrounding_box(&a, &b))
-            .unwrap_or(BoundingBox::empty_box())
+            .unwrap_or_else(BoundingBox::empty_box)
     }
 }
 

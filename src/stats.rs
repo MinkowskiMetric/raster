@@ -27,6 +27,12 @@ impl RenderStats {
     }
 }
 
+impl Default for RenderStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub trait RenderStatsSource {
     fn get_stats(&self) -> RenderStats;
 }
@@ -44,6 +50,12 @@ impl TracingStats {
 
     fn get_stats_mut(&mut self) -> &mut RenderStats {
         &mut self.0
+    }
+}
+
+impl Default for TracingStats {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

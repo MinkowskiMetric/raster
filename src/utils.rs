@@ -67,7 +67,7 @@ impl<Item, Iter: Iterator<Item = Item>> MyFoldFirst for Iter {
         func: F,
     ) -> Option<Self::Result> {
         if let Some(mut working_value) = self.next() {
-            while let Some(next_value) = self.next() {
+            for next_value in self {
                 working_value = func(working_value, next_value);
             }
 

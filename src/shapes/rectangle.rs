@@ -13,6 +13,12 @@ impl UnitXyRectangle {
     }
 }
 
+impl Default for UnitXyRectangle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Primitive for UnitXyRectangle {
     fn intersect(
         &self,
@@ -54,8 +60,8 @@ impl Primitive for UnitXyRectangle {
 
         Some(PrimitiveHitResult::new(
             t,
-            hit_point.into(),
-            surface_normal.into(),
+            hit_point,
+            surface_normal,
             tangent,
             bitangent,
             front_face,

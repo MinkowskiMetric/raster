@@ -144,17 +144,16 @@ impl Primitive for ParabolaXY {
         let tangent = (-radial_point).cross(outward_normal);
         let bitangent = outward_normal.cross(tangent);
 
-        let u = radial_point.magnitude() / self.pr;
-        let v = 0.0; // TODOTODOTODO - could use the angle
+        let uv = (radial_point.magnitude() / self.pr, 0.0); // TODOTODOTODO - could use the angle
 
         Some(PrimitiveHitResult::new(
             t,
-            hit_point.into(),
-            surface_normal.into(),
+            hit_point,
+            surface_normal,
             tangent,
             bitangent,
             front_face,
-            (u, v),
+            uv,
         ))
     }
 

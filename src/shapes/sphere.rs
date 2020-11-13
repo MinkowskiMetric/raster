@@ -28,6 +28,9 @@ impl Sphere {
         }
     }
 
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     unsafe fn intersect_avx(
@@ -85,15 +88,15 @@ impl Sphere {
                 let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
-                let (u, v) = get_sphere_uv(normalized_hitpoint);
+                let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(PrimitiveHitResult::new(
                     temp,
-                    hit_point.into(),
-                    surface_normal.into(),
+                    hit_point,
+                    surface_normal,
                     tangent,
                     bitangent,
                     front_face,
-                    (u, v),
+                    uv,
                 ));
             }
 
@@ -113,20 +116,20 @@ impl Sphere {
                 let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
-                let (u, v) = get_sphere_uv(normalized_hitpoint);
+                let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(PrimitiveHitResult::new(
                     temp,
-                    hit_point.into(),
-                    surface_normal.into(),
+                    hit_point,
+                    surface_normal,
                     tangent,
                     bitangent,
                     front_face,
-                    (u, v),
+                    uv,
                 ));
             }
         }
 
-        return None;
+        None
     }
 }
 
@@ -176,6 +179,9 @@ impl MovingSphere {
         }
     }
 
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     unsafe fn center_v(&self, t: FloatType) -> std::arch::x86_64::__m256d {
@@ -188,15 +194,16 @@ impl MovingSphere {
         let t_shift = _mm256_sub_pd(_mm256_set1_pd(t), time_origin);
         let translate = _mm256_mul_pd(velocity, t_shift);
 
-        let center = _mm256_add_pd(space_origin, translate);
-
-        center
+        _mm256_add_pd(space_origin, translate)
     }
 
     fn center(&self, t: FloatType) -> M256Point3 {
         unsafe { M256Point3::from_v(self.center_v(t)) }
     }
 
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     unsafe fn intersect_avx(
@@ -254,15 +261,15 @@ impl MovingSphere {
                 let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
-                let (u, v) = get_sphere_uv(normalized_hitpoint);
+                let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(PrimitiveHitResult::new(
                     temp,
-                    hit_point.into(),
-                    surface_normal.into(),
+                    hit_point,
+                    surface_normal,
                     tangent,
                     bitangent,
                     front_face,
-                    (u, v),
+                    uv,
                 ));
             }
 
@@ -282,20 +289,20 @@ impl MovingSphere {
                 let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
-                let (u, v) = get_sphere_uv(normalized_hitpoint);
+                let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(PrimitiveHitResult::new(
                     temp,
-                    hit_point.into(),
-                    surface_normal.into(),
+                    hit_point,
+                    surface_normal,
                     tangent,
                     bitangent,
                     front_face,
-                    (u, v),
+                    uv,
                 ));
             }
         }
 
-        return None;
+        None
     }
 }
 

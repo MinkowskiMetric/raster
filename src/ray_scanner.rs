@@ -126,7 +126,7 @@ impl std::ops::Add for VectorImage {
     fn add(mut self, other: Self) -> Self {
         self.pixels_mut()
             .zip(other.pixels())
-            .fold({}, |_, (dst, src)| *dst = *dst + *src);
+            .fold((), |_, (dst, src)| *dst += *src);
 
         self
     }
@@ -134,8 +134,7 @@ impl std::ops::Add for VectorImage {
 
 pub async fn scan<StatsAccumulator: 'static + RenderStatsAccumulator + Sync + Send>(
     scene: Scene,
-    image_width: usize,
-    image_height: usize,
+    (image_width, image_height): (usize, usize),
     t0: FloatType,
     t1: FloatType,
     thread_count: usize,
@@ -162,7 +161,7 @@ pub async fn scan<StatsAccumulator: 'static + RenderStatsAccumulator + Sync + Se
         })
     });
 
-    let vector_image = join_all(futures)
+    join_all(futures)
         .await
         .into_iter()
         .my_fold_first(|a, b| match (a, b) {
@@ -171,9 +170,7 @@ pub async fn scan<StatsAccumulator: 'static + RenderStatsAccumulator + Sync + Se
             (_, Err(b)) => Err(b),
         })
         .unwrap()
-        .unwrap();
-
-    vector_image
+        .unwrap()
 }
 
 fn scan_batch(
@@ -226,7 +223,7 @@ struct ScatterStackRecord {
 type FixedSizeAttenuationStack<'a> =
     crate::fixed_size_stack::FixedSizeStack<'a, ScatterStackRecord>;
 
-fn collapse_color_stack<'a>(mut stack: FixedSizeAttenuationStack<'a>, input_color: Color) -> Color {
+fn collapse_color_stack(mut stack: FixedSizeAttenuationStack<'_>, input_color: Color) -> Color {
     let mut color = input_color;
 
     while let Some(scatter_record) = stack.pop() {
@@ -253,7 +250,7 @@ pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut dyn RenderStatsCollec
     let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
 
-    let mut current_ray = ray.clone();
+    let mut current_ray = *ray;
 
     loop {
         stats.count_ray_cast();
@@ -261,26 +258,24 @@ pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut dyn RenderStatsCollec
         if attenuation_stack.len() >= MAX_DEPTH {
             // We cannot recurse any further, there is no point doing another hit test
             return collapse_color_stack(attenuation_stack, constants::BLACK);
-        } else {
-            if let Some(hit_result) =
-                scene.intersect(&current_ray, 0.001, constants::INFINITY, stats)
-            {
-                let (hit_result, material) = hit_result.split();
+        } else if let Some(hit_result) =
+            scene.intersect(&current_ray, 0.001, constants::INFINITY, stats)
+        {
+            let (hit_result, material) = hit_result.split();
 
-                // We hit an object. First see if it emitted any light
-                let emitted = material.emitted(hit_result.hit_point(), hit_result.uv());
-                if let Some(ScatterResult { partial, scattered }) =
-                    material.scatter(&current_ray, hit_result)
-                {
-                    attenuation_stack.push(ScatterStackRecord { partial, emitted });
-                    current_ray = scattered;
-                } else {
-                    return collapse_color_stack(attenuation_stack, emitted);
-                }
+            // We hit an object. First see if it emitted any light
+            let emitted = material.emitted(hit_result.hit_point(), hit_result.uv());
+            if let Some(ScatterResult { partial, scattered }) =
+                material.scatter(&current_ray, hit_result)
+            {
+                attenuation_stack.push(ScatterStackRecord { partial, emitted });
+                current_ray = scattered;
             } else {
-                // We did not intersect with any objects, so sample the sky
-                return collapse_color_stack(attenuation_stack, scene.sky().sample(&current_ray));
+                return collapse_color_stack(attenuation_stack, emitted);
             }
+        } else {
+            // We did not intersect with any objects, so sample the sky
+            return collapse_color_stack(attenuation_stack, scene.sky().sample(&current_ray));
         }
     }
 }

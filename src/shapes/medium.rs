@@ -151,12 +151,10 @@ impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
         let attenuation =
             cgmath::Vector4::from(self.0.value(hit_record.hit_point(), hit_record.uv())).truncate();
 
-        let ret = Some(ScatterResult {
+        Some(ScatterResult {
             partial: PartialScatterResult { attenuation },
             scattered: Ray::new(hit_record.hit_point(), random_in_unit_sphere(), ray_in.time),
-        });
-
-        ret
+        })
     }
 }
 

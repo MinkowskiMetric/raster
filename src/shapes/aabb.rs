@@ -7,6 +7,9 @@ pub struct BoundingBox {
     pt_max: M256Point3,
 }
 
+/// # Safety
+///
+/// only call this if the CPU supports AVX
 #[inline]
 #[target_feature(enable = "avx")]
 unsafe fn max_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
@@ -16,11 +19,12 @@ unsafe fn max_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
     let y = _mm256_extractf128_pd(v, 1); // extract v[2], and v[3]
     let m1 = _mm_max_pd(x, y); // m1[0] = max(v[0], v[2]), m1[1] = max(v[1], v[3])
     let m2 = _mm_permute_pd(m1, 1); // m2[0] = m1[1], m2[1] = m1[0]
-    let m = _mm_max_pd(m1, m2);
-
-    m
+    _mm_max_pd(m1, m2)
 }
 
+/// # Safety
+///
+/// only call this if the CPU supports AVX
 #[inline]
 #[target_feature(enable = "avx")]
 unsafe fn min_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
@@ -30,9 +34,7 @@ unsafe fn min_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
     let y = _mm256_extractf128_pd(v, 1); // extract v[2], and v[3]
     let m1 = _mm_min_pd(x, y); // m1[0] = min(v[0], v[2]), m1[1] = min(v[1], v[3])
     let m2 = _mm_permute_pd(m1, 1); // m2[0] = m1[1], m2[1] = m1[0]
-    let m = _mm_min_pd(m1, m2);
-
-    m
+    _mm_min_pd(m1, m2)
 }
 
 impl BoundingBox {
@@ -118,6 +120,9 @@ impl BoundingBox {
         ]
     }
 
+    /// # Safety
+    ///
+    /// only call this if the CPU supports AVX
     #[inline]
     #[target_feature(enable = "avx")]
     pub unsafe fn intersect_avx(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> bool {
@@ -147,8 +152,6 @@ impl BoundingBox {
         let t_max_f = _mm256_or_pd(t_max_l, t_max_r);
         let t_max = min_v(t_max_f);
 
-        let cmp = 0 != _mm_comilt_sd(t_min, t_max);
-
-        cmp
+        0 != _mm_comilt_sd(t_min, t_max)
     }
 }
