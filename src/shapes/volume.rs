@@ -60,7 +60,6 @@ fn random_axis_comparator(
 
 #[derive(Debug)]
 enum InnerVolume {
-    None,
     SingleChild(Box<dyn Shape>),
     TwoChild {
         left: Box<Volume>,
@@ -74,7 +73,6 @@ fn compute_inner_volume_bounding_box(
     t1: FloatType,
 ) -> BoundingBox {
     match inner_volume {
-        InnerVolume::None => BoundingBox::empty_box(),
         InnerVolume::SingleChild(child) => child.bounding_box(t0, t1),
         InnerVolume::TwoChild { left, right } => {
             BoundingBox::surrounding_box(&left.bounding_box(t0, t1), &right.bounding_box(t0, t1))
@@ -84,7 +82,7 @@ fn compute_inner_volume_bounding_box(
 
 #[derive(Debug)]
 pub struct Volume {
-    inner_volume: InnerVolume,
+    inner_volume: Option<InnerVolume>,
     bounding_box: BoundingBox,
 }
 
@@ -93,9 +91,11 @@ pub struct VolumeIter<'a> {
 }
 
 impl<'a> VolumeIter<'a> {
-    fn from_inner_volume(inner_volume: &'a InnerVolume) -> Self {
+    fn from_inner_volume(inner_volume: &'a Option<InnerVolume>) -> Self {
         let mut ret = Self { stack: Vec::new() };
-        ret.push_left_children(inner_volume);
+        if let Some(inner_volume) = inner_volume {
+            ret.push_left_children(inner_volume);
+        }
         ret
     }
 
@@ -105,15 +105,13 @@ impl<'a> VolumeIter<'a> {
             match position {
                 InnerVolume::TwoChild { left, .. } => {
                     self.stack.push(position);
-                    position = &left.inner_volume;
+                    position = &left.inner_volume.as_ref().unwrap();
                 }
 
                 InnerVolume::SingleChild(_) => {
                     self.stack.push(position);
                     break;
                 }
-
-                InnerVolume::None => break,
             }
         }
     }
@@ -128,11 +126,7 @@ impl<'a> Iterator for VolumeIter<'a> {
                 InnerVolume::SingleChild(child) => return Some(child),
 
                 InnerVolume::TwoChild { right, .. } => {
-                    self.push_left_children(&right.inner_volume);
-                }
-
-                InnerVolume::None => {
-                    debug_assert!(false, "this should not happen, but isn't bad if it does")
+                    self.push_left_children(&right.inner_volume.as_ref().unwrap());
                 }
             }
         }
@@ -171,27 +165,35 @@ impl Volume {
         t1: FloatType,
     ) -> Self {
         if shapes.is_empty() {
-            Self::from_inner_volume(InnerVolume::None, t0, t1)
+            Self::from_inner_volume(None, t0, t1)
         } else if shapes.len() == 1 {
-            Self::from_inner_volume(InnerVolume::SingleChild(shapes[0].take().unwrap()), t0, t1)
+            Self::from_inner_volume(
+                Some(InnerVolume::SingleChild(shapes[0].take().unwrap())),
+                t0,
+                t1,
+            )
         } else {
             // Sort the shapes list according to a random axis
             shapes.sort_by(random_axis_comparator(t0, t1));
 
             let pivot = shapes.len() / 2;
             Self::from_inner_volume(
-                InnerVolume::TwoChild {
+                Some(InnerVolume::TwoChild {
                     left: Box::new(Self::from_shapes_slice(&mut shapes[0..pivot], t0, t1)),
                     right: Box::new(Self::from_shapes_slice(&mut shapes[pivot..], t0, t1)),
-                },
+                }),
                 t0,
                 t1,
             )
         }
     }
 
-    fn from_inner_volume(inner_volume: InnerVolume, t0: FloatType, t1: FloatType) -> Self {
-        let bounding_box = compute_inner_volume_bounding_box(&inner_volume, t0, t1);
+    fn from_inner_volume(inner_volume: Option<InnerVolume>, t0: FloatType, t1: FloatType) -> Self {
+        let bounding_box = if let Some(inner_volume) = inner_volume.as_ref() {
+            compute_inner_volume_bounding_box(&inner_volume, t0, t1)
+        } else {
+            BoundingBox::empty_box()
+        };
 
         Volume {
             inner_volume,
@@ -219,7 +221,7 @@ impl Volume {
         while let Some(v) = volume_stack.pop() {
             stats.count_bounding_box_test();
             if v.bounding_box.intersect_avx(ray, t_min, t_max) {
-                if let InnerVolume::TwoChild { left, right } = &v.inner_volume {
+                if let Some(InnerVolume::TwoChild { left, right }) = &v.inner_volume {
                     // We know that we can always push one value onto the stack here
                     // because we just popped a value off
                     volume_stack.push(right.as_ref());
@@ -234,7 +236,7 @@ impl Volume {
                     } else {
                         volume_stack.push(left.as_ref());
                     }
-                } else if let InnerVolume::SingleChild(c) = &v.inner_volume {
+                } else if let Some(InnerVolume::SingleChild(c)) = &v.inner_volume {
                     hit_result =
                         replace_hit_result(hit_result, c.intersect(ray, t_min, t_max, stats));
                 }
