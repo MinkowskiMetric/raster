@@ -203,7 +203,7 @@ impl<S: Shape> Shape for CollectionShape<S> {
     ) -> Option<HitResult<'a>> {
         self.0
             .iter()
-            .filter_map(|shape| shape.intersect(&ray, t_min, t_max, stats))
+            .filter_map(|shape| shape.intersect(ray, t_min, t_max, stats))
             .min_by(|xr, yr| {
                 xr.distance()
                     .partial_cmp(&yr.distance())

@@ -41,14 +41,9 @@ impl<Density: MediumDensity + Clone, Phase: Material + Clone, Child: Primitive +
             self.child
                 .intersect(ray, -constants::INFINITY, constants::INFINITY, stats)
         {
-            if let Some(hit_2) =
-                self.child
-                    .intersect(ray, hit_1.distance() + 0.0001, constants::INFINITY, stats)
-            {
-                Some((hit_1, hit_2))
-            } else {
-                None
-            }
+            self.child
+                .intersect(ray, hit_1.distance() + 0.0001, constants::INFINITY, stats)
+                .map(|hit_2| (hit_1, hit_2))
         } else {
             None
         }
@@ -77,24 +72,22 @@ impl<
                 let internal_ray = Ray::new(internal_ray_origin, ray.direction, ray.time);
                 let internal_ray_length = distance_2 - distance_1;
 
-                if let Some(scatter_distance) =
-                    self.density.does_scatter(internal_ray, internal_ray_length)
-                {
-                    Some(HitResult::new(
-                        PrimitiveHitResult::new(
-                            scatter_distance + distance_1,
-                            ray.origin + (ray.direction * (scatter_distance + distance_1)),
-                            vec3(1.0, 0.0, 0.0), // arbitrary
-                            vec3(0.0, 1.0, 0.0), // arbitrary
-                            vec3(0.0, 0.0, 1.0), // arbitrary
-                            true,                // also arbitrary
-                            (0.0, 0.0),
-                        ),
-                        &self.phase,
-                    ))
-                } else {
-                    None
-                }
+                self.density
+                    .does_scatter(internal_ray, internal_ray_length)
+                    .map(|scatter_distance| {
+                        HitResult::new(
+                            PrimitiveHitResult::new(
+                                scatter_distance + distance_1,
+                                ray.origin + (ray.direction * (scatter_distance + distance_1)),
+                                vec3(1.0, 0.0, 0.0), // arbitrary
+                                vec3(0.0, 1.0, 0.0), // arbitrary
+                                vec3(0.0, 0.0, 1.0), // arbitrary
+                                true,                // also arbitrary
+                                (0.0, 0.0),
+                            ),
+                            &self.phase,
+                        )
+                    })
             } else {
                 None
             }

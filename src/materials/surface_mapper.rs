@@ -20,11 +20,9 @@ impl<T: SurfaceMapper, M: Material> Material for SurfaceMappingMaterial<T, M> {
     fn scatter(&self, ray_in: &Ray, hit_record: PrimitiveHitResult) -> Option<ScatterResult> {
         let mapped_hit_record = self.0.process_hit_result(hit_record);
 
-        if let Some(scatter_result) = self.1.scatter(ray_in, mapped_hit_record) {
-            Some(self.0.process_scatter_result(scatter_result))
-        } else {
-            None
-        }
+        self.1
+            .scatter(ray_in, mapped_hit_record)
+            .map(|scatter_result| self.0.process_scatter_result(scatter_result))
     }
 
     fn emitted(&self, p: Point3, uv: (FloatType, FloatType)) -> Color {

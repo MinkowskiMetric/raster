@@ -26,7 +26,7 @@ fn test_axis(
     *t_min = t0.max(*t_min);
     *t_max = t1.min(*t_max);
 
-    !(t_max <= t_min)
+    t_max > t_min
 }
 
 /// # Safety
@@ -62,16 +62,16 @@ unsafe fn min_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
 impl BoundingBox {
     pub fn new(pt1: Point3, pt2: Point3) -> Self {
         BoundingBox {
-            pt_min: Point3::new(pt1.x.min(pt2.x), pt1.y.min(pt2.y), pt1.z.min(pt2.z)).into(),
-            pt_max: Point3::new(pt1.x.max(pt2.x), pt1.y.max(pt2.y), pt1.z.max(pt2.z)).into(),
+            pt_min: Point3::new(pt1.x.min(pt2.x), pt1.y.min(pt2.y), pt1.z.min(pt2.z)),
+            pt_max: Point3::new(pt1.x.max(pt2.x), pt1.y.max(pt2.y), pt1.z.max(pt2.z)),
         }
     }
 
     pub fn empty_box() -> Self {
         let zero_point = Point3::new(0.0, 0.0, 0.0);
         BoundingBox {
-            pt_min: zero_point.into(),
-            pt_max: zero_point.into(),
+            pt_min: zero_point,
+            pt_max: zero_point,
         }
     }
 

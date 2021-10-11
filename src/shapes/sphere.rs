@@ -22,10 +22,7 @@ pub struct Sphere {
 
 impl Sphere {
     pub fn new(center: Point3, radius: FloatType) -> Self {
-        Self {
-            center: center.into(),
-            radius,
-        }
+        Self { center, radius }
     }
 
     /*/// # Safety
@@ -448,7 +445,7 @@ impl Primitive for MovingSphere {
             }
         }
 
-        return None;
+        None
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
