@@ -27,8 +27,8 @@ impl Primitive for UnitXyRectangle {
         t_max: FloatType,
         _stats: &mut dyn RenderStatsCollector,
     ) -> Option<PrimitiveHitResult> {
-        let ray_origin = ray.origin.into_point();
-        let ray_direction = ray.direction.into_vector();
+        let ray_origin = ray.origin;
+        let ray_direction = ray.direction;
 
         let t = -ray_origin.z / ray_direction.z;
         if t < t_min || t > t_max {

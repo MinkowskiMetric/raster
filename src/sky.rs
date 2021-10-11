@@ -15,7 +15,7 @@ impl Sky {
         match self {
             Sky::RegularSky => {
                 let unit_direction = ray.direction;
-                let t = 0.5 * (1.0 - unit_direction.y());
+                let t = 0.5 * (1.0 - unit_direction.y);
                 (((1.0 - t) * vec3(1.0, 1.0, 1.0)) + (t * vec3(0.5, 0.7, 1.0)))
                     .try_into()
                     .unwrap()

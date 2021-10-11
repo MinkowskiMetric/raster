@@ -8,7 +8,7 @@ pub fn random_in_range(min: FloatType, max: FloatType) -> FloatType {
 }
 
 pub fn random_int_in_range(min: i32, max: i32) -> i32 {
-    thread_rng().gen_range(min, max)
+    thread_rng().gen_range(min..max)
 }
 
 pub fn random_in_unit_sphere() -> Vector3 {

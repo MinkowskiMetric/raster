@@ -30,8 +30,8 @@ impl Primitive for ParabolaXY {
         let focus_distance = orientation_vector.magnitude();
         let orientation_vector = orientation_vector / focus_distance;
 
-        let ray_origin = ray.origin.into_point();
-        let ray_direction = ray.direction.into_vector();
+        let ray_origin = ray.origin;
+        let ray_direction = ray.direction;
 
         // So, we're looking for places where the ray is the same distance from the plane as from the focus.
 

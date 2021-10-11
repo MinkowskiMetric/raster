@@ -1,4 +1,4 @@
-pub type FloatType = f64;
+pub type FloatType = f32;
 pub type Point3 = cgmath::Point3<FloatType>;
 pub type Vector3 = cgmath::Vector3<FloatType>;
 pub type Vector4 = cgmath::Vector4<FloatType>;
@@ -33,36 +33,39 @@ pub mod constants {
     pub const INFINITY: super::FloatType = super::FloatType::INFINITY;
     pub const PI: super::FloatType = super::FloatType::PI;
 }
-
+/*
 #[repr(C, align(32))]
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct M256Point3 {
-    val: [f64; 4],
+pub struct AlignedPoint3 {
+    _w: f32,
+    pub z: f32,
+    pub y: f32,
+    pub x: f32,
 }
 
-impl From<Point3> for M256Point3 {
+impl From<Point3> for AlignedPoint3 {
     fn from(p: Point3) -> Self {
         Self {
-            val: [1.0, p.z, p.y, p.x],
+            _w: 1.0,
+            z: p.z, y: p.y, x: p.x,
         }
     }
 }
 
-impl From<M256Point3> for Point3 {
-    fn from(p: M256Point3) -> Self {
-        Self::new(p.x(), p.y(), p.z())
+impl From<AlignedPoint3> for Point3 {
+    fn from(p: AlignedPoint3) -> Self {
+        Self::new(p.x, p.y, p.z)
     }
 }
 
-impl M256Point3 {
+impl AlignedPoint3 {
     /// # Safety
     ///
     /// only call this if the CPU supports AVX
     #[inline]
-    #[target_feature(enable = "avx")]
-    pub unsafe fn load_v(&self) -> std::arch::x86_64::__m256d {
+    pub fn load_v(&self) -> std::arch::x86_64::__m128d {
         use std::arch::x86_64::*;
-        _mm256_load_pd(&self.val[0])
+        _mm_load_pd(&self.val[0])
     }
 
     /// # Safety
@@ -198,3 +201,4 @@ pub unsafe fn _mm256_dot_pd(x: std::arch::x86_64::__m256d, y: std::arch::x86_64:
 
     _mm_cvtsd_f64(_mm_add_pd(xy_l, xy_h))
 }
+*/
