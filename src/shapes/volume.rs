@@ -105,7 +105,7 @@ impl<'a> VolumeIter<'a> {
             match position {
                 InnerVolume::TwoChild { left, .. } => {
                     self.stack.push(position);
-                    position = &left.inner_volume.as_ref().unwrap();
+                    position = left.inner_volume.as_ref().unwrap();
                 }
 
                 InnerVolume::SingleChild(_) => {
@@ -126,7 +126,7 @@ impl<'a> Iterator for VolumeIter<'a> {
                 InnerVolume::SingleChild(child) => return Some(child),
 
                 InnerVolume::TwoChild { right, .. } => {
-                    self.push_left_children(&right.inner_volume.as_ref().unwrap());
+                    self.push_left_children(right.inner_volume.as_ref().unwrap());
                 }
             }
         }
@@ -190,7 +190,7 @@ impl Volume {
 
     fn from_inner_volume(inner_volume: Option<InnerVolume>, t0: FloatType, t1: FloatType) -> Self {
         let bounding_box = if let Some(inner_volume) = inner_volume.as_ref() {
-            compute_inner_volume_bounding_box(&inner_volume, t0, t1)
+            compute_inner_volume_bounding_box(inner_volume, t0, t1)
         } else {
             BoundingBox::empty_box()
         };

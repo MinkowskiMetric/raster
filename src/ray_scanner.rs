@@ -98,13 +98,13 @@ impl VectorImage {
 
     pub fn pixels(&self) -> Pixels {
         Pixels {
-            chunks: self.data.chunks(1 as usize),
+            chunks: self.data.chunks(1),
         }
     }
 
     pub fn pixels_mut(&mut self) -> PixelsMut {
         PixelsMut {
-            chunks: self.data.chunks_mut(1 as usize),
+            chunks: self.data.chunks_mut(1),
         }
     }
 

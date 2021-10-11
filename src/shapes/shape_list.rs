@@ -25,7 +25,7 @@ impl ShapeList {
         self
     }
 
-    pub fn iter<'a>(&'a self) -> std::slice::Iter<'a, Box<dyn Shape>> {
+    pub fn iter(&self) -> std::slice::Iter<'_, Box<dyn Shape>> {
         self.shapes.iter()
     }
 }

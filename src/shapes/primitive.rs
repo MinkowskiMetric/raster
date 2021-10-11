@@ -135,7 +135,7 @@ impl<
     ) -> Option<PrimitiveHitResult> {
         self.iter
             .clone()
-            .filter_map(|shape| shape.intersect(&ray, t_min, t_max, stats))
+            .filter_map(|shape| shape.intersect(ray, t_min, t_max, stats))
             .min_by(|xr, yr| {
                 xr.distance
                     .partial_cmp(&yr.distance)
