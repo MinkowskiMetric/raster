@@ -4,10 +4,10 @@ use crate::{Color, Texture};
 use std::convert::TryInto;
 
 #[derive(Debug, Clone)]
-pub struct NoiseTexture(Perlin, f64);
+pub struct NoiseTexture(Perlin, FloatType);
 
 impl NoiseTexture {
-    pub fn new(scale: f64) -> Self {
+    pub fn new(scale: FloatType) -> Self {
         Self(Perlin::new(), scale)
     }
 
@@ -15,7 +15,7 @@ impl NoiseTexture {
         &self.0
     }
 
-    pub fn scale(&self) -> f64 {
+    pub fn scale(&self) -> FloatType {
         self.1
     }
 }
@@ -33,7 +33,7 @@ impl Texture for NoiseTexture {
 pub mod factories {
     use super::*;
 
-    pub fn noise_texture(scale: f64) -> NoiseTexture {
+    pub fn noise_texture(scale: FloatType) -> NoiseTexture {
         NoiseTexture::new(scale)
     }
 }

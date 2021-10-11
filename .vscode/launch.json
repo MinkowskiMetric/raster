@@ -1,0 +1,86 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'raster' (x86-64)",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--target",
+                    "x86_64-apple-darwin",
+                    "--no-run",
+                    "--lib",
+                    "--package=raster"
+                ],
+                "filter": {
+                    "name": "raster",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'raster'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=raster"
+                ],
+                "filter": {
+                    "name": "raster",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'raster'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=raster",
+                    "--package=raster"
+                ],
+                "filter": {
+                    "name": "raster",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'raster'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=raster",
+                    "--package=raster"
+                ],
+                "filter": {
+                    "name": "raster",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

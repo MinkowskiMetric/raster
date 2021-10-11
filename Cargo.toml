@@ -7,14 +7,14 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-"num" = "*"
-"cgmath" = "*"
-"image" = "0.23.*"
-"rand" = "*"
-"clap" = { version = "~2.27.0", features = ["yaml"] }
-"futures" = { version= "~0.3.5" }
-"tokio" = { version="0.2.*", features = ["full"] }
-"num-traits" = "0.2.*"
+"num" = "0.4"
+"cgmath" = "0.18"
+"image" = "0.23"
+"rand" = "0.8"
+"clap" = { version = "2", features = ["yaml"] }
+"futures" = { version= "0.3" }
+"tokio" = { version="0.2", features = ["full"] }
+"num-traits" = "0.2"
 
 [profile.release]
 debug = 2

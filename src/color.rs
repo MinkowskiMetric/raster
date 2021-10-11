@@ -42,13 +42,13 @@ impl Color {
 impl<T: image::Primitive> From<Rgb<T>> for Color {
     fn from(p: Rgb<T>) -> Self {
         let max_t = T::max_value();
-        let max_t = max_t.to_f64().unwrap();
+        let max_t = max_t.to_f32().unwrap();
 
         let Rgb(p) = p;
         Color([
-            p[0].to_f64().unwrap() / max_t,
-            p[1].to_f64().unwrap() / max_t,
-            p[2].to_f64().unwrap() / max_t,
+            p[0].to_f32().unwrap() / max_t,
+            p[1].to_f32().unwrap() / max_t,
+            p[2].to_f32().unwrap() / max_t,
             1.0,
         ])
     }
@@ -57,7 +57,7 @@ impl<T: image::Primitive> From<Rgb<T>> for Color {
 impl<T: image::Primitive> From<Color> for Rgb<T> {
     fn from(p: Color) -> Self {
         let max_t = T::max_value();
-        let max_t = max_t.to_f64().unwrap();
+        let max_t = max_t.to_f32().unwrap();
 
         Rgb([
             NumCast::from(p.get_r().max(0.0).min(1.0) * max_t).unwrap(),

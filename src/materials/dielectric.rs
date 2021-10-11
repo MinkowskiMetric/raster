@@ -24,7 +24,7 @@ impl Material for Dielectric {
         } else {
             self.refractive_index()
         };
-        let unit_ray_direction = ray_in.direction.into_vector().normalize();
+        let unit_ray_direction = ray_in.direction.normalize();
 
         let cos_theta = -unit_ray_direction.dot(hit_record.surface_normal()).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();

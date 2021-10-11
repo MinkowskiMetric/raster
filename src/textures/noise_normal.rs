@@ -4,10 +4,10 @@ use crate::{Color, Texture};
 use std::convert::TryInto;
 
 #[derive(Debug, Clone)]
-pub struct NoiseNormal(Perlin, Perlin, f64, f64);
+pub struct NoiseNormal(Perlin, Perlin, FloatType, FloatType);
 
 impl NoiseNormal {
-    pub fn new(scale: f64, depth: f64) -> Self {
+    pub fn new(scale: FloatType, depth: FloatType) -> Self {
         Self(Perlin::new(), Perlin::new(), scale, depth)
     }
 
@@ -19,11 +19,11 @@ impl NoiseNormal {
         &self.1
     }
 
-    pub fn scale(&self) -> f64 {
+    pub fn scale(&self) -> FloatType {
         self.2
     }
 
-    pub fn depth(&self) -> f64 {
+    pub fn depth(&self) -> FloatType {
         self.3
     }
 
@@ -47,7 +47,7 @@ impl Texture for NoiseNormal {
 pub mod factories {
     use super::*;
 
-    pub fn noise_normal(scale: f64, depth: f64) -> NoiseNormal {
+    pub fn noise_normal(scale: FloatType, depth: FloatType) -> NoiseNormal {
         NoiseNormal::new(scale, depth)
     }
 }

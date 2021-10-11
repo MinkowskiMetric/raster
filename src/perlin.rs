@@ -72,7 +72,7 @@ impl Perlin {
         Self::perlin_interp(&c, uu, vv, ww)
     }
 
-    pub fn turbulence(&self, p: Point3, depth: usize) -> f64 {
+    pub fn turbulence(&self, p: Point3, depth: usize) -> FloatType {
         let mut accum = 0.0;
         let mut temp_p = p;
         let mut weight = 1.0;
@@ -86,17 +86,22 @@ impl Perlin {
         accum.abs()
     }
 
-    fn perlin_interp(c: &[[[Vector3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+    fn perlin_interp(
+        c: &[[[Vector3; 2]; 2]; 2],
+        u: FloatType,
+        v: FloatType,
+        w: FloatType,
+    ) -> FloatType {
         let uu = u * u * (3.0 - 2.0 * u);
         let vv = v * v * (3.0 - 2.0 * v);
         let ww = w * w * (3.0 - 2.0 * w);
         let mut accum = 0.0;
         for (i, i_item) in c.iter().enumerate() {
-            let fi = i as f64;
+            let fi = i as FloatType;
             for (j, j_item) in i_item.iter().enumerate() {
-                let fj = j as f64;
+                let fj = j as FloatType;
                 for (k, k_item) in j_item.iter().enumerate() {
-                    let fk = k as f64;
+                    let fk = k as FloatType;
                     let weight = Vector3::new(u - fi, v - fj, w - fk);
 
                     accum += ((fi * uu) + ((1.0 - fi) * (1.0 - uu)))

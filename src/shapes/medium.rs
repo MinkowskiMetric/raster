@@ -73,10 +73,8 @@ impl<
             let distance_2 = hit_result_2.distance().min(t_max);
 
             if distance_1 < distance_2 {
-                let internal_ray_origin =
-                    ray.origin.into_point() + (ray.direction.into_vector() * distance_1);
-                let internal_ray =
-                    Ray::new(internal_ray_origin, ray.direction.into_vector(), ray.time);
+                let internal_ray_origin = ray.origin + (ray.direction * distance_1);
+                let internal_ray = Ray::new(internal_ray_origin, ray.direction, ray.time);
                 let internal_ray_length = distance_2 - distance_1;
 
                 if let Some(scatter_distance) =
@@ -85,8 +83,7 @@ impl<
                     Some(HitResult::new(
                         PrimitiveHitResult::new(
                             scatter_distance + distance_1,
-                            ray.origin.into_point()
-                                + (ray.direction.into_vector() * (scatter_distance + distance_1)),
+                            ray.origin + (ray.direction * (scatter_distance + distance_1)),
                             vec3(1.0, 0.0, 0.0), // arbitrary
                             vec3(0.0, 1.0, 0.0), // arbitrary
                             vec3(0.0, 0.0, 1.0), // arbitrary
@@ -213,10 +210,9 @@ fn test_constant_medium_hit_points() {
 
             assert!(
                 hit_point.z >= -1.0 && hit_point.z <= 1.0,
-                format!(
-                    "hit_point.z {:?} not in range\nHIT_RESULT: {:#?}",
-                    hit_point.z, intersect
-                )
+                "hit_point.z {:?} not in range\nHIT_RESULT: {:#?}",
+                hit_point.z,
+                intersect
             );
             assert!(distance >= 9.0 && distance < 11.0);
             assert_eq!(hit_point.z, distance - 10.0);

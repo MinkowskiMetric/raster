@@ -75,8 +75,8 @@ impl StaticTransform {
 
 impl InstantGeometryTransform for StaticTransform {
     fn transform_ray(&self, ray: &Ray) -> Ray {
-        let transformed_origin = self.inverse.transform_point(ray.origin.into_point());
-        let transformed_direction = self.inverse.transform_vector(ray.direction.into_vector());
+        let transformed_origin = self.inverse.transform_point(ray.origin);
+        let transformed_direction = self.inverse.transform_vector(ray.direction);
         Ray::new(transformed_origin, transformed_direction, ray.time)
     }
 
@@ -101,8 +101,7 @@ impl InstantGeometryTransform for StaticTransform {
                 .transform_vector(hit_result.bitangent())
                 .normalize(),
         );
-        hit_result
-            .set_distance((hit_result.hit_point() - original_ray.origin.into_point()).magnitude());
+        hit_result.set_distance((hit_result.hit_point() - original_ray.origin).magnitude());
 
         hit_result
     }

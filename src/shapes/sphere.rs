@@ -16,7 +16,7 @@ fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
 
 #[derive(Clone, Debug)]
 pub struct Sphere {
-    center: M256Point3,
+    center: Point3,
     radius: FloatType,
 }
 
@@ -28,7 +28,7 @@ impl Sphere {
         }
     }
 
-    /// # Safety
+    /*/// # Safety
     ///
     /// only call this if the CPU supports AVX
     #[inline]
@@ -130,7 +130,7 @@ impl Sphere {
         }
 
         None
-    }
+    }*/
 }
 
 impl Primitive for Sphere {
@@ -141,13 +141,80 @@ impl Primitive for Sphere {
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<PrimitiveHitResult> {
-        unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
+        stats.count_sphere_test();
+        let ray_origin = ray.origin;
+        let oc = ray_origin - self.center;
+        let a = ray.direction.dot(ray.direction);
+        let b = oc.dot(ray.direction);
+        let c = oc.dot(oc) - (self.radius * self.radius);
+        let discriminant = (b * b) - (a * c);
+        if discriminant > 0.0 {
+            let temp = (-b - discriminant.sqrt()) / a;
+            if temp < t_max && temp > t_min {
+                let hit_point = ray.origin + (temp * ray.direction);
+                let outward_normal = (hit_point - self.center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0)
+                    .cross(hit_point - self.center)
+                    .normalize();
+                let front_face = ray.direction.dot(outward_normal) < 0.0;
+
+                let surface_normal = if front_face {
+                    outward_normal
+                } else {
+                    -outward_normal
+                };
+                let bitangent = outward_normal.cross(tangent).normalize();
+
+                let normalized_hitpoint = (hit_point - self.center) / self.radius;
+                let uv = get_sphere_uv(normalized_hitpoint);
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point,
+                    surface_normal,
+                    tangent,
+                    bitangent,
+                    front_face,
+                    uv,
+                ));
+            }
+
+            let temp = (-b + discriminant.sqrt()) / a;
+            if temp < t_max && temp > t_min {
+                let hit_point = ray.origin + (temp * ray.direction);
+                let outward_normal = (hit_point - self.center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0)
+                    .cross(hit_point - self.center)
+                    .normalize();
+                let front_face = ray.direction.dot(outward_normal) < 0.0;
+
+                let surface_normal = if front_face {
+                    outward_normal
+                } else {
+                    -outward_normal
+                };
+                let bitangent = outward_normal.cross(tangent).normalize();
+
+                let normalized_hitpoint = (hit_point - self.center) / self.radius;
+                let uv = get_sphere_uv(normalized_hitpoint);
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point,
+                    surface_normal,
+                    tangent,
+                    bitangent,
+                    front_face,
+                    uv,
+                ));
+            }
+        }
+
+        None
     }
 
     fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
         BoundingBox::new(
-            self.center.into_point() - vec3(self.radius, self.radius, self.radius),
-            self.center.into_point() + vec3(self.radius, self.radius, self.radius),
+            self.center - vec3(self.radius, self.radius, self.radius),
+            self.center + vec3(self.radius, self.radius, self.radius),
         )
     }
 }
@@ -156,9 +223,9 @@ impl UntransformedPrimitive for Sphere {}
 
 #[derive(Clone, Debug)]
 pub struct MovingSphere {
-    space_origin: M256Point3,
-    time_origin: M256Point3,
-    velocity: M256Vector3,
+    space_origin: Point3,
+    time_origin: FloatType,
+    velocity: Vector3,
     radius: FloatType,
 }
 
@@ -168,9 +235,9 @@ impl MovingSphere {
         center1: (Point3, FloatType),
         radius: FloatType,
     ) -> Self {
-        let space_origin = center0.0.into();
-        let time_origin = Point3::new(center0.1, center0.1, center0.1).into();
-        let velocity = ((center1.0 - center0.0) / (center1.1 - center0.1)).into();
+        let space_origin = center0.0;
+        let time_origin = center0.1;
+        let velocity = (center1.0 - center0.0) / (center1.1 - center0.1);
         Self {
             space_origin,
             time_origin,
@@ -182,7 +249,7 @@ impl MovingSphere {
     /// # Safety
     ///
     /// only call this if the CPU supports AVX
-    #[inline]
+    /*#[inline]
     #[target_feature(enable = "avx")]
     unsafe fn center_v(&self, t: FloatType) -> std::arch::x86_64::__m256d {
         use std::arch::x86_64::*;
@@ -195,13 +262,16 @@ impl MovingSphere {
         let translate = _mm256_mul_pd(velocity, t_shift);
 
         _mm256_add_pd(space_origin, translate)
+    }*/
+
+    fn center(&self, t: FloatType) -> Point3 {
+        let t_shift = t - self.time_origin;
+        let translate = self.velocity * t_shift;
+
+        self.space_origin + translate
     }
 
-    fn center(&self, t: FloatType) -> M256Point3 {
-        unsafe { M256Point3::from_v(self.center_v(t)) }
-    }
-
-    /// # Safety
+    /*/// # Safety
     ///
     /// only call this if the CPU supports AVX
     #[inline]
@@ -303,7 +373,7 @@ impl MovingSphere {
         }
 
         None
-    }
+    }*/
 }
 
 impl Primitive for MovingSphere {
@@ -314,17 +384,81 @@ impl Primitive for MovingSphere {
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<PrimitiveHitResult> {
-        unsafe { self.intersect_avx(ray, t_min, t_max, stats) }
+        stats.count_moving_sphere_test();
+        let center = self.center(ray.time);
+        let ray_origin = ray.origin;
+        let oc = ray_origin - center;
+        let a = ray.direction.dot(ray.direction);
+        let b = oc.dot(ray.direction);
+        let c = oc.dot(oc) - (self.radius * self.radius);
+        let discriminant = (b * b) - (a * c);
+        if discriminant > 0.0 {
+            let temp = (-b - discriminant.sqrt()) / a;
+            if temp < t_max && temp > t_min {
+                let hit_point = ray.origin + (temp * ray.direction);
+                let outward_normal = (hit_point - center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
+                let front_face = ray.direction.dot(outward_normal) < 0.0;
+
+                let surface_normal = if front_face {
+                    outward_normal
+                } else {
+                    -outward_normal
+                };
+                let bitangent = outward_normal.cross(tangent).normalize();
+
+                let normalized_hitpoint = (hit_point - center) / self.radius;
+                let uv = get_sphere_uv(normalized_hitpoint);
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point,
+                    surface_normal,
+                    tangent,
+                    bitangent,
+                    front_face,
+                    uv,
+                ));
+            }
+
+            let temp = (-b + discriminant.sqrt()) / a;
+            if temp < t_max && temp > t_min {
+                let hit_point = ray.origin + (temp * ray.direction);
+                let outward_normal = (hit_point - center) / self.radius;
+                let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
+                let front_face = ray.direction.dot(outward_normal) < 0.0;
+
+                let surface_normal = if front_face {
+                    outward_normal
+                } else {
+                    -outward_normal
+                };
+                let bitangent = outward_normal.cross(tangent).normalize();
+
+                let normalized_hitpoint = (hit_point - center) / self.radius;
+                let uv = get_sphere_uv(normalized_hitpoint);
+                return Some(PrimitiveHitResult::new(
+                    temp,
+                    hit_point,
+                    surface_normal,
+                    tangent,
+                    bitangent,
+                    front_face,
+                    uv,
+                ));
+            }
+        }
+
+        return None;
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         let box0 = BoundingBox::new(
-            self.center(t0).into_point() - vec3(self.radius, self.radius, self.radius),
-            self.center(t0).into_point() + vec3(self.radius, self.radius, self.radius),
+            self.center(t0) - vec3(self.radius, self.radius, self.radius),
+            self.center(t0) + vec3(self.radius, self.radius, self.radius),
         );
         let box1 = BoundingBox::new(
-            self.center(t1).into_point() - vec3(self.radius, self.radius, self.radius),
-            self.center(t1).into_point() + vec3(self.radius, self.radius, self.radius),
+            self.center(t1) - vec3(self.radius, self.radius, self.radius),
+            self.center(t1) + vec3(self.radius, self.radius, self.radius),
         );
 
         BoundingBox::surrounding_box(&box0, &box1)
