@@ -3,6 +3,7 @@ pub trait RenderStatsCollector {
     fn count_bounding_box_test(&mut self);
     fn count_sphere_test(&mut self);
     fn count_moving_sphere_test(&mut self);
+    fn count_triangle_test(&mut self);
     fn count_pixel(&mut self);
 }
 
@@ -12,6 +13,7 @@ pub struct RenderStats {
     pub bounding_box_tests: usize,
     pub sphere_tests: usize,
     pub moving_sphere_tests: usize,
+    pub triangle_tests: usize,
     pub pixels: usize,
 }
 
@@ -22,6 +24,7 @@ impl RenderStats {
             bounding_box_tests: 0,
             sphere_tests: 0,
             moving_sphere_tests: 0,
+            triangle_tests: 0,
             pixels: 0,
         }
     }
@@ -76,6 +79,10 @@ impl RenderStatsCollector for TracingStats {
         self.get_stats_mut().moving_sphere_tests += 1;
     }
 
+    fn count_triangle_test(&mut self) {
+        self.get_stats_mut().triangle_tests += 1;
+    }
+
     fn count_pixel(&mut self) {
         self.get_stats_mut().pixels += 1;
     }
@@ -90,6 +97,7 @@ impl RenderStatsAccumulator for TracingStats {
             bounding_box_tests: render_stats.bounding_box_tests + stats.bounding_box_tests,
             sphere_tests: render_stats.sphere_tests + stats.sphere_tests,
             moving_sphere_tests: render_stats.moving_sphere_tests + stats.moving_sphere_tests,
+            triangle_tests: render_stats.triangle_tests + stats.triangle_tests,
             pixels: render_stats.pixels + stats.pixels,
         }
     }

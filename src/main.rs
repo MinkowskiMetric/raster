@@ -568,6 +568,92 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
     (camera, black_sky(), shapes)
 }
 
+fn one_triangle(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(20.0, 5.0, -5.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = raster::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let vertices = [
+        point3(-1.0, 0.0, 1.0),
+        point3(1.0, 0.0, 1.0),
+        point3(-1.0, 2.0, 1.0),
+        point3(1.0, 2.0, 1.0),
+    ];
+
+    let red = solid_texture(Color([1.0, 0.0, 0.0, 0.0]));
+    let green = solid_texture(Color([0.0, 1.0, 0.0, 0.0]));
+
+    let shapes = shapes![
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(green),),
+        triangle_mesh([0, 2, 3], vertices)
+            .unwrap()
+            .apply_material(lambertian(red)),
+    ];
+
+    (camera, regular_sky(), shapes)
+}
+
+fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(20.0, 5.0, -5.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = raster::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let vertices = [
+        point3(-1.0, 0.0, 1.0),
+        point3(1.0, 0.0, 1.0),
+        point3(-1.0, 2.0, 1.0),
+        point3(1.0, 2.0, 1.0),
+        point3(-1.0, 0.0, -1.0),
+        point3(1.0, 0.0, -1.0),
+        point3(-1.0, 2.0, -1.0),
+        point3(1.0, 2.0, -1.0),
+    ];
+
+    let red = solid_texture(Color([1.0, 0.0, 0.0, 0.0]));
+    let green = solid_texture(Color([0.0, 1.0, 0.0, 0.0]));
+
+    let shapes = shapes![
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(green),),
+        sphere(point3(-5.0, 2.0, -1.0), 2.0)
+            .apply_material(metal(Color([1.0, 1.0, 1.0, 0.0]), 0.0)),
+        triangle_mesh(
+            [
+                0, 1, 2, 1, 2, 3, 2, 3, 6, 3, 6, 7, 0, 1, 4, 1, 4, 5, 4, 5, 6, 5, 6, 7, 0, 2, 4, 2,
+                4, 6, 1, 3, 5, 3, 5, 7,
+            ],
+            vertices
+        )
+        .unwrap()
+        .apply_material(lambertian(red)),
+    ];
+
+    (camera, regular_sky(), shapes)
+}
+
 const DEFAULT_WIDTH: usize = 1920;
 const DEFAULT_HEIGHT: usize = 1080;
 const DEFAULT_MIN_PASSES: usize = 100;
@@ -578,7 +664,7 @@ type SceneResult = (raster::Camera, raster::Sky, ShapeList);
 type SceneFactory = fn(usize, usize) -> SceneResult;
 type BuiltinScene = (&'static str, SceneFactory);
 
-const BUILTIN_SCENES: [BuiltinScene; 12] = [
+const BUILTIN_SCENES: [BuiltinScene; 14] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
@@ -591,6 +677,8 @@ const BUILTIN_SCENES: [BuiltinScene; 12] = [
     ("book2", book2),
     ("orange", orange),
     ("orange_parabola", orange_parabola),
+    ("one_triangle", one_triangle),
+    ("mesh_cube", mesh_cube),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {

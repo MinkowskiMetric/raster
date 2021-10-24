@@ -103,29 +103,7 @@ pub trait Primitive: Send + Sync + std::fmt::Debug {
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox;
 }
 
-pub trait UntransformedPrimitive: Primitive {}
-
-pub trait IntoAggregatePrimitive {
-    type Aggregate: Primitive;
-
-    fn into_aggregate_primitive(self) -> Self::Aggregate;
-}
-
-#[derive(Clone, Debug)]
-pub struct PrimitiveAggregator<
-    'a,
-    P: 'a + Primitive,
-    Iter: Iterator<Item = &'a P> + Clone + Send + Sync + std::fmt::Debug,
-> {
-    iter: Iter,
-}
-
-impl<
-        'a,
-        P: 'a + Primitive,
-        Iter: Iterator<Item = &'a P> + Clone + Send + Sync + std::fmt::Debug,
-    > Primitive for PrimitiveAggregator<'a, P, Iter>
-{
+impl<T: Primitive> Primitive for &T {
     fn intersect(
         &self,
         ray: &Ray,
@@ -133,9 +111,37 @@ impl<
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<PrimitiveHitResult> {
-        self.iter
-            .clone()
-            .filter_map(|shape| shape.intersect(ray, t_min, t_max, stats))
+        (*self).intersect(ray, t_min, t_max, stats)
+    }
+
+    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+        (*self).bounding_box(t0, t1)
+    }
+}
+
+pub trait UntransformedPrimitive: Primitive {}
+
+pub trait PrimitiveIteratorOps {
+    fn intersect(
+        self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        stats: &mut dyn RenderStatsCollector,
+    ) -> Option<PrimitiveHitResult>;
+
+    fn bounding_box(self, t0: FloatType, t1: FloatType) -> BoundingBox;
+}
+
+impl<P: Primitive, Iter: Iterator<Item = P>> PrimitiveIteratorOps for Iter {
+    fn intersect(
+        self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+        stats: &mut dyn RenderStatsCollector,
+    ) -> Option<PrimitiveHitResult> {
+        self.filter_map(|shape| shape.intersect(ray, t_min, t_max, stats))
             .min_by(|xr, yr| {
                 xr.distance
                     .partial_cmp(&yr.distance)
@@ -143,25 +149,10 @@ impl<
             })
     }
 
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.iter
-            .clone()
-            .map(|a| a.bounding_box(t0, t1))
+    fn bounding_box(self, t0: FloatType, t1: FloatType) -> BoundingBox {
+        self.map(|a| a.bounding_box(t0, t1))
             .my_fold_first(|a, b| BoundingBox::surrounding_box(&a, &b))
             .unwrap_or_else(BoundingBox::empty_box)
-    }
-}
-
-impl<
-        'a,
-        P: 'a + Primitive,
-        Iter: Iterator<Item = &'a P> + Clone + Send + Sync + std::fmt::Debug,
-    > IntoAggregatePrimitive for Iter
-{
-    type Aggregate = PrimitiveAggregator<'a, P, Iter>;
-
-    fn into_aggregate_primitive(self) -> Self::Aggregate {
-        Self::Aggregate { iter: self }
     }
 }
 
@@ -190,16 +181,12 @@ impl<P: Primitive, M: Material> Shape for SkinnedPrimitive<P, M> {
     ) -> Option<HitResult<'a>> {
         self.primitives
             .iter()
-            .into_aggregate_primitive()
             .intersect(ray, t_min, t_max, stats)
             .map(|hit_result| HitResult::new(hit_result, &self.material))
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.primitives
-            .iter()
-            .into_aggregate_primitive()
-            .bounding_box(t0, t1)
+        self.primitives.iter().bounding_box(t0, t1)
     }
 }
 
@@ -319,17 +306,11 @@ impl<P: Primitive> Primitive for CompoundPrimitive<P> {
         t_max: FloatType,
         stats: &mut dyn RenderStatsCollector,
     ) -> Option<PrimitiveHitResult> {
-        self.0
-            .iter()
-            .into_aggregate_primitive()
-            .intersect(ray, t_min, t_max, stats)
+        self.0.iter().intersect(ray, t_min, t_max, stats)
     }
 
     fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.0
-            .iter()
-            .into_aggregate_primitive()
-            .bounding_box(t0, t1)
+        self.0.iter().bounding_box(t0, t1)
     }
 }
 

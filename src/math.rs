@@ -12,6 +12,10 @@ pub fn vec3<T>(x: T, y: T, z: T) -> cgmath::Vector3<T> {
     cgmath::vec3(x, y, z)
 }
 
+pub fn point3<T>(x: T, y: T, z: T) -> cgmath::Point3<T> {
+    cgmath::point3(x, y, z)
+}
+
 trait MyConstants: Copy {
     const INFINITY: Self;
     const PI: Self;
@@ -30,6 +34,7 @@ impl MyConstants for f64 {
 pub mod constants {
     use super::MyConstants;
 
+    pub const EPSILON: super::FloatType = super::FloatType::EPSILON;
     pub const INFINITY: super::FloatType = super::FloatType::INFINITY;
     pub const PI: super::FloatType = super::FloatType::PI;
 }

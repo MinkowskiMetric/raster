@@ -1,3 +1,5 @@
+use std::iter::FromIterator;
+
 use crate::math::*;
 use crate::ray_scanner::Ray;
 
@@ -73,6 +75,18 @@ impl BoundingBox {
             pt_min: zero_point,
             pt_max: zero_point,
         }
+    }
+
+    pub fn containing_point(pt: &Point3) -> Self {
+        let epsilon_offset: Vector3 = vec3(0.0001, 0.0001, 0.0001);
+        Self {
+            pt_min: pt - epsilon_offset,
+            pt_max: pt + epsilon_offset,
+        }
+    }
+
+    pub fn combine(self, other: Self) -> Self {
+        Self::surrounding_box(&self, &other)
     }
 
     pub fn surrounding_box(box0: &BoundingBox, box1: &BoundingBox) -> Self {
@@ -174,4 +188,13 @@ impl BoundingBox {
 
         0 != _mm_comilt_sd(t_min, t_max)
     }*/
+}
+
+impl<'a> FromIterator<&'a Point3> for BoundingBox {
+    fn from_iter<T: IntoIterator<Item = &'a Point3>>(iter: T) -> Self {
+        let mut iter = iter.into_iter().map(BoundingBox::containing_point);
+        iter.next()
+            .map(|initial| iter.fold(initial, |a, b| a.combine(b)))
+            .unwrap_or_else(BoundingBox::empty_box)
+    }
 }
