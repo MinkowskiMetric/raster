@@ -261,12 +261,9 @@ pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut dyn RenderStatsCollec
             scene.intersect(&current_ray, 0.001, constants::INFINITY, stats)
         {
             let (hit_result, material) = hit_result.split();
+            let (emitted, scatter) = material.base_scatter(&current_ray, hit_result).split();
 
-            // We hit an object. First see if it emitted any light
-            let emitted = material.emitted(hit_result.hit_point(), hit_result.uv());
-            if let Some(ScatterResult { partial, scattered }) =
-                material.scatter(&current_ray, hit_result)
-            {
+            if let Some(ScatterResult { partial, scattered }) = scatter {
                 attenuation_stack.push(ScatterStackRecord { partial, emitted });
                 current_ray = scattered;
             } else {

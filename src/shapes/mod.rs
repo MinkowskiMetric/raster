@@ -14,7 +14,7 @@ mod volume;
 pub use crate::shapes;
 pub use aabb::BoundingBox;
 pub use medium::MediumDensity;
-pub use mesh::TriangleMesh;
+pub use mesh::{TriangleMesh, TriangleVertex};
 pub use primitive::{
     CompoundPrimitive, IntoPrimitive, Primitive, PrimitiveHitResult, PrimitiveIteratorOps,
     SkinnablePrimitive, SkinnedPrimitive, UntransformedPrimitive,

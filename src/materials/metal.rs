@@ -33,7 +33,7 @@ impl<T: Texture> Material for Metal<T> {
             + self.fuzz() * random_in_unit_sphere();
         let color = self
             .texture()
-            .value(hit_record.hit_point(), hit_record.uv());
+            .value(hit_record.hit_point(), *hit_record.uv());
         if reflected.dot(hit_record.surface_normal()) > 0.0 {
             Some(ScatterResult {
                 partial: PartialScatterResult {

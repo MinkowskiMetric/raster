@@ -83,7 +83,7 @@ impl<
                                 vec3(0.0, 1.0, 0.0), // arbitrary
                                 vec3(0.0, 0.0, 1.0), // arbitrary
                                 true,                // also arbitrary
-                                (0.0, 0.0),
+                                point2(0.0, 0.0),
                             ),
                             &self.phase,
                         )
@@ -139,7 +139,8 @@ pub struct Isotropic<Albedo: Texture + Clone>(Albedo);
 impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
     fn scatter(&self, ray_in: &Ray, hit_record: PrimitiveHitResult) -> Option<ScatterResult> {
         let attenuation =
-            cgmath::Vector4::from(self.0.value(hit_record.hit_point(), hit_record.uv())).truncate();
+            cgmath::Vector4::from(self.0.value(hit_record.hit_point(), *hit_record.uv()))
+                .truncate();
 
         Some(ScatterResult {
             partial: PartialScatterResult { attenuation },

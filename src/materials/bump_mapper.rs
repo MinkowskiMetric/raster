@@ -22,7 +22,7 @@ impl<T: Texture> SurfaceMapper for BumpMapper<T> {
 
         let tbn = cgmath::Matrix3 { x: t, y: b, z: n };
 
-        let normal = (Vector3::from(self.0.value(hit_result.hit_point(), hit_result.uv())) * 2.0)
+        let normal = (Vector3::from(self.0.value(hit_result.hit_point(), *hit_result.uv())) * 2.0)
             - vec3(1.0, 1.0, 1.0);
         let normal = (tbn * normal).normalize();
 

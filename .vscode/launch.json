@@ -60,7 +60,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["-w", "320", "-h", "240", "--scene=mesh_cube", "one_triangle.png"],
+            "args": ["-w", "320", "-h", "240", "--scene=teapot", "output/teapot.png"],
             "cwd": "${workspaceFolder}"
         },
         {

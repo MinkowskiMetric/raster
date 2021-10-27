@@ -25,7 +25,7 @@ impl<T: SurfaceMapper, M: Material> Material for SurfaceMappingMaterial<T, M> {
             .map(|scatter_result| self.0.process_scatter_result(scatter_result))
     }
 
-    fn emitted(&self, p: Point3, uv: (FloatType, FloatType)) -> Color {
+    fn emitted(&self, p: Point3, uv: Point2) -> Color {
         self.1.emitted(p, uv)
     }
 }

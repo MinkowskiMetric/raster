@@ -144,7 +144,7 @@ impl Primitive for ParabolaXY {
         let tangent = (-radial_point).cross(outward_normal);
         let bitangent = outward_normal.cross(tangent);
 
-        let uv = (radial_point.magnitude() / self.pr, 0.0); // TODOTODOTODO - could use the angle
+        let uv = point2(radial_point.magnitude() / self.pr, 0.0); // TODOTODOTODO - could use the angle
 
         Some(PrimitiveHitResult::new(
             t,

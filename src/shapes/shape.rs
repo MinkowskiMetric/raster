@@ -2,25 +2,25 @@ use super::{PrimitiveHitResult, TransformableShape};
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
+use crate::BaseMaterial;
 use crate::BoundingBox;
-use crate::Material;
 use crate::RenderStatsCollector;
 
 #[derive(Debug)]
 pub struct HitResult<'a> {
     primitive_hit_result: PrimitiveHitResult,
-    material: &'a dyn Material,
+    material: &'a dyn BaseMaterial,
 }
 
 impl<'a> HitResult<'a> {
-    pub fn new(primitive_hit_result: PrimitiveHitResult, material: &'a dyn Material) -> Self {
+    pub fn new(primitive_hit_result: PrimitiveHitResult, material: &'a dyn BaseMaterial) -> Self {
         Self {
             primitive_hit_result,
             material,
         }
     }
 
-    pub fn material(&self) -> &'a dyn Material {
+    pub fn material(&self) -> &'a dyn BaseMaterial {
         self.material
     }
 
@@ -28,7 +28,7 @@ impl<'a> HitResult<'a> {
         &self.primitive_hit_result
     }
 
-    pub fn split(self) -> (PrimitiveHitResult, &'a dyn Material) {
+    pub fn split(self) -> (PrimitiveHitResult, &'a dyn BaseMaterial) {
         (self.primitive_hit_result, self.material)
     }
 
@@ -80,7 +80,7 @@ impl<'a> HitResult<'a> {
         self.primitive_hit_result.set_front_face(front_face)
     }
 
-    pub fn uv(&self) -> (FloatType, FloatType) {
+    pub fn uv(&self) -> &Point2 {
         self.primitive_hit_result.uv()
     }
 }
