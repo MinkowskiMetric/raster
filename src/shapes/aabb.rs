@@ -77,7 +77,7 @@ impl BoundingBox {
         }
     }
 
-    pub fn containing_point(pt: &Point3) -> Self {
+    pub fn containing_point(pt: Point3) -> Self {
         let epsilon_offset: Vector3 = vec3(0.0001, 0.0001, 0.0001);
         Self {
             pt_min: pt - epsilon_offset,
@@ -190,8 +190,8 @@ impl BoundingBox {
     }*/
 }
 
-impl<'a> FromIterator<&'a Point3> for BoundingBox {
-    fn from_iter<T: IntoIterator<Item = &'a Point3>>(iter: T) -> Self {
+impl FromIterator<Point3> for BoundingBox {
+    fn from_iter<T: IntoIterator<Item = Point3>>(iter: T) -> Self {
         let mut iter = iter.into_iter().map(BoundingBox::containing_point);
         iter.next()
             .map(|initial| iter.fold(initial, |a, b| a.combine(b)))

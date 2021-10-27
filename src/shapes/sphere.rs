@@ -4,14 +4,14 @@ use crate::ray_scanner::Ray;
 use crate::BoundingBox;
 use crate::RenderStatsCollector;
 
-fn get_sphere_uv(p: Vector3) -> (FloatType, FloatType) {
+fn get_sphere_uv(p: Vector3) -> Point2 {
     let phi = p.z.atan2(p.x);
     let theta = p.y.asin();
 
     let u = 1.0 - (phi + constants::PI) / (2.0 * constants::PI);
     let v = (theta + constants::PI / 2.0) / constants::PI;
 
-    (u, v)
+    point2(u, v)
 }
 
 #[derive(Clone, Debug)]

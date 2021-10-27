@@ -15,13 +15,14 @@ pub mod utils;
 
 pub use camera::Camera;
 pub use color::Color;
-pub use materials::{Material, PartialScatterResult, ScatterResult, SurfaceMapper};
+pub use materials::{BaseMaterial, Material, PartialScatterResult, ScatterResult, SurfaceMapper};
 pub use ray_scanner::{scan, Ray};
 pub use scene::Scene;
 pub use shapes::{
     BoundingBox, CollectionShape, CompoundPrimitive, CompoundShape, HitResult, IntoPrimitive,
     MediumDensity, Primitive, PrimitiveHitResult, PrimitiveIteratorOps, Shape, ShapeList,
     SkinnablePrimitive, Sphere, TransformablePrimitive, TransformableShape, TransformedXyRectangle,
+    TriangleVertex, UntransformedPrimitive,
 };
 pub use sky::Sky;
 pub use stats::{

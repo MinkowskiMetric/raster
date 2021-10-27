@@ -16,9 +16,9 @@ impl<Image: GenericImageView + Sync + Send> ImageTexture<Image> {
 }
 
 impl<Image: GenericImageView + Sync + Send> Texture for ImageTexture<Image> {
-    fn value(&self, _p: Point3, (u, v): (FloatType, FloatType)) -> Color {
-        let u = u.max(0.0).min(1.0);
-        let v = 1.0 - v.max(0.0).min(1.0);
+    fn value(&self, _p: Point3, uv: Point2) -> Color {
+        let u = uv.x.max(0.0).min(1.0);
+        let v = 1.0 - uv.y.max(0.0).min(1.0);
 
         let i = ((u * (self.image().width() as FloatType)) as u32).min(self.image().width() - 1);
         let j = ((v * (self.image().height() as FloatType)) as u32).min(self.image().height() - 1);

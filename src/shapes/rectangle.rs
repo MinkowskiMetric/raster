@@ -65,7 +65,7 @@ impl Primitive for UnitXyRectangle {
             tangent,
             bitangent,
             front_face,
-            (u, v),
+            point2(u, v),
         ))
     }
 

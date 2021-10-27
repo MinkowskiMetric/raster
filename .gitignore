@@ -1,5 +1,4 @@
 /target
 **/*.rs.bk
 .DS_Store
-/one_triangle.png
-mesh_cube.png
+/output

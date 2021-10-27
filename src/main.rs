@@ -8,7 +8,7 @@ use image::RgbImage;
 use raster::{
     prelude::*, shapes, Color, CompoundPrimitive, IntoPrimitive, RenderStatsSource, ShapeList,
     SkinnablePrimitive, Sphere, Texture, TransformablePrimitive, TransformableShape,
-    TransformedXyRectangle,
+    TransformedXyRectangle, TriangleVertex,
 };
 
 use std::sync::{Arc, RwLock};
@@ -568,10 +568,14 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
     (camera, black_sky(), shapes)
 }
 
-fn one_triangle(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn sphere_mapped_plane(
+    radius: FloatType,
+    width: usize,
+    height: usize,
+) -> (raster::Camera, raster::Sky, ShapeList) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
-    let lookfrom = Point3::new(20.0, 5.0, -5.0);
-    let lookat = Point3::new(0.0, 0.0, 0.0);
+    let lookfrom = Point3::new(0.0, 3.0, 20.0);
+    let lookat = Point3::new(0.0, 1.0, 0.0);
     let vup = vec3(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).magnitude();
     let aperture = 0.0;
@@ -579,30 +583,71 @@ fn one_triangle(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
         lookfrom,
         lookat,
         vup,
-        Deg(20.0).into(),
+        Deg(30.0).into(),
         aspect_ratio,
         aperture,
         dist_to_focus,
     );
 
-    let vertices = [
-        point3(-1.0, 0.0, 1.0),
-        point3(1.0, 0.0, 1.0),
-        point3(-1.0, 2.0, 1.0),
-        point3(1.0, 2.0, 1.0),
+    // Imagine a triangle - hypotenuse runs from top left corner of plane
+    // to center of sphere, so it is the sphere radius, opposite runs from
+    // centre of plane to corner so from pythagoras (h^2 = o^2 + a^2) we get
+    // a^2 = h^2 - o^2
+    let plane_center = point3(0.0, 3.0, 1.0);
+    let half_plane_diagonal_squared = (3.0 * 3.0) + (3.0 * 3.0);
+    let plane_to_center = ((radius * radius) - half_plane_diagonal_squared).sqrt();
+
+    let center = if radius < 0.0 {
+        plane_center + vec3(0.0, 0.0, -plane_to_center)
+    } else {
+        plane_center + vec3(0.0, 0.0, plane_to_center)
+    };
+
+    // Imagine a sphere, radius r, where r is large enough for our square to be
+    // on it
+    let points = [
+        (point3(-3.0, 0.0, 1.0), point2(0.0, 0.0)),
+        (point3(3.0, 0.0, 1.0), point2(1.0, 0.0)),
+        (point3(-3.0, 6.0, 1.0), point2(0.0, 1.0)),
+        (point3(3.0, 6.0, 1.0), point2(1.0, 1.1)),
     ];
 
+    let vertices: Vec<_> = points
+        .iter()
+        .map(|(vertex, uv)| {
+            let center_to_vertex = vertex - center;
+            let normal = center_to_vertex.normalize();
+            let tangent = vec3(0.0, 1.0, 0.0).cross(center_to_vertex).normalize();
+
+            TriangleVertex::new(*vertex, *uv, normal, tangent)
+        })
+        .collect();
+
     let red = solid_texture(Color([1.0, 0.0, 0.0, 0.0]));
-    let green = solid_texture(Color([0.0, 1.0, 0.0, 0.0]));
+    let floor = solid_texture(Color([0.2, 0.25, 0.2, 0.0]));
 
     let shapes = shapes![
-        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(green),),
-        triangle_mesh([0, 2, 3], vertices)
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(floor),),
+        sphere(point3(0.0, 0.0, 24.0), 2.0).apply_material(lambertian(red)),
+        triangle_mesh([0, 1, 2, 1, 2, 3], vertices)
             .unwrap()
-            .apply_material(lambertian(red)),
+            .apply_material(
+                metal(Color([0.9, 1.0, 0.9, 1.0]), 0.001) /*bump_mapper(
+                                                              brick_normal_map(),
+                                                              metal_with_texture(brick_image(), 0.7)
+                                                          )*/
+            ),
     ];
 
     (camera, regular_sky(), shapes)
+}
+
+fn concave_mirror(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    sphere_mapped_plane(15.0, width, height)
+}
+
+fn convex_mirror(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    sphere_mapped_plane(-15.0, width, height)
 }
 
 fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
@@ -622,22 +667,34 @@ fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, Shape
         dist_to_focus,
     );
 
-    let vertices = [
-        point3(-1.0, 0.0, 1.0),
-        point3(1.0, 0.0, 1.0),
-        point3(-1.0, 2.0, 1.0),
-        point3(1.0, 2.0, 1.0),
-        point3(-1.0, 0.0, -1.0),
-        point3(1.0, 0.0, -1.0),
-        point3(-1.0, 2.0, -1.0),
-        point3(1.0, 2.0, -1.0),
+    let points = [
+        (point3(-1.0, 0.0, 1.0), point2(0.0, 0.0)),
+        (point3(1.0, 0.0, 1.0), point2(0.0, 0.0)),
+        (point3(-1.0, 2.0, 1.0), point2(0.0, 0.0)),
+        (point3(1.0, 2.0, 1.0), point2(0.0, 0.0)),
+        (point3(-1.0, 0.0, -1.0), point2(0.0, 0.0)),
+        (point3(1.0, 0.0, -1.0), point2(0.0, 0.0)),
+        (point3(-1.0, 2.0, -1.0), point2(0.0, 0.0)),
+        (point3(1.0, 2.0, -1.0), point2(0.0, 0.0)),
     ];
 
-    let red = solid_texture(Color([1.0, 0.0, 0.0, 0.0]));
-    let green = solid_texture(Color([0.0, 1.0, 0.0, 0.0]));
+    let center = point3(0.0, 1.0, 0.0);
+
+    let vertices: Vec<_> = points
+        .iter()
+        .map(|(vertex, uv)| {
+            let center_to_vertex = vertex - center;
+            let normal = center_to_vertex.normalize();
+            let tangent = vec3(0.0, 1.0, 0.0).cross(center_to_vertex).normalize();
+
+            TriangleVertex::new(*vertex, *uv, normal, tangent)
+        })
+        .collect();
+
+    let floor = solid_texture(Color([0.2, 0.25, 0.2, 0.0]));
 
     let shapes = shapes![
-        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(green),),
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(floor),),
         sphere(point3(-5.0, 2.0, -1.0), 2.0)
             .apply_material(metal(Color([1.0, 1.0, 1.0, 0.0]), 0.0)),
         triangle_mesh(
@@ -648,7 +705,41 @@ fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, Shape
             vertices
         )
         .unwrap()
-        .apply_material(lambertian(red)),
+        .apply_material(metal(Color([0.8, 0.8, 1.0, 1.0]), 0.001)),
+    ];
+
+    (camera, regular_sky(), shapes)
+}
+
+fn teapot(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+    let aspect_ratio = (width as FloatType) / (height as FloatType);
+    let lookfrom = Point3::new(20.0, 5.0, -5.0);
+    let lookat = Point3::new(0.0, 1.5, 0.0);
+    let vup = vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).magnitude();
+    let aperture = 0.0;
+    let camera = raster::Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        Deg(20.0).into(),
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
+
+    let teapot = load_obj_mesh("./meshes/teapot.obj").expect("Failed to load mesh");
+    let red = solid_texture(Color([0.65, 0.05, 0.05, 1.0]));
+    let floor = solid_texture(Color([0.25, 0.45, 0.25, 1.0]));
+
+    let shapes = shapes![
+        sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(floor),),
+        teapot
+            .values()
+            .flat_map(std::collections::HashMap::values)
+            .cloned()
+            .into_primitive()
+            .apply_material(metal_with_texture(red, 0.05)),
     ];
 
     (camera, regular_sky(), shapes)
@@ -664,7 +755,7 @@ type SceneResult = (raster::Camera, raster::Sky, ShapeList);
 type SceneFactory = fn(usize, usize) -> SceneResult;
 type BuiltinScene = (&'static str, SceneFactory);
 
-const BUILTIN_SCENES: [BuiltinScene; 14] = [
+const BUILTIN_SCENES: [BuiltinScene; 16] = [
     ("random", random_scene),
     ("mine", my_test_scene),
     ("twospheres", two_spheres),
@@ -677,8 +768,10 @@ const BUILTIN_SCENES: [BuiltinScene; 14] = [
     ("book2", book2),
     ("orange", orange),
     ("orange_parabola", orange_parabola),
-    ("one_triangle", one_triangle),
+    ("concave_mirror", concave_mirror),
+    ("convex_mirror", convex_mirror),
     ("mesh_cube", mesh_cube),
+    ("teapot", teapot),
 ];
 
 fn command_line() -> clap::ArgMatches<'static> {

@@ -16,7 +16,7 @@ impl<T: 'static + Texture + Clone> DiffuseLight<T> {
 }
 
 impl<T: 'static + Texture + Clone> Material for DiffuseLight<T> {
-    fn emitted(&self, p: Point3, uv: (FloatType, FloatType)) -> Color {
+    fn emitted(&self, p: Point3, uv: Point2) -> Color {
         self.emit().value(p, uv)
     }
 

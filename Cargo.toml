@@ -16,6 +16,7 @@ edition = "2018"
 "futures" = { version= "0.3" }
 "tokio" = { version="0.2", features = ["full"] }
 "num-traits" = "0.2"
+"obj" = "0.10"
 
 [profile.release]
 debug = 2

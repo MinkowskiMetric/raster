@@ -1,4 +1,5 @@
 pub type FloatType = f32;
+pub type Point2 = cgmath::Point2<FloatType>;
 pub type Point3 = cgmath::Point3<FloatType>;
 pub type Vector3 = cgmath::Vector3<FloatType>;
 pub type Vector4 = cgmath::Vector4<FloatType>;
@@ -10,6 +11,10 @@ pub use cgmath::prelude::*;
 
 pub fn vec3<T>(x: T, y: T, z: T) -> cgmath::Vector3<T> {
     cgmath::vec3(x, y, z)
+}
+
+pub fn point2<T>(x: T, y: T) -> cgmath::Point2<T> {
+    cgmath::point2(x, y)
 }
 
 pub fn point3<T>(x: T, y: T, z: T) -> cgmath::Point3<T> {

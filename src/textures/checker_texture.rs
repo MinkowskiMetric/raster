@@ -24,7 +24,7 @@ impl<Tex1: 'static + Texture + Clone, Tex2: 'static + Texture + Clone> CheckerTe
 impl<Tex1: 'static + Texture + Clone, Tex2: 'static + Texture + Clone> Texture
     for CheckerTexture<Tex1, Tex2>
 {
-    fn value(&self, p: Point3, uv: (FloatType, FloatType)) -> Color {
+    fn value(&self, p: Point3, uv: Point2) -> Color {
         let sines = (10.0 * p.x).sin() * (10.0 * p.y).sin() * (10.0 * p.z).sin();
 
         if sines < 0.0 {

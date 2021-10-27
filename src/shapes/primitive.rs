@@ -2,8 +2,8 @@ use super::{CompoundShape, HitResult, Shape, TransformablePrimitive, Transformab
 use crate::math::*;
 use crate::ray_scanner::Ray;
 use crate::utils::*;
+use crate::BaseMaterial;
 use crate::BoundingBox;
-use crate::Material;
 use crate::RenderStatsCollector;
 
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub struct PrimitiveHitResult {
     tangent: Vector3,
     bitangent: Vector3,
     front_face: bool,
-    uv: (FloatType, FloatType),
+    uv: Point2,
 }
 
 impl PrimitiveHitResult {
@@ -25,7 +25,7 @@ impl PrimitiveHitResult {
         tangent: Vector3,
         bitangent: Vector3,
         front_face: bool,
-        uv: (FloatType, FloatType),
+        uv: Point2,
     ) -> Self {
         Self {
             distance,
@@ -86,8 +86,8 @@ impl PrimitiveHitResult {
         self.front_face = front_face
     }
 
-    pub fn uv(&self) -> (FloatType, FloatType) {
-        self.uv
+    pub fn uv(&self) -> &Point2 {
+        &self.uv
     }
 }
 
@@ -157,12 +157,12 @@ impl<P: Primitive, Iter: Iterator<Item = P>> PrimitiveIteratorOps for Iter {
 }
 
 #[derive(Debug, Clone)]
-pub struct SkinnedPrimitive<P: Primitive, M: Material> {
+pub struct SkinnedPrimitive<P: Primitive, M: BaseMaterial> {
     primitives: Vec<P>,
     material: M,
 }
 
-impl<P: Primitive, M: Material> SkinnedPrimitive<P, M> {
+impl<P: Primitive, M: BaseMaterial> SkinnedPrimitive<P, M> {
     pub fn new<Iter: IntoIterator<Item = P>>(material: M, iter: Iter) -> Self {
         Self {
             material,
@@ -171,7 +171,7 @@ impl<P: Primitive, M: Material> SkinnedPrimitive<P, M> {
     }
 }
 
-impl<P: Primitive, M: Material> Shape for SkinnedPrimitive<P, M> {
+impl<P: Primitive, M: BaseMaterial> Shape for SkinnedPrimitive<P, M> {
     fn intersect<'a>(
         &'a self,
         ray: &Ray,
@@ -190,7 +190,7 @@ impl<P: Primitive, M: Material> Shape for SkinnedPrimitive<P, M> {
     }
 }
 
-impl<P: TransformablePrimitive, M: Material> TransformableShape for SkinnedPrimitive<P, M> {
+impl<P: TransformablePrimitive, M: BaseMaterial> TransformableShape for SkinnedPrimitive<P, M> {
     type Target = SkinnedPrimitive<P::Target, M>;
 
     fn transform(self, transform: Matrix4) -> Self::Target {
@@ -207,7 +207,7 @@ impl<P: TransformablePrimitive, M: Material> TransformableShape for SkinnedPrimi
 
 pub struct BoxedSkinnedPrimitiveIterator<
     P: Primitive,
-    M: Material + Clone,
+    M: BaseMaterial + Clone,
     Iter: Iterator<Item = P>,
 > {
     material: M,
@@ -216,7 +216,7 @@ pub struct BoxedSkinnedPrimitiveIterator<
 
 impl<
         P: 'static + SkinnablePrimitive<M>,
-        M: 'static + Material + Clone,
+        M: 'static + BaseMaterial + Clone,
         Iter: Iterator<Item = P>,
     > Iterator for BoxedSkinnedPrimitiveIterator<P, M, Iter>
 {
@@ -230,7 +230,7 @@ impl<
     }
 }
 
-impl<P: 'static + SkinnablePrimitive<M>, M: 'static + Material + Clone> IntoIterator
+impl<P: 'static + SkinnablePrimitive<M>, M: 'static + BaseMaterial + Clone> IntoIterator
     for SkinnedPrimitive<P, M>
 {
     type Item = Box<dyn Shape>;
@@ -244,7 +244,7 @@ impl<P: 'static + SkinnablePrimitive<M>, M: 'static + Material + Clone> IntoIter
     }
 }
 
-impl<P: 'static + SkinnablePrimitive<M>, M: 'static + Material + Clone> CompoundShape
+impl<P: 'static + SkinnablePrimitive<M>, M: 'static + BaseMaterial + Clone> CompoundShape
     for SkinnedPrimitive<P, M>
 {
     type GeometryIterator = BoxedSkinnedPrimitiveIterator<P, M, <Vec<P> as IntoIterator>::IntoIter>;
@@ -257,14 +257,15 @@ impl<P: 'static + SkinnablePrimitive<M>, M: 'static + Material + Clone> Compound
     }
 }
 
-pub struct SkinnedPrimitiveIterator<P: Primitive, M: Material + Clone, Iter: Iterator<Item = P>> {
+pub struct SkinnedPrimitiveIterator<P: Primitive, M: BaseMaterial + Clone, Iter: Iterator<Item = P>>
+{
     material: M,
     iter: Iter,
 }
 
 impl<
         P: 'static + SkinnablePrimitive<M>,
-        M: 'static + Material + Clone,
+        M: 'static + BaseMaterial + Clone,
         Iter: Iterator<Item = P>,
     > Iterator for SkinnedPrimitiveIterator<P, M, Iter>
 {
@@ -277,13 +278,13 @@ impl<
     }
 }
 
-pub trait SkinnablePrimitive<M: Material>: Primitive {
+pub trait SkinnablePrimitive<M: BaseMaterial>: Primitive {
     type Target: Shape;
 
     fn apply_material(self, material: M) -> Self::Target;
 }
 
-impl<M: Material, P: UntransformedPrimitive> SkinnablePrimitive<M> for P {
+impl<M: BaseMaterial, P: UntransformedPrimitive> SkinnablePrimitive<M> for P {
     type Target = SkinnedPrimitive<P, M>;
 
     fn apply_material(self, material: M) -> Self::Target {
@@ -336,7 +337,7 @@ impl<P: Primitive> IntoIterator for CompoundPrimitive<P> {
     }
 }
 
-impl<M: Material, P: Primitive> SkinnablePrimitive<M> for CompoundPrimitive<P> {
+impl<M: BaseMaterial, P: Primitive> SkinnablePrimitive<M> for CompoundPrimitive<P> {
     type Target = SkinnedPrimitive<P, M>;
 
     fn apply_material(self, material: M) -> Self::Target {
