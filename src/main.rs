@@ -729,20 +729,30 @@ fn teapot(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
     );
 
     let teapot = load_obj_mesh("./meshes/teapot.obj").expect("Failed to load mesh");
-    let red = solid_texture(Color([0.65, 0.05, 0.05, 1.0]));
     let floor = solid_texture(Color([0.25, 0.45, 0.25, 1.0]));
 
     let shapes = shapes![
+        xz_rectangle((-4.0, 4.0), (-4.0, 4.0), 10.0)
+            .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))),
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(floor),),
         teapot
             .values()
             .flat_map(std::collections::HashMap::values)
             .cloned()
             .into_primitive()
-            .apply_material(metal_with_texture(red, 0.05)),
+            .apply_material(dielectric(1.5)),
+        constant_medium(
+            0.2,
+            teapot
+                .values()
+                .flat_map(std::collections::HashMap::values)
+                .cloned()
+                .into_primitive(),
+            isotropic(solid_texture(Color([0.2, 0.4, 0.9, 1.0])))
+        ),
     ];
 
-    (camera, regular_sky(), shapes)
+    (camera, black_sky(), shapes)
 }
 
 const DEFAULT_WIDTH: usize = 1920;
