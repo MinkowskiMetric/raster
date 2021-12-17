@@ -1,10 +1,11 @@
-use super::{Triangle, TriangleVertex};
+use super::arch::mesh::*;
+use super::TriangleVertex;
 use crate::{
-    math::*, BoundingBox, Primitive, PrimitiveHitResult, PrimitiveIteratorOps, Ray,
-    RenderStatsCollector, UntransformedPrimitive,
+    math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
+    GeometryHitResult, Intersectable, Octree, Ray,
 };
 use anyhow::{anyhow, Result};
-use std::{iter::FromIterator, slice::ChunksExact};
+use std::iter::FromIterator;
 
 #[derive(Clone, Debug)]
 pub struct VertexTuple {
@@ -14,8 +15,8 @@ pub struct VertexTuple {
     pub tangent: Option<usize>,
 }
 
-#[derive(Debug, Clone)]
 pub struct TriangleMesh {
+    intersect_triangles: Octree<IntersectTriangle>,
     triangles: Vec<VertexTuple>,
     vertices: Vec<Point3>,
     uvs: Vec<Point2>,
@@ -31,7 +32,28 @@ impl TriangleMesh {
         normals: Vec<Vector3>,
         tangents: Vec<Vector3>,
     ) -> Self {
+        let intersect_triangles: Vec<_> = triangles
+            .chunks_exact(3)
+            .enumerate()
+            .map(|(idx, verts)| {
+                let start_index = idx * 3;
+                let v0 = vertices[verts[0].vertex];
+                let v1 = vertices[verts[1].vertex];
+                let v2 = vertices[verts[2].vertex];
+
+                IntersectTriangle::new(start_index, v0, v1, v2)
+            })
+            .collect();
+
+        let intersect_triangles = Octree::snapshot_into_groups(
+            intersect_triangles,
+            TRIANGLE_MESH_GROUP_SIZE,
+            -constants::INFINITY,
+            constants::INFINITY,
+        );
+
         Self {
+            intersect_triangles,
             triangles,
             vertices,
             uvs,
@@ -119,72 +141,121 @@ impl TriangleMesh {
     pub fn len(&self) -> usize {
         self.triangles.len() / 3
     }
+
+    fn vertex(
+        &self,
+        index: usize,
+    ) -> (&Point3, Option<&Point2>, Option<&Vector3>, Option<&Vector3>) {
+        let vertex_tuple = &self.triangles[index];
+
+        (
+            &self.vertices[vertex_tuple.vertex],
+            vertex_tuple.uv.map(|uv_idx| &self.uvs[uv_idx]),
+            vertex_tuple.normal.map(|uv_idx| &self.normals[uv_idx]),
+            vertex_tuple.tangent.map(|uv_idx| &self.tangents[uv_idx]),
+        )
+    }
 }
 
-impl Primitive for TriangleMesh {
+impl Intersectable for TriangleMesh {
+    type Result = GeometryHitResult;
+
     fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut dyn RenderStatsCollector,
-    ) -> Option<PrimitiveHitResult> {
-        self.iter().intersect(ray, t_min, t_max, stats)
-    }
+    ) -> Option<GeometryHitResult> {
+        self.intersect_triangles
+            .intersecting_blocks(ray, t_min, t_max)
+            .filter_map(|intersect_triangle| {
+                intersect_triangle_slice(intersect_triangle, ray, t_min, t_max)
+            })
+            .min_by(|l, r| l.t.partial_cmp(&r.t).unwrap())
+            .map(|hit_result| {
+                let (pos0, uv0, normal0, tangent0) = self.vertex(hit_result.start_index);
+                let (pos1, uv1, normal1, tangent1) = self.vertex(hit_result.start_index + 1);
+                let (pos2, uv2, normal2, tangent2) = self.vertex(hit_result.start_index + 2);
 
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.iter().bounding_box(t0, t1)
+                let v0v1 = pos1 - pos0;
+                let v0v2 = pos2 - pos0;
+
+                let fixed_uv = point2(0.0, 0.0);
+                let uv0 = uv0.unwrap_or(&fixed_uv);
+                let uv1 = uv1.unwrap_or(&fixed_uv);
+                let uv2 = uv2.unwrap_or(&fixed_uv);
+
+                let triangle_normal = v0v1.cross(v0v2).normalize();
+                let normal0 = normal0.unwrap_or(&triangle_normal);
+                let normal1 = normal1.unwrap_or(&triangle_normal);
+                let normal2 = normal2.unwrap_or(&triangle_normal);
+
+                let triangle_tangent = v0v1.normalize();
+                let tangent0 = tangent0.unwrap_or(&triangle_tangent);
+                let tangent1 = tangent1.unwrap_or(&triangle_tangent);
+                let tangent2 = tangent2.unwrap_or(&triangle_tangent);
+
+                let t = hit_result.t;
+                let u = hit_result.u;
+                let v = hit_result.v;
+
+                let hit_point = ray.origin + (t * ray.direction);
+
+                // surface normal
+                let outward_normal = (1.0 - u - v) * normal0;
+                let outward_normal = outward_normal + (u * normal1);
+                let outward_normal = outward_normal + (v * normal2);
+                let outward_normal = outward_normal.normalize();
+
+                // tangent
+                let tangent = (1.0 - u - v) * tangent0;
+                let tangent = tangent + (u * tangent1);
+                let tangent = tangent + (v * tangent2);
+                let tangent = tangent.normalize();
+
+                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let surface_normal = if front_face {
+                    outward_normal
+                } else {
+                    -outward_normal
+                };
+                let bitangent = outward_normal.cross(tangent).normalize();
+
+                // texture coordinates
+                let uv = (1.0 - u - v) * uv0;
+                let uv = uv.add_element_wise(u * uv1);
+                let uv = uv.add_element_wise(v * uv2);
+
+                GeometryHitResult::new(
+                    t,
+                    hit_point,
+                    surface_normal,
+                    tangent,
+                    bitangent,
+                    front_face,
+                    uv,
+                )
+            })
     }
 }
 
-impl UntransformedPrimitive for TriangleMesh {}
-
-#[derive(Debug, Clone)]
-pub struct TriangleIterator<'a> {
-    triangles: ChunksExact<'a, VertexTuple>,
-    vertices: &'a [Point3],
-    uvs: &'a [Point2],
-    normals: &'a [Vector3],
-    tangents: &'a [Vector3],
-}
-
-impl<'a> Iterator for TriangleIterator<'a> {
-    type Item = Triangle<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.triangles.next().map(|vertex_indices| {
-            Self::Item::new(
-                vertex_indices,
-                self.vertices,
-                self.uvs,
-                self.normals,
-                self.tangents,
-            )
-        })
+impl Bounded for TriangleMesh {
+    fn bounding_box(&self) -> BoundingBox {
+        self.intersect_triangles.bounding_box()
     }
 }
 
-impl TriangleMesh {
-    #[allow(dead_code)]
-    pub fn iter(&'_ self) -> TriangleIterator<'_> {
-        TriangleIterator {
-            triangles: self.triangles.chunks_exact(3),
-            vertices: &self.vertices,
-            uvs: &self.uvs,
-            normals: &self.normals,
-            tangents: &self.tangents,
-        }
-    }
-}
+impl DefaultTransformable for TriangleMesh {}
+impl DefaultSkinnable for TriangleMesh {}
+impl DefaultPrimitive for TriangleMesh {}
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::IntersectResult;
 
     #[test]
     fn test_triangle_mesh() {
-        let mut stats = crate::TracingStats::new();
-
         let cube_vertices = [
             TriangleVertex::new(
                 point3(0.0, 0.0, 0.0),
@@ -239,29 +310,26 @@ mod test {
         // An empty triangle mesh is fine - it just has no triangles in it
         TriangleMesh::new([], cube_vertices.iter().cloned()).expect("Valid empty mesh");
         // The triangle index needs to be a multiple of 3
-        TriangleMesh::new([1], cube_vertices.iter().cloned()).expect_err("Invalid mesh");
+        assert!(TriangleMesh::new([1], cube_vertices.iter().cloned()).is_err());
         // Out of range triangles are out of range
-        TriangleMesh::new([0, 1, 9], cube_vertices.iter().cloned()).expect_err("Invalid mesh");
+        assert!(TriangleMesh::new([0, 1, 9], cube_vertices.iter().cloned()).is_err());
 
         // One valid triangle is good
         let one_tri = TriangleMesh::new([0, 1, 2], cube_vertices.iter().cloned())
             .expect("Valid single triangle");
-        assert_eq!(one_tri.len(), 1);
-        let tri = one_tri.iter().next().expect("Missing triangle");
 
-        let bounding = tri.bounding_box(0.0, 0.0);
+        let bounding = one_tri.bounding_box();
         assert_eq!(*bounding.min_point(), point3(-0.0001, -0.0001, -0.0001));
         assert_eq!(
             *bounding.max_point(),
             point3(2.0 + 0.0001, 2.0 + 0.0001, 0.0001)
         );
 
-        let intersection = tri
+        let intersection = one_tri
             .intersect(
                 &Ray::new(Point3::new(0.5, 0.5, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
                 0.0,
                 constants::INFINITY,
-                &mut stats,
             )
             .expect("Missing intersection");
 
@@ -270,11 +338,10 @@ mod test {
         assert_eq!(intersection.tangent(), vec3(0.0, 1.0, 0.0));
         assert_eq!(intersection.bitangent(), vec3(-1.0, 0.0, 0.0));
 
-        let intersection = tri.intersect(
+        let intersection = one_tri.intersect(
             &Ray::new(Point3::new(1.5, 1.5, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
             0.0,
             constants::INFINITY,
-            &mut stats,
         );
         assert!(
             intersection.is_none(),
@@ -285,22 +352,19 @@ mod test {
         // One valid triangle is good
         let one_tri = TriangleMesh::new([0, 2, 3], cube_vertices.iter().cloned())
             .expect("Valid single triangle");
-        assert_eq!(one_tri.len(), 1);
-        let tri = one_tri.iter().next().expect("Missing triangle");
 
-        let bounding = tri.bounding_box(0.0, 0.0);
+        let bounding = one_tri.bounding_box();
         assert_eq!(*bounding.min_point(), point3(-0.0001, -0.0001, -0.0001));
         assert_eq!(
             *bounding.max_point(),
             point3(2.0 + 0.0001, 2.0 + 0.0001, 0.0001)
         );
 
-        let intersection = tri
+        let intersection = one_tri
             .intersect(
                 &Ray::new(Point3::new(0.5, 0.5, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
                 0.0,
                 constants::INFINITY,
-                &mut stats,
             )
             .expect("Missing intersection");
 
@@ -309,11 +373,10 @@ mod test {
         assert_eq!(intersection.tangent(), vec3(0.0, 1.0, 0.0));
         assert_eq!(intersection.bitangent(), vec3(-1.0, 0.0, 0.0));
 
-        let intersection = tri.intersect(
+        let intersection = one_tri.intersect(
             &Ray::new(Point3::new(1.5, 0.5, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
             0.0,
             constants::INFINITY,
-            &mut stats,
         );
         assert!(
             intersection.is_none(),

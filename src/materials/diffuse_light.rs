@@ -1,6 +1,6 @@
 use super::{Material, ScatterResult};
 use crate::math::*;
-use crate::{Color, PrimitiveHitResult, Ray, Texture};
+use crate::{Color, IntersectResult, Ray, Texture};
 
 #[derive(Debug, Clone)]
 pub struct DiffuseLight<T: 'static + Texture + Clone>(T);
@@ -20,7 +20,7 @@ impl<T: 'static + Texture + Clone> Material for DiffuseLight<T> {
         self.emit().value(p, uv)
     }
 
-    fn scatter(&self, _ray_in: &Ray, _hit_record: PrimitiveHitResult) -> Option<ScatterResult> {
+    fn scatter(&self, _ray_in: &Ray, _hit_record: &dyn IntersectResult) -> Option<ScatterResult> {
         None
     }
 }

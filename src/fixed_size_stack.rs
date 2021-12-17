@@ -36,7 +36,7 @@ impl<'a, T: Sized> FixedSizeStack<'a, T> {
         self.top
     }
 
-    pub fn is_full(&self) -> bool {
+    /*pub fn is_full(&self) -> bool {
         self.top >= self.data.len()
-    }
+    }*/
 }

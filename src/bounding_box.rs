@@ -190,11 +190,25 @@ impl BoundingBox {
     }*/
 }
 
+impl Default for BoundingBox {
+    fn default() -> Self {
+        Self::empty_box()
+    }
+}
+
 impl FromIterator<Point3> for BoundingBox {
     fn from_iter<T: IntoIterator<Item = Point3>>(iter: T) -> Self {
-        let mut iter = iter.into_iter().map(BoundingBox::containing_point);
+        iter.into_iter()
+            .map(BoundingBox::containing_point)
+            .collect()
+    }
+}
+
+impl FromIterator<BoundingBox> for BoundingBox {
+    fn from_iter<T: IntoIterator<Item = BoundingBox>>(iter: T) -> Self {
+        let mut iter = iter.into_iter();
         iter.next()
-            .map(|initial| iter.fold(initial, |a, b| a.combine(b)))
-            .unwrap_or_else(BoundingBox::empty_box)
+            .map(|first| iter.fold(first, |l, r| l.combine(r)))
+            .unwrap_or_default()
     }
 }

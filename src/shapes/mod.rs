@@ -1,30 +1,13 @@
-mod aabb;
 mod box_shape;
 mod medium;
 mod mesh;
 mod parabola;
-mod primitive;
 mod rectangle;
-mod shape;
-mod shape_list;
 mod sphere;
-mod transform;
-mod volume;
 
-pub use crate::shapes;
-pub use aabb::BoundingBox;
 pub use medium::MediumDensity;
 pub use mesh::{TriangleMesh, TriangleVertex};
-pub use primitive::{
-    CompoundPrimitive, IntoPrimitive, Primitive, PrimitiveHitResult, PrimitiveIteratorOps,
-    SkinnablePrimitive, SkinnedPrimitive, UntransformedPrimitive,
-};
-pub use rectangle::TransformedXyRectangle;
-pub use shape::{CollectionShape, CompoundShape, HitResult, Shape, SimpleShape};
-pub use shape_list::ShapeList;
 pub use sphere::{MovingSphere, Sphere};
-pub use transform::{TransformablePrimitive, TransformableShape};
-pub use volume::Volume;
 
 pub mod factories {
     use super::*;
@@ -35,5 +18,4 @@ pub mod factories {
     pub use parabola::factories::*;
     pub use rectangle::factories::*;
     pub use sphere::factories::*;
-    pub use volume::factories::*;
 }

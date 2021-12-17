@@ -1,8 +1,10 @@
-use super::{Primitive, PrimitiveHitResult, TransformablePrimitive, UntransformedPrimitive};
-use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::Bounded;
 use crate::BoundingBox;
-use crate::RenderStatsCollector;
+use crate::Intersectable;
+use crate::TimeDependentBounded;
+use crate::{math::*, DefaultPrimitive, GeometryHitResult};
+use crate::{DefaultSkinnable, DefaultTransformable};
 
 fn get_sphere_uv(p: Vector3) -> Point2 {
     let phi = p.z.atan2(p.x);
@@ -35,8 +37,7 @@ impl Sphere {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut dyn RenderStatsCollector,
-    ) -> Option<PrimitiveHitResult> {
+    ) -> Option<HitResult> {
         use std::arch::x86_64::*;
 
         stats.count_sphere_test();
@@ -86,7 +87,7 @@ impl Sphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(HitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -114,7 +115,7 @@ impl Sphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(HitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -130,15 +131,15 @@ impl Sphere {
     }*/
 }
 
-impl Primitive for Sphere {
+impl Intersectable for Sphere {
+    type Result = GeometryHitResult;
+
     fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut dyn RenderStatsCollector,
-    ) -> Option<PrimitiveHitResult> {
-        stats.count_sphere_test();
+    ) -> Option<GeometryHitResult> {
         let ray_origin = ray.origin;
         let oc = ray_origin - self.center;
         let a = ray.direction.dot(ray.direction);
@@ -164,7 +165,7 @@ impl Primitive for Sphere {
 
                 let normalized_hitpoint = (hit_point - self.center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(GeometryHitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -193,7 +194,7 @@ impl Primitive for Sphere {
 
                 let normalized_hitpoint = (hit_point - self.center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(GeometryHitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -207,8 +208,10 @@ impl Primitive for Sphere {
 
         None
     }
+}
 
-    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+impl Bounded for Sphere {
+    fn bounding_box(&self) -> BoundingBox {
         BoundingBox::new(
             self.center - vec3(self.radius, self.radius, self.radius),
             self.center + vec3(self.radius, self.radius, self.radius),
@@ -216,7 +219,9 @@ impl Primitive for Sphere {
     }
 }
 
-impl UntransformedPrimitive for Sphere {}
+impl DefaultTransformable for Sphere {}
+impl DefaultSkinnable for Sphere {}
+impl DefaultPrimitive for Sphere {}
 
 #[derive(Clone, Debug)]
 pub struct MovingSphere {
@@ -278,8 +283,7 @@ impl MovingSphere {
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut dyn RenderStatsCollector,
-    ) -> Option<PrimitiveHitResult> {
+    ) -> Option<HitResult> {
         use std::arch::x86_64::*;
 
         stats.count_moving_sphere_test();
@@ -329,7 +333,7 @@ impl MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(HitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -357,7 +361,7 @@ impl MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(HitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -373,15 +377,15 @@ impl MovingSphere {
     }*/
 }
 
-impl Primitive for MovingSphere {
+impl Intersectable for MovingSphere {
+    type Result = GeometryHitResult;
+
     fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        stats: &mut dyn RenderStatsCollector,
-    ) -> Option<PrimitiveHitResult> {
-        stats.count_moving_sphere_test();
+    ) -> Option<GeometryHitResult> {
         let center = self.center(ray.time);
         let ray_origin = ray.origin;
         let oc = ray_origin - center;
@@ -406,7 +410,7 @@ impl Primitive for MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(GeometryHitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -433,7 +437,7 @@ impl Primitive for MovingSphere {
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
-                return Some(PrimitiveHitResult::new(
+                return Some(GeometryHitResult::new(
                     temp,
                     hit_point,
                     surface_normal,
@@ -447,8 +451,10 @@ impl Primitive for MovingSphere {
 
         None
     }
+}
 
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+impl TimeDependentBounded for MovingSphere {
+    fn time_dependent_bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         let box0 = BoundingBox::new(
             self.center(t0) - vec3(self.radius, self.radius, self.radius),
             self.center(t0) + vec3(self.radius, self.radius, self.radius),
@@ -462,16 +468,20 @@ impl Primitive for MovingSphere {
     }
 }
 
-impl UntransformedPrimitive for MovingSphere {}
+impl DefaultPrimitive for MovingSphere {}
+impl DefaultTransformable for MovingSphere {}
+impl DefaultSkinnable for MovingSphere {}
 
 pub mod factories {
+    use crate::Transformable;
+
     use super::*;
 
-    pub fn unit_sphere() -> <Sphere as TransformablePrimitive>::Target {
+    pub fn unit_sphere() -> <Sphere as Transformable>::Target {
         Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.0).identity()
     }
 
-    pub fn sphere(center: Point3, radius: FloatType) -> <Sphere as TransformablePrimitive>::Target {
+    pub fn sphere(center: Point3, radius: FloatType) -> <Sphere as Transformable>::Target {
         unit_sphere()
             .scale(radius)
             .translate(center - Point3::new(0.0, 0.0, 0.0))
@@ -489,18 +499,16 @@ pub mod factories {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::factories::*;
+    use crate::{factories::*, IntersectResult};
 
     #[test]
     fn test_sphere_normals() {
         let sp = sphere(Point3::new(0.0, 0.0, 0.0), 1.0);
 
-        let mut stats = crate::TracingStats::new();
         let result = sp.intersect(
             &Ray::new(Point3::new(0.0, 0.0, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
             0.0,
             constants::INFINITY,
-            &mut stats,
         );
         assert!(result.is_some());
         let result = result.unwrap();
