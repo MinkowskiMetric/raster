@@ -1,95 +1,38 @@
 use crate::camera::{Camera, PreparedCamera};
-use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::shapes::{Shape, ShapeList, Volume};
-use crate::sky::Sky;
-use crate::BoundingBox;
-use crate::HitResult;
-use crate::RenderStatsCollector;
+use crate::{
+    math::*, sky::Sky, BoundingBox, Intersectable, Octree, SkinnedHitResult, TimeDependentBounded,
+};
+use crate::{CompoundVisible, DynVisible, Visible};
 
-#[derive(Debug)]
-enum RootShape {
-    Volume(Volume),
-    ShapeList(ShapeList),
-}
-
-impl RootShape {
-    pub fn from_shapes(
-        enable_spatial_partitioning: bool,
-        t0: FloatType,
-        t1: FloatType,
-        shapes: ShapeList,
-    ) -> Self {
-        if enable_spatial_partitioning {
-            RootShape::Volume(Volume::from_shapes(shapes, t0, t1))
-        } else {
-            RootShape::ShapeList(shapes)
-        }
-    }
-}
-
-impl Shape for RootShape {
-    fn intersect<'a>(
-        &'a self,
-        ray: &Ray,
-        t_min: FloatType,
-        t_max: FloatType,
-        stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult<'a>> {
-        match self {
-            RootShape::Volume(v) => v.intersect(ray, t_min, t_max, stats),
-            RootShape::ShapeList(s) => s.intersect(ray, t_min, t_max, stats),
-        }
-    }
-
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        match self {
-            RootShape::Volume(v) => v.bounding_box(t0, t1),
-            RootShape::ShapeList(s) => s.bounding_box(t0, t1),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct Scene {
     camera: Camera,
     sky: Sky,
-    enable_spatial_partitioning: bool,
-    shapes: ShapeList,
+    shapes: CompoundVisible,
 }
 
 impl Scene {
-    pub fn new(
-        camera: Camera,
-        sky: Sky,
-        enable_spatial_partitioning: bool,
-        shapes: ShapeList,
-    ) -> Self {
+    pub fn new(camera: Camera, sky: Sky, shapes: CompoundVisible) -> Self {
         Scene {
             camera,
             sky,
-            enable_spatial_partitioning,
-            shapes,
+            shapes: shapes.decompose(),
         }
     }
 }
 
-#[derive(Debug)]
 pub struct PreparedScene {
     camera: PreparedCamera,
     sky: Sky,
-    root_volume: RootShape,
+    root_volume: Octree<DynVisible>,
 }
 
 impl PreparedScene {
     pub fn make(scene: Scene, t0: FloatType, t1: FloatType) -> Self {
-        let root_volume =
-            RootShape::from_shapes(scene.enable_spatial_partitioning, t0, t1, scene.shapes);
-
         Self {
             camera: PreparedCamera::make(scene.camera, t0, t1),
             sky: scene.sky,
-            root_volume,
+            root_volume: Octree::snapshot(scene.shapes, t0, t1),
         }
     }
 
@@ -102,18 +45,16 @@ impl PreparedScene {
     }
 }
 
-impl Shape for PreparedScene {
-    fn intersect<'a>(
-        &'a self,
-        ray: &Ray,
-        t_min: FloatType,
-        t_max: FloatType,
-        stats: &mut dyn RenderStatsCollector,
-    ) -> Option<HitResult<'a>> {
-        self.root_volume.intersect(ray, t_min, t_max, stats)
-    }
+impl Intersectable for PreparedScene {
+    type Result = SkinnedHitResult;
 
-    fn bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
-        self.root_volume.bounding_box(t0, t1)
+    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<SkinnedHitResult> {
+        self.root_volume.intersect(ray, t_min, t_max)
+    }
+}
+
+impl TimeDependentBounded for PreparedScene {
+    fn time_dependent_bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
+        self.root_volume.time_dependent_bounding_box(t0, t1)
     }
 }

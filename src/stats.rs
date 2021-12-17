@@ -1,12 +1,3 @@
-pub trait RenderStatsCollector {
-    fn count_ray_cast(&mut self);
-    fn count_bounding_box_test(&mut self);
-    fn count_sphere_test(&mut self);
-    fn count_moving_sphere_test(&mut self);
-    fn count_triangle_test(&mut self);
-    fn count_pixel(&mut self);
-}
-
 #[derive(Debug, Clone)]
 pub struct RenderStats {
     pub rays_cast: usize,
@@ -15,6 +6,15 @@ pub struct RenderStats {
     pub moving_sphere_tests: usize,
     pub triangle_tests: usize,
     pub pixels: usize,
+}
+
+pub trait RenderStatsCollector {
+    fn count_ray_cast(&mut self);
+    fn count_bounding_box_test(&mut self);
+    fn count_sphere_test(&mut self);
+    fn count_moving_sphere_test(&mut self);
+    fn count_triangle_test(&mut self);
+    fn count_pixel(&mut self);
 }
 
 impl RenderStats {

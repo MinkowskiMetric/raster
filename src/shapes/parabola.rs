@@ -1,8 +1,8 @@
-use super::{Primitive, PrimitiveHitResult, UntransformedPrimitive};
-use crate::math::*;
 use crate::ray_scanner::Ray;
-use crate::BoundingBox;
-use crate::RenderStatsCollector;
+use crate::DefaultPrimitive;
+use crate::DefaultSkinnable;
+use crate::Intersectable;
+use crate::{math::*, Bounded, BoundingBox, DefaultTransformable, GeometryHitResult};
 
 #[derive(Debug, Clone)]
 pub struct ParabolaXY {
@@ -11,14 +11,15 @@ pub struct ParabolaXY {
     pr: FloatType,
 }
 
-impl Primitive for ParabolaXY {
+impl Intersectable for ParabolaXY {
+    type Result = GeometryHitResult;
+
     fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        _stats: &mut dyn RenderStatsCollector,
-    ) -> Option<PrimitiveHitResult> {
+    ) -> Option<GeometryHitResult> {
         // A paraboloid is all the points that are equidistant between the focus of the parabola, and the directrix plane,
         // which is a plane that does not pass through the focus.
 
@@ -146,7 +147,7 @@ impl Primitive for ParabolaXY {
 
         let uv = point2(radial_point.magnitude() / self.pr, 0.0); // TODOTODOTODO - could use the angle
 
-        Some(PrimitiveHitResult::new(
+        Some(GeometryHitResult::new(
             t,
             hit_point,
             surface_normal,
@@ -156,8 +157,10 @@ impl Primitive for ParabolaXY {
             uv,
         ))
     }
+}
 
-    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+impl Bounded for ParabolaXY {
+    fn bounding_box(&self) -> BoundingBox {
         // For now we'll make this quite big
         BoundingBox::new(
             Point3::new(-1000.0, -1000.0, -1000.0),
@@ -166,7 +169,9 @@ impl Primitive for ParabolaXY {
     }
 }
 
-impl UntransformedPrimitive for ParabolaXY {}
+impl DefaultTransformable for ParabolaXY {}
+impl DefaultSkinnable for ParabolaXY {}
+impl DefaultPrimitive for ParabolaXY {}
 
 pub mod factories {
     use super::*;

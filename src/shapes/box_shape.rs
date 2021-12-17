@@ -1,16 +1,14 @@
-use super::{
-    factories::*, CompoundPrimitive, IntoPrimitive, TransformablePrimitive, TransformedXyRectangle,
-};
-use crate::math::*;
+use super::factories::*;
+use crate::{math::*, CompoundPrimitive, Primitive, Transformable};
 
 pub mod factories {
     use super::*;
 
-    pub fn unit_box() -> CompoundPrimitive<TransformedXyRectangle> {
+    pub fn unit_box() -> CompoundPrimitive {
         let pt_min = Point3::new(-0.5, -0.5, -0.5);
         let pt_max = Point3::new(0.5, 0.5, 0.5);
 
-        vec![
+        compound_primitive![
             xy_rectangle((pt_min.x, pt_max.x), (pt_min.y, pt_max.y), pt_max.z),
             xy_rectangle((pt_min.x, pt_max.x), (pt_min.y, pt_max.y), pt_min.z),
             xz_rectangle((pt_min.x, pt_max.x), (pt_min.z, pt_max.z), pt_max.y),
@@ -18,10 +16,12 @@ pub mod factories {
             yz_rectangle((pt_min.y, pt_max.y), (pt_min.z, pt_max.z), pt_max.x),
             yz_rectangle((pt_min.y, pt_max.y), (pt_min.z, pt_max.z), pt_min.x),
         ]
-        .into_primitive()
     }
 
-    pub fn box_shape(pt_min: Point3, pt_max: Point3) -> CompoundPrimitive<TransformedXyRectangle> {
+    pub fn box_shape(
+        pt_min: Point3,
+        pt_max: Point3,
+    ) -> <CompoundPrimitive as Transformable>::Target {
         let x_range = pt_max.x - pt_min.x;
         let x_center = (pt_max.x + pt_min.x) / 2.0;
         let y_range = pt_max.y - pt_min.y;

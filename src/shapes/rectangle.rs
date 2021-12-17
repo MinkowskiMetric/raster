@@ -1,8 +1,10 @@
-use super::{Primitive, PrimitiveHitResult, TransformablePrimitive, UntransformedPrimitive};
-use crate::math::*;
 use crate::ray_scanner::Ray;
+use crate::Bounded;
 use crate::BoundingBox;
-use crate::RenderStatsCollector;
+use crate::Intersectable;
+use crate::Transformable;
+use crate::{math::*, GeometryHitResult};
+use crate::{DefaultPrimitive, DefaultSkinnable, DefaultTransformable};
 
 #[derive(Debug, Clone)]
 pub struct UnitXyRectangle;
@@ -19,14 +21,15 @@ impl Default for UnitXyRectangle {
     }
 }
 
-impl Primitive for UnitXyRectangle {
+impl Intersectable for UnitXyRectangle {
+    type Result = GeometryHitResult;
+
     fn intersect(
         &self,
         ray: &Ray,
         t_min: FloatType,
         t_max: FloatType,
-        _stats: &mut dyn RenderStatsCollector,
-    ) -> Option<PrimitiveHitResult> {
+    ) -> Option<GeometryHitResult> {
         let ray_origin = ray.origin;
         let ray_direction = ray.direction;
 
@@ -58,7 +61,7 @@ impl Primitive for UnitXyRectangle {
 
         let hit_point = ray_origin + (t * ray_direction);
 
-        Some(PrimitiveHitResult::new(
+        Some(GeometryHitResult::new(
             t,
             hit_point,
             surface_normal,
@@ -68,8 +71,10 @@ impl Primitive for UnitXyRectangle {
             point2(u, v),
         ))
     }
+}
 
-    fn bounding_box(&self, _t0: FloatType, _t1: FloatType) -> BoundingBox {
+impl Bounded for UnitXyRectangle {
+    fn bounding_box(&self) -> BoundingBox {
         BoundingBox::new(
             Point3::new(-0.5, -0.5, -0.0001),
             Point3::new(0.5, 0.5, 0.0001),
@@ -77,14 +82,14 @@ impl Primitive for UnitXyRectangle {
     }
 }
 
-impl UntransformedPrimitive for UnitXyRectangle {}
-
-pub type TransformedXyRectangle = <UnitXyRectangle as TransformablePrimitive>::Target;
+impl DefaultTransformable for UnitXyRectangle {}
+impl DefaultSkinnable for UnitXyRectangle {}
+impl DefaultPrimitive for UnitXyRectangle {}
 
 pub mod factories {
     use super::*;
 
-    pub fn unit_xy_rectangle() -> TransformedXyRectangle {
+    pub fn unit_xy_rectangle() -> <UnitXyRectangle as Transformable>::Target {
         UnitXyRectangle::new().identity()
     }
 
@@ -92,7 +97,7 @@ pub mod factories {
         x_range: (FloatType, FloatType),
         y_range: (FloatType, FloatType),
         z_center: FloatType,
-    ) -> TransformedXyRectangle {
+    ) -> <UnitXyRectangle as Transformable>::Target {
         let x_scale = x_range.1 - x_range.0;
         let y_scale = y_range.1 - y_range.0;
         let x_center = (x_range.1 + x_range.0) / 2.0;
@@ -103,7 +108,7 @@ pub mod factories {
             .translate(vec3(x_center, y_center, z_center))
     }
 
-    pub fn unit_xz_rectangle() -> TransformedXyRectangle {
+    pub fn unit_xz_rectangle() -> <UnitXyRectangle as Transformable>::Target {
         unit_xy_rectangle().rotate_x(Deg(90.0).into())
     }
 
@@ -111,7 +116,7 @@ pub mod factories {
         x_range: (FloatType, FloatType),
         z_range: (FloatType, FloatType),
         y_center: FloatType,
-    ) -> TransformedXyRectangle {
+    ) -> <UnitXyRectangle as Transformable>::Target {
         let x_scale = x_range.1 - x_range.0;
         let z_scale = z_range.1 - z_range.0;
         let x_center = (x_range.1 + x_range.0) / 2.0;
@@ -122,7 +127,7 @@ pub mod factories {
             .translate(vec3(x_center, y_center, z_center))
     }
 
-    pub fn unit_yz_rectangle() -> TransformedXyRectangle {
+    pub fn unit_yz_rectangle() -> <UnitXyRectangle as Transformable>::Target {
         unit_xy_rectangle().rotate_y(Deg(90.0).into())
     }
 
@@ -130,7 +135,7 @@ pub mod factories {
         y_range: (FloatType, FloatType),
         z_range: (FloatType, FloatType),
         x_center: FloatType,
-    ) -> TransformedXyRectangle {
+    ) -> <UnitXyRectangle as Transformable>::Target {
         let y_scale = y_range.1 - y_range.0;
         let z_scale = z_range.1 - z_range.0;
         let y_center = (y_range.1 + y_range.0) / 2.0;

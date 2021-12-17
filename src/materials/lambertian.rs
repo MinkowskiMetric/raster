@@ -1,6 +1,6 @@
 use super::{Material, PartialScatterResult, ScatterResult};
 use crate::utils::*;
-use crate::{PrimitiveHitResult, Ray, Texture};
+use crate::{IntersectResult, Ray, Texture};
 
 #[derive(Clone, Debug)]
 pub struct Lambertian<T: 'static + Texture + Clone>(T);
@@ -16,11 +16,9 @@ impl<T: 'static + Texture + Clone> Lambertian<T> {
 }
 
 impl<T: 'static + Texture + Clone> Material for Lambertian<T> {
-    fn scatter(&self, ray_in: &Ray, hit_record: PrimitiveHitResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: &dyn IntersectResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point() + hit_record.surface_normal() + random_unit_vector();
-        let color = self
-            .albedo()
-            .value(hit_record.hit_point(), *hit_record.uv());
+        let color = self.albedo().value(hit_record.hit_point(), hit_record.uv());
         Some(ScatterResult {
             partial: PartialScatterResult {
                 attenuation: cgmath::Vector4::from(color).truncate(),

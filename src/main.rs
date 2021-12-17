@@ -6,9 +6,8 @@ use std::convert::TryInto;
 use image::RgbImage;
 
 use raster::{
-    prelude::*, shapes, Color, CompoundPrimitive, IntoPrimitive, RenderStatsSource, ShapeList,
-    SkinnablePrimitive, Sphere, Texture, TransformablePrimitive, TransformableShape,
-    TransformedXyRectangle, TriangleVertex,
+    compound_visible, prelude::*, Color, CompoundPrimitive, CompoundVisible, RenderStatsSource,
+    Skinnable, Texture, Transformable, TriangleVertex,
 };
 
 use std::sync::{Arc, RwLock};
@@ -17,8 +16,8 @@ fn attenuate_color(color: Color, attenuation: FloatType) -> Color {
     color.attenuate(attenuation)
 }
 
-fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
-    let mut shapes = ShapeList::build();
+fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
+    let mut shapes = CompoundVisible::default();
 
     shapes.push(
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(checker_texture(
@@ -88,7 +87,7 @@ fn random_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
     (camera, regular_sky(), shapes)
 }
 
-fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(-5.0, 2.0, 1.0);
     let lookat = Point3::new(0.0, 0.0, -3.0);
@@ -104,7 +103,7 @@ fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
         aperture,
         dist_to_focus,
     );
-    let shapes = shapes![
+    let shapes = compound_visible![
         sphere(Point3::new(-0.5, 0.0, -3.0), 1.0).apply_material(dielectric(1.5)),
         sphere(Point3::new(-0.5, 0.0, -3.0), 0.999).apply_material(invert_normal(dielectric(1.5))),
         sphere(Point3::new(0.5, 0.0, -5.0), 1.0)
@@ -118,7 +117,7 @@ fn my_test_scene(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     (camera, regular_sky(), shapes)
 }
 
-fn two_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn two_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -134,7 +133,7 @@ fn two_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
         aperture,
         dist_to_focus,
     );
-    let shapes = shapes![
+    let shapes = compound_visible![
         sphere(Point3::new(0.0, -10.0, 0.0), 10.0).apply_material(lambertian(checker_texture(
             solid_texture(vec3(0.2, 0.3, 0.1).try_into().unwrap()),
             solid_texture(vec3(0.9, 0.9, 0.9).try_into().unwrap()),
@@ -147,7 +146,10 @@ fn two_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
     (camera, regular_sky(), shapes)
 }
 
-fn two_perlin_spheres(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn two_perlin_spheres(
+    width: usize,
+    height: usize,
+) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -165,7 +167,7 @@ fn two_perlin_spheres(width: usize, height: usize) -> (raster::Camera, raster::S
         aperture,
         dist_to_focus,
     );
-    let shapes = shapes![
+    let shapes = compound_visible![
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(pertext.clone()),),
         sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext)),
     ];
@@ -191,7 +193,7 @@ fn brick_normal_map() -> impl Texture + Clone {
     image_texture(brick_image)
 }
 
-fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let earth_image = earth_map();
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -209,13 +211,14 @@ fn textured_earth(width: usize, height: usize) -> (raster::Camera, raster::Sky, 
         aperture,
         dist_to_focus,
     );
-    let shapes =
-        shapes![sphere(Point3::new(0.0, 0.0, 0.0), 2.0).apply_material(lambertian(earth_image),)];
+    let shapes = compound_visible![
+        sphere(Point3::new(0.0, 0.0, 0.0), 2.0).apply_material(lambertian(earth_image),)
+    ];
 
     (camera, regular_sky(), shapes)
 }
 
-fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let pertext = noise_texture(4.0);
 
     let aspect_ratio = (width as FloatType) / (height as FloatType);
@@ -233,7 +236,7 @@ fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
         aperture,
         dist_to_focus,
     );
-    let shapes = shapes![
+    let shapes = compound_visible![
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(pertext.clone()),),
         sphere(Point3::new(0.0, 2.0, 0.0), 2.0).apply_material(lambertian(pertext)),
         sphere(Point3::new(0.0, 7.0, 0.0), 2.0)
@@ -247,7 +250,7 @@ fn simple_light(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sh
     (camera, black_sky(), shapes)
 }
 
-fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
@@ -273,7 +276,7 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
             .apply_material(white.clone())
     };
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green),
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red),
         xz_rectangle((213.0, 343.0), (227.0, 332.0), 554.0).apply_material(light),
@@ -293,7 +296,7 @@ fn cornell_box(width: usize, height: usize) -> (raster::Camera, raster::Sky, Sha
     (camera, black_sky(), shapes)
 }
 
-fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
@@ -316,7 +319,7 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     let light = diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])));
     let unit_cube = || box_shape(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(green),
         yz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(red),
         xz_rectangle((113.0, 443.0), (127.0, 432.0), 554.0).apply_material(light),
@@ -344,7 +347,7 @@ fn cornell_smoke(width: usize, height: usize) -> (raster::Camera, raster::Sky, S
     (camera, black_sky(), shapes)
 }
 
-fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(278.0, 278.0, -800.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
@@ -365,7 +368,7 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     let glass = dielectric(1.5);
     let light = diffuse_light(solid_texture(Color([30.0, 30.0, 30.0, 1.0])));
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         xz_rectangle((0.0, 555.0), (0.0, 555.0), 0.0).apply_material(white.clone()), // The floor
         xy_rectangle((0.0, 555.0), (0.0, 555.0), 555.0).apply_material(white.clone()), // The back wall
         yz_rectangle((250.0, 350.0), (0.0, 555.0), 1000.0).apply_material(light),      // The light
@@ -381,7 +384,7 @@ fn prism(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     (camera, color_sky(Color([0.1, 0.1, 0.1, 1.0])), shapes)
 }
 
-fn book2_boxes_1(boxes_per_side: usize) -> CompoundPrimitive<TransformedXyRectangle> {
+fn book2_boxes_1(boxes_per_side: usize) -> CompoundPrimitive {
     let mut ret = Vec::new();
 
     for i in 0..boxes_per_side {
@@ -399,10 +402,10 @@ fn book2_boxes_1(boxes_per_side: usize) -> CompoundPrimitive<TransformedXyRectan
         }
     }
 
-    ret.into_primitive()
+    ret.into_iter().collect()
 }
 
-fn book2_boxes_2(ns: usize) -> CompoundPrimitive<<Sphere as TransformablePrimitive>::Target> {
+fn book2_boxes_2(ns: usize) -> CompoundPrimitive {
     (0..ns)
         .into_iter()
         .map(|_| {
@@ -415,10 +418,10 @@ fn book2_boxes_2(ns: usize) -> CompoundPrimitive<<Sphere as TransformablePrimiti
                 10.0,
             )
         })
-        .into_primitive()
+        .collect()
 }
 
-fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(478.0, 278.0, -600.0);
     let lookat = Point3::new(278.0, 278.0, 0.0);
@@ -435,7 +438,7 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
         dist_to_focus,
     );
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         book2_boxes_1(20).apply_material(lambertian(solid_texture(Color([0.48, 0.83, 0.53, 1.0])))),
         xz_rectangle((123.0, 423.0), (147.0, 412.0), 554.0)
             .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))),
@@ -471,7 +474,7 @@ fn book2(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList
     (camera, black_sky(), shapes)
 }
 
-fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(2.0, 2.0, -10.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -488,7 +491,7 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
         dist_to_focus,
     );
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         sphere(Point3::new(-3.0, 0.0, 0.0), 2.0).apply_material(bump_mapper(
             noise_normal(10.0, 0.4),
             lambertian(solid_texture(Color([1.0, 69.0 / 255.0, 0.0, 1.0])))
@@ -510,7 +513,7 @@ fn orange(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
     (camera, black_sky(), shapes)
 }
 
-fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(20.0, 5.0, -5.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -527,7 +530,7 @@ fn orange_parabola(width: usize, height: usize) -> (raster::Camera, raster::Sky,
         dist_to_focus,
     );
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         /*sphere(
             Point3::new(-3.0, 0.0, 0.0),
             2.0,
@@ -572,7 +575,7 @@ fn sphere_mapped_plane(
     radius: FloatType,
     width: usize,
     height: usize,
-) -> (raster::Camera, raster::Sky, ShapeList) {
+) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(0.0, 3.0, 20.0);
     let lookat = Point3::new(0.0, 1.0, 0.0);
@@ -626,7 +629,7 @@ fn sphere_mapped_plane(
     let red = solid_texture(Color([1.0, 0.0, 0.0, 0.0]));
     let floor = solid_texture(Color([0.2, 0.25, 0.2, 0.0]));
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(floor),),
         sphere(point3(0.0, 0.0, 24.0), 2.0).apply_material(lambertian(red)),
         triangle_mesh([0, 1, 2, 1, 2, 3], vertices)
@@ -642,15 +645,15 @@ fn sphere_mapped_plane(
     (camera, regular_sky(), shapes)
 }
 
-fn concave_mirror(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn concave_mirror(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     sphere_mapped_plane(15.0, width, height)
 }
 
-fn convex_mirror(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn convex_mirror(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     sphere_mapped_plane(-15.0, width, height)
 }
 
-fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(20.0, 5.0, -5.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
@@ -693,7 +696,7 @@ fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, Shape
 
     let floor = solid_texture(Color([0.2, 0.25, 0.2, 0.0]));
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(floor),),
         sphere(point3(-5.0, 2.0, -1.0), 2.0)
             .apply_material(metal(Color([1.0, 1.0, 1.0, 0.0]), 0.0)),
@@ -711,7 +714,7 @@ fn mesh_cube(width: usize, height: usize) -> (raster::Camera, raster::Sky, Shape
     (camera, regular_sky(), shapes)
 }
 
-fn teapot(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeList) {
+fn teapot(width: usize, height: usize) -> (raster::Camera, raster::Sky, CompoundVisible) {
     let aspect_ratio = (width as FloatType) / (height as FloatType);
     let lookfrom = Point3::new(20.0, 5.0, -5.0);
     let lookat = Point3::new(0.0, 1.5, 0.0);
@@ -728,26 +731,25 @@ fn teapot(width: usize, height: usize) -> (raster::Camera, raster::Sky, ShapeLis
         dist_to_focus,
     );
 
-    let teapot = load_obj_mesh("./meshes/teapot.obj").expect("Failed to load mesh");
     let floor = solid_texture(Color([0.25, 0.45, 0.25, 1.0]));
 
-    let shapes = shapes![
+    let shapes = compound_visible![
         xz_rectangle((-4.0, 4.0), (-4.0, 4.0), 10.0)
             .apply_material(diffuse_light(solid_texture(Color([7.0, 7.0, 7.0, 1.0])))),
         sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0).apply_material(lambertian(floor),),
-        teapot
-            .values()
-            .flat_map(std::collections::HashMap::values)
-            .cloned()
-            .into_primitive()
+        load_obj_mesh("./meshes/teapot.obj")
+            .expect("Failed to load mesh")
+            .into_values()
+            .flat_map(std::collections::HashMap::into_values)
+            .collect::<CompoundPrimitive>()
             .apply_material(dielectric(1.5)),
         constant_medium(
             0.2,
-            teapot
-                .values()
-                .flat_map(std::collections::HashMap::values)
-                .cloned()
-                .into_primitive(),
+            load_obj_mesh("./meshes/teapot.obj")
+                .expect("Failed to load mesh")
+                .into_values()
+                .flat_map(std::collections::HashMap::into_values)
+                .collect::<CompoundPrimitive>(),
             isotropic(solid_texture(Color([0.2, 0.4, 0.9, 1.0])))
         ),
     ];
@@ -761,7 +763,7 @@ const DEFAULT_MIN_PASSES: usize = 100;
 const DEFAULT_THREADS: usize = 8;
 const DEFAULT_ENABLE_SPATIAL_PARTITIONING: bool = true;
 
-type SceneResult = (raster::Camera, raster::Sky, ShapeList);
+type SceneResult = (raster::Camera, raster::Sky, CompoundVisible);
 type SceneFactory = fn(usize, usize) -> SceneResult;
 type BuiltinScene = (&'static str, SceneFactory);
 
@@ -872,16 +874,12 @@ async fn main() {
         .value_of("threads")
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(DEFAULT_THREADS);
-    let enable_spatial_partitioning = matches
-        .value_of("enable-spatial-partitioning")
-        .and_then(|v| v.parse::<bool>().ok())
-        .unwrap_or(DEFAULT_ENABLE_SPATIAL_PARTITIONING);
 
     let scene_name = matches.value_of("scene").unwrap_or(BUILTIN_SCENES[0].0);
     let (scene_name, scene_function) = BUILTIN_SCENES.iter().find(|a| a.0 == scene_name).unwrap();
 
     let (camera, sky, shapes) = scene_function(width, height);
-    let scene = raster::Scene::new(camera, sky, enable_spatial_partitioning, shapes);
+    let scene = raster::Scene::new(camera, sky, shapes);
 
     let (t0, t1) = (0.0, 1.0);
 

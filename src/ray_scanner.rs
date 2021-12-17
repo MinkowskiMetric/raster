@@ -1,7 +1,7 @@
 use crate::math::*;
 use crate::scene::{PreparedScene, Scene};
 use crate::utils::*;
-use crate::{constants, Color, PartialScatterResult, ScatterResult, Shape};
+use crate::{constants, Color, Intersectable, PartialScatterResult, ScatterResult};
 use crate::{RenderStatsAccumulator, RenderStatsCollector, TracingStats};
 use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};
@@ -194,7 +194,7 @@ fn scan_batch(
                 );
                 let ray = scene.camera().make_ray(s, t);
 
-                let ret = cgmath::Vector4::from(trace(&ray, scene, &mut pixel_stats));
+                let ret = cgmath::Vector4::from(trace(&ray, scene));
 
                 pixel_stats.count_pixel();
 
@@ -245,23 +245,19 @@ fn collapse_color_stack(mut stack: FixedSizeAttenuationStack<'_>, input_color: C
         .unwrap()
 }
 
-pub fn trace(ray: &Ray, scene: &PreparedScene, stats: &mut dyn RenderStatsCollector) -> Color {
+pub fn trace(ray: &Ray, scene: &PreparedScene) -> Color {
     let mut attenuation_stack_data = [None; MAX_DEPTH];
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
 
     let mut current_ray = *ray;
 
     loop {
-        stats.count_ray_cast();
-
         if attenuation_stack.len() >= MAX_DEPTH {
             // We cannot recurse any further, there is no point doing another hit test
             return collapse_color_stack(attenuation_stack, constants::BLACK);
-        } else if let Some(hit_result) =
-            scene.intersect(&current_ray, 0.001, constants::INFINITY, stats)
-        {
+        } else if let Some(hit_result) = scene.intersect(&current_ray, 0.001, constants::INFINITY) {
             let (hit_result, material) = hit_result.split();
-            let (emitted, scatter) = material.base_scatter(&current_ray, hit_result).split();
+            let (emitted, scatter) = material.base_scatter(&current_ray, &hit_result).split();
 
             if let Some(ScatterResult { partial, scattered }) = scatter {
                 attenuation_stack.push(ScatterStackRecord { partial, emitted });
