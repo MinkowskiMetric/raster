@@ -1,4 +1,4 @@
-use crate::{BaseMaterial, Color, IntersectResult, Ray};
+use crate::{BaseMaterial, Color, GeometryHitResult, IntersectResult, Ray};
 
 use super::material::BaseMaterialScatterResult;
 
@@ -14,7 +14,7 @@ impl BaseMaterial for DebugMaterial {
     fn base_scatter(
         &self,
         _ray_in: &Ray,
-        hit_record: &dyn IntersectResult,
+        hit_record: GeometryHitResult,
     ) -> BaseMaterialScatterResult {
         let color = match self {
             Self::Uv => {

@@ -1,10 +1,7 @@
-use crate::ray_scanner::Ray;
-use crate::Bounded;
-use crate::BoundingBox;
-use crate::Intersectable;
-use crate::Transformable;
-use crate::{math::*, GeometryHitResult};
-use crate::{DefaultPrimitive, DefaultSkinnable, DefaultTransformable};
+use crate::{
+    math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
+    GeometryHitResult, Intersectable, Ray, Transformable,
+};
 
 #[derive(Debug, Clone)]
 pub struct UnitXyRectangle;
@@ -59,11 +56,9 @@ impl Intersectable for UnitXyRectangle {
 
         let bitangent = surface_normal.cross(tangent);
 
-        let hit_point = ray_origin + (t * ray_direction);
-
         Some(GeometryHitResult::new(
+            ray,
             t,
-            hit_point,
             surface_normal,
             tangent,
             bitangent,

@@ -1,8 +1,7 @@
-use crate::ray_scanner::Ray;
-use crate::DefaultPrimitive;
-use crate::DefaultSkinnable;
-use crate::Intersectable;
-use crate::{math::*, Bounded, BoundingBox, DefaultTransformable, GeometryHitResult};
+use crate::{
+    math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
+    GeometryHitResult, Intersectable, Ray,
+};
 
 #[derive(Debug, Clone)]
 pub struct ParabolaXY {
@@ -148,8 +147,8 @@ impl Intersectable for ParabolaXY {
         let uv = point2(radial_point.magnitude() / self.pr, 0.0); // TODOTODOTODO - could use the angle
 
         Some(GeometryHitResult::new(
+            ray,
             t,
-            hit_point,
             surface_normal,
             tangent,
             bitangent,

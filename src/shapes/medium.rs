@@ -1,10 +1,7 @@
-use crate::ray_scanner::Ray;
-use crate::utils::*;
-use crate::DefaultVisible;
-use crate::TimeDependentBounded;
-use crate::{math::*, GeometryHitResult, IntersectResult, SkinnedHitResult};
 use crate::{
-    BoundingBox, Intersectable, Material, PartialScatterResult, Primitive, ScatterResult, Texture,
+    math::*, utils::*, BoundingBox, DefaultVisible, GeometryHitResult, IntersectResult,
+    Intersectable, Material, PartialScatterResult, Primitive, Ray, ScatterResult, SkinnedHitResult,
+    Texture, TimeDependentBounded,
 };
 use std::sync::Arc;
 
@@ -62,8 +59,8 @@ impl<Density: 'static + MediumDensity, Phase: 'static + Material, Child: Primiti
                     .map(|scatter_distance| {
                         SkinnedHitResult::new(
                             GeometryHitResult::new(
+                                ray,
                                 scatter_distance + distance_1,
-                                ray.origin + (ray.direction * (scatter_distance + distance_1)),
                                 vec3(1.0, 0.0, 0.0), // arbitrary
                                 vec3(0.0, 1.0, 0.0), // arbitrary
                                 vec3(0.0, 0.0, 1.0), // arbitrary
@@ -123,7 +120,7 @@ impl MediumDensity for ConstantDensity {
 pub struct Isotropic<Albedo: Texture>(Albedo);
 
 impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
-    fn scatter(&self, ray_in: &Ray, hit_record: &dyn IntersectResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: GeometryHitResult) -> Option<ScatterResult> {
         let attenuation =
             cgmath::Vector4::from(self.0.value(hit_record.hit_point(), hit_record.uv())).truncate();
 

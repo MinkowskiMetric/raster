@@ -10,6 +10,7 @@ mod intersectable;
 mod materials;
 mod octree;
 mod perlin;
+mod ray;
 mod ray_scanner;
 mod scene;
 mod shapes;
@@ -25,20 +26,22 @@ pub mod utils;
 pub use bounded::{
     Bounded, BoundedIteratorOps, TimeDependentBounded, TimeDependentBoundedIteratorOps,
 };
-pub use bounding_box::BoundingBox;
-pub use camera::Camera;
+pub use bounding_box::{BoundingBox, BoundingBoxIntersectionTester};
+pub use camera::{Camera, PreparedCamera};
 pub use color::Color;
 pub use compound::{
     CompoundPrimitive, CompoundVisible, DefaultPrimitive, DefaultVisible, DynPrimitive, DynVisible,
-    Primitive, Visible,
+    Primitive, SharedPrimitive, Visible,
 };
 pub use hit_result::{
     GeometryHitResult, IntersectResult, IntersectResultIteratorOps, SkinnedHitResult,
+    WrappedIntersectResult,
 };
 pub use intersectable::{Intersectable, IntersectableIteratorOps};
 pub use materials::{BaseMaterial, Material, PartialScatterResult, ScatterResult, SurfaceMapper};
 pub use octree::Octree;
-pub use ray_scanner::{scan, Ray};
+pub use ray::Ray;
+pub use ray_scanner::scan;
 pub use scene::Scene;
 pub use shapes::{MediumDensity, Sphere, TriangleVertex};
 pub use skinnable::{DefaultSkinnable, Skinnable};

@@ -1,31 +1,35 @@
 use crate::{
-    BaseMaterial, CompoundVisible, DynVisible, IntersectResult, Intersectable, Primitive,
-    SkinnedHitResult, TimeDependentBounded, Transformable, Visible,
+    math::*, BaseMaterial, CompoundVisible, DynVisible, GeometryHitResult, IntersectResult,
+    Intersectable, Primitive, TimeDependentBounded, Transformable, Visible, WrappedIntersectResult,
 };
 use std::sync::Arc;
 
-pub trait Skinnable: Intersectable {
-    type Target: Intersectable<Result = SkinnedHitResult>;
+pub trait Skinnable: Sized {
+    type Target;
 
-    fn apply_material<M: 'static + BaseMaterial>(self, material: M) -> Self::Target;
+    fn apply_material<M: 'static + BaseMaterial>(self, material: M) -> Self::Target {
+        self.apply_shared_material(Arc::new(material))
+    }
+
+    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target;
 }
 
 pub trait DefaultSkinnable {}
 
-impl<S: Intersectable + DefaultSkinnable> Skinnable for S {
+impl<S: DefaultSkinnable> Skinnable for S {
     type Target = Skinned<S>;
 
-    fn apply_material<M: 'static + BaseMaterial>(self, material: M) -> Self::Target {
+    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target {
         Skinned::new(self, material)
     }
 }
 
-pub struct Skinned<P: Intersectable> {
+pub struct Skinned<P> {
     primitive: P,
     material: Arc<dyn BaseMaterial>,
 }
 
-impl<P: Intersectable + Clone> Clone for Skinned<P> {
+impl<P: Clone> Clone for Skinned<P> {
     fn clone(&self) -> Self {
         Self {
             primitive: self.primitive.clone(),
@@ -34,17 +38,21 @@ impl<P: Intersectable + Clone> Clone for Skinned<P> {
     }
 }
 
-impl<P: Intersectable> Skinned<P> {
-    pub fn new<M: 'static + BaseMaterial>(primitive: P, material: M) -> Self {
+impl<P> Skinned<P> {
+    pub fn new(primitive: P, material: Arc<dyn BaseMaterial>) -> Self {
         Self {
             primitive,
-            material: Arc::new(material),
+            material,
         }
+    }
+
+    pub fn split(self) -> (P, Arc<dyn BaseMaterial>) {
+        (self.primitive, self.material)
     }
 }
 
-impl<P: Intersectable> Intersectable for Skinned<P> {
-    type Result = SkinnedHitResult;
+impl<P: Intersectable<Result = GeometryHitResult>> Intersectable for Skinned<P> {
+    type Result = <GeometryHitResult as Skinnable>::Target;
 
     fn intersect(
         &self,
@@ -54,13 +62,11 @@ impl<P: Intersectable> Intersectable for Skinned<P> {
     ) -> Option<Self::Result> {
         self.primitive
             .intersect(ray, t_min, t_max)
-            .map(|hit_result| {
-                SkinnedHitResult::new(hit_result.as_geometry_hit_result(), self.material.clone())
-            })
+            .map(|hit_result| hit_result.apply_shared_material(self.material.clone()))
     }
 }
 
-impl<P: Intersectable + TimeDependentBounded> TimeDependentBounded for Skinned<P> {
+impl<P: TimeDependentBounded> TimeDependentBounded for Skinned<P> {
     fn time_dependent_bounding_box(
         &self,
         t0: crate::math::FloatType,
@@ -70,25 +76,33 @@ impl<P: Intersectable + TimeDependentBounded> TimeDependentBounded for Skinned<P
     }
 }
 
-impl<P: Intersectable + Transformable> Transformable for Skinned<P> {
-    type Target = Skinned<P::Target>;
+impl<P: Transformable> Transformable for Skinned<P> {
+    type Target = Skinned<<P as Transformable>::Target>;
 
-    fn transform(self, transform: crate::math::Matrix4) -> Self::Target {
+    fn core_transform(self, transform: &Matrix4, inverse_transform: &Matrix4) -> Self::Target {
         Skinned {
-            primitive: self.primitive.transform(transform),
+            primitive: self.primitive.core_transform(transform, inverse_transform),
             material: self.material,
         }
     }
 }
 
-impl<P: Intersectable> Skinnable for Skinned<P> {
+impl<P> Skinnable for Skinned<P> {
     type Target = Self;
 
-    fn apply_material<M: 'static + BaseMaterial>(self, material: M) -> Self::Target {
+    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target {
         Self {
             primitive: self.primitive,
-            material: Arc::new(material),
+            material,
         }
+    }
+}
+
+impl<P: IntersectResult> WrappedIntersectResult for Skinned<P> {
+    type Wrapped = P;
+
+    fn intersect_result(&self) -> &Self::Wrapped {
+        &self.primitive
     }
 }
 

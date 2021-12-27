@@ -1,41 +1,16 @@
-use crate::math::*;
-use crate::scene::{PreparedScene, Scene};
-use crate::utils::*;
-use crate::{constants, Color, Intersectable, PartialScatterResult, ScatterResult};
-use crate::{RenderStatsAccumulator, RenderStatsCollector, TracingStats};
+use crate::{
+    constants,
+    math::*,
+    scene::{PreparedScene, Scene},
+    utils::*,
+    Color, Intersectable, PartialScatterResult, Ray, RenderStatsAccumulator, RenderStatsCollector,
+    ScatterResult, TracingStats,
+};
 use futures::future::join_all;
 use std::slice::{Chunks, ChunksMut};
 
 use std::convert::TryInto;
 use std::sync::{Arc, RwLock};
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Ray {
-    pub origin: Point3,
-    pub direction: Vector3,
-    pub inv_direction: Vector3,
-    pub sign: Vector3,
-    pub time: FloatType,
-}
-
-impl Ray {
-    pub fn new(origin: Point3, direction: Vector3, time: FloatType) -> Self {
-        let inv_direction = 1.0 / direction;
-        let sign = Vector3::new(
-            if inv_direction.x < 0.0 { -1.0 } else { 0.0 },
-            if inv_direction.y < 0.0 { -1.0 } else { 0.0 },
-            if inv_direction.z < 0.0 { -1.0 } else { 0.0 },
-        );
-
-        Self {
-            origin,
-            direction,
-            inv_direction,
-            sign,
-            time,
-        }
-    }
-}
 
 pub struct VectorImage {
     width: usize,
@@ -160,14 +135,17 @@ pub async fn scan<StatsAccumulator: 'static + RenderStatsAccumulator + Sync + Se
         })
     });
 
-    join_all(futures)
-        .await
-        .into_iter()
-        .my_fold_first(|a, b| match (a, b) {
-            (Ok(a), Ok(b)) => Ok(a + b),
-            (Err(a), _) => Err(a),
-            (_, Err(b)) => Err(b),
+    let mut thread_results = join_all(futures).await.into_iter();
+    let result = thread_results.next();
+    result
+        .map(|result| {
+            thread_results.fold(result, |l, r| match (l, r) {
+                (Ok(l), Ok(r)) => Ok(l + r),
+                (Err(e), _) => Err(e),
+                (_, Err(e)) => Err(e),
+            })
         })
+        .transpose()
         .unwrap()
         .unwrap()
 }
@@ -257,7 +235,7 @@ pub fn trace(ray: &Ray, scene: &PreparedScene) -> Color {
             return collapse_color_stack(attenuation_stack, constants::BLACK);
         } else if let Some(hit_result) = scene.intersect(&current_ray, 0.001, constants::INFINITY) {
             let (hit_result, material) = hit_result.split();
-            let (emitted, scatter) = material.base_scatter(&current_ray, &hit_result).split();
+            let (emitted, scatter) = material.base_scatter(&current_ray, hit_result).split();
 
             if let Some(ScatterResult { partial, scattered }) = scatter {
                 attenuation_stack.push(ScatterStackRecord { partial, emitted });

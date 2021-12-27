@@ -1,10 +1,7 @@
-use crate::ray_scanner::Ray;
-use crate::Bounded;
-use crate::BoundingBox;
-use crate::Intersectable;
-use crate::TimeDependentBounded;
-use crate::{math::*, DefaultPrimitive, GeometryHitResult};
-use crate::{DefaultSkinnable, DefaultTransformable};
+use crate::{
+    math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
+    GeometryHitResult, Intersectable, Ray, TimeDependentBounded,
+};
 
 fn get_sphere_uv(p: Vector3) -> Point2 {
     let phi = p.z.atan2(p.x);
@@ -166,8 +163,8 @@ impl Intersectable for Sphere {
                 let normalized_hitpoint = (hit_point - self.center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(GeometryHitResult::new(
+                    ray,
                     temp,
-                    hit_point,
                     surface_normal,
                     tangent,
                     bitangent,
@@ -195,8 +192,8 @@ impl Intersectable for Sphere {
                 let normalized_hitpoint = (hit_point - self.center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(GeometryHitResult::new(
+                    ray,
                     temp,
-                    hit_point,
                     surface_normal,
                     tangent,
                     bitangent,
@@ -411,8 +408,8 @@ impl Intersectable for MovingSphere {
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(GeometryHitResult::new(
+                    ray,
                     temp,
-                    hit_point,
                     surface_normal,
                     tangent,
                     bitangent,
@@ -438,8 +435,8 @@ impl Intersectable for MovingSphere {
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
                 return Some(GeometryHitResult::new(
+                    ray,
                     temp,
-                    hit_point,
                     surface_normal,
                     tangent,
                     bitangent,
@@ -473,15 +470,27 @@ impl DefaultTransformable for MovingSphere {}
 impl DefaultSkinnable for MovingSphere {}
 
 pub mod factories {
-    use crate::Transformable;
+    use std::{mem::MaybeUninit, sync::Once};
+
+    use crate::{SharedPrimitive, Transformable};
 
     use super::*;
 
-    pub fn unit_sphere() -> <Sphere as Transformable>::Target {
-        Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.0).identity()
+    pub fn unit_sphere() -> <SharedPrimitive as Transformable>::Target {
+        static mut UNIT_SPHERE_STORAGE: MaybeUninit<SharedPrimitive> = MaybeUninit::uninit();
+        static UNIT_SPHERE_INIT: Once = Once::new();
+
+        unsafe {
+            UNIT_SPHERE_INIT.call_once(|| {
+                let sphere = SharedPrimitive::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.0));
+                UNIT_SPHERE_STORAGE.write(sphere);
+            });
+
+            UNIT_SPHERE_STORAGE.assume_init_ref().clone().identity()
+        }
     }
 
-    pub fn sphere(center: Point3, radius: FloatType) -> <Sphere as Transformable>::Target {
+    pub fn sphere(center: Point3, radius: FloatType) -> <SharedPrimitive as Transformable>::Target {
         unit_sphere()
             .scale(radius)
             .translate(center - Point3::new(0.0, 0.0, 0.0))

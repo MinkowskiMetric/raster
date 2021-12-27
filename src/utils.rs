@@ -1,14 +1,14 @@
 use crate::math::*;
-use rand::prelude::*;
+use random_fast_rng::{local_rng, Random};
 
 use std::convert::TryInto;
 
 pub fn random_in_range(min: FloatType, max: FloatType) -> FloatType {
-    (random::<FloatType>() * (max - min)) + min
+    (local_rng().gen::<FloatType>() * (max - min)) + min
 }
 
 pub fn random_int_in_range(min: i32, max: i32) -> i32 {
-    thread_rng().gen_range(min..max)
+    random_in_range(min as f32, max as f32) as i32
 }
 
 pub fn random_in_unit_sphere() -> Vector3 {
@@ -48,32 +48,4 @@ pub fn random_color_in_range(min: FloatType, max: FloatType) -> crate::color::Co
     )
     .try_into()
     .unwrap()
-}
-
-pub trait MyFoldFirst {
-    type Result;
-
-    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(
-        self,
-        func: F,
-    ) -> Option<Self::Result>;
-}
-
-impl<Item, Iter: Iterator<Item = Item>> MyFoldFirst for Iter {
-    type Result = Item;
-
-    fn my_fold_first<F: Fn(Self::Result, Self::Result) -> Self::Result>(
-        mut self,
-        func: F,
-    ) -> Option<Self::Result> {
-        if let Some(mut working_value) = self.next() {
-            for next_value in self {
-                working_value = func(working_value, next_value);
-            }
-
-            Some(working_value)
-        } else {
-            None
-        }
-    }
 }

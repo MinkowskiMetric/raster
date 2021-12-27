@@ -1,6 +1,4 @@
-use crate::math::*;
-use crate::ray_scanner::Ray;
-use crate::utils::*;
+use crate::{math::*, utils::*, Ray};
 
 #[derive(Clone, Debug)]
 pub struct Camera {
