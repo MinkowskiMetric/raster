@@ -1,19 +1,13 @@
+use std::sync::Arc;
+
 use crate::{
-    math::*, BoundingBox, CompoundPrimitive, CompoundVisible, DynPrimitive, DynVisible,
-    GeometryHitResult, IntersectResult, Intersectable, Primitive, Ray, Skinnable, SkinnedHitResult,
-    TimeDependentBounded, Visible,
+    math::*, BaseMaterial, BoundingBox, CompoundPrimitive, CompoundVisible, DynPrimitive,
+    DynVisible, GeometryHitResult, IntersectResult, Intersectable, Primitive, Ray, Skinnable,
+    SkinnedHitResult, TimeDependentBounded, Visible,
 };
 
-trait InstantGeometryTransform {
-    fn transform_ray(&self, ray: &Ray) -> Ray;
-    fn transform_hit_result<I: IntersectResult>(&self, original_ray: &Ray, hit_result: I) -> I;
-    fn transform_bounding_box(&self, bounding_box: BoundingBox) -> BoundingBox;
-}
-
 trait GeometryTransform {
-    type Instant: InstantGeometryTransform;
-
-    fn transform_at_t(&self, t: FloatType) -> Self::Instant;
+    fn transform_at_t(&self, t: FloatType) -> StaticTransform;
 }
 
 #[derive(Clone, Debug)]
@@ -23,89 +17,28 @@ struct StaticTransform {
 }
 
 impl StaticTransform {
-    pub fn new(transform: Matrix4) -> Self {
-        let inverse = transform.inverse_transform().unwrap();
-        Self { transform, inverse }
-    }
-
-    pub fn concat(self, transform: Matrix4) -> Self {
+    pub fn concat(self, transform: &Matrix4) -> Self {
         let transform = transform.concat(&self.transform);
         let inverse = transform.inverse_transform().unwrap();
         Self { transform, inverse }
     }
 }
 
-impl InstantGeometryTransform for StaticTransform {
-    fn transform_ray(&self, ray: &Ray) -> Ray {
-        let transformed_origin = self.inverse.transform_point(ray.origin);
-        let transformed_direction = self.inverse.transform_vector(ray.direction);
-        Ray::new(transformed_origin, transformed_direction, ray.time)
-    }
-
-    fn transform_hit_result<I: IntersectResult>(&self, original_ray: &Ray, mut hit_result: I) -> I {
-        hit_result.set_hit_point(self.transform.transform_point(hit_result.hit_point()));
-        hit_result.set_surface_normal(
-            self.transform
-                .transform_vector(hit_result.surface_normal())
-                .normalize(),
-        );
-        hit_result.set_tangent(
-            self.transform
-                .transform_vector(hit_result.tangent())
-                .normalize(),
-        );
-        hit_result.set_bitangent(
-            self.transform
-                .transform_vector(hit_result.bitangent())
-                .normalize(),
-        );
-        hit_result.set_distance((hit_result.hit_point() - original_ray.origin).magnitude());
-
-        hit_result
-    }
-
-    fn transform_bounding_box(&self, bounding_box: BoundingBox) -> BoundingBox {
-        let shape_bounding_box_corners = bounding_box.all_corners();
-
-        let mut pt_min = Point3::new(
-            constants::INFINITY,
-            constants::INFINITY,
-            constants::INFINITY,
-        );
-        let mut pt_max = Point3::new(
-            -constants::INFINITY,
-            -constants::INFINITY,
-            -constants::INFINITY,
-        );
-
-        for corner in shape_bounding_box_corners.iter() {
-            let corner = self.transform.transform_point(*corner);
-
-            pt_min.x = pt_min.x.min(corner.x);
-            pt_min.y = pt_min.y.min(corner.y);
-            pt_min.z = pt_min.z.min(corner.z);
-
-            pt_max.x = pt_max.x.max(corner.x);
-            pt_max.y = pt_max.y.max(corner.y);
-            pt_max.z = pt_max.z.max(corner.z);
-        }
-
-        BoundingBox::new(pt_min, pt_max)
-    }
-}
-
 impl GeometryTransform for StaticTransform {
-    type Instant = Self;
-
-    fn transform_at_t(&self, _t: FloatType) -> Self::Instant {
+    fn transform_at_t(&self, _t: FloatType) -> StaticTransform {
         self.clone()
     }
 }
 
-pub trait Transformable: Intersectable + Sized {
-    type Target: Intersectable<Result = Self::Result> + Skinnable + Transformable;
+pub trait Transformable: Sized {
+    type Target: Transformable;
 
-    fn transform(self, transform: Matrix4) -> Self::Target;
+    fn core_transform(self, transform: &Matrix4, inverse_transform: &Matrix4) -> Self::Target;
+
+    fn transform(self, transform: Matrix4) -> Self::Target {
+        let inverse_transform = transform.inverse_transform().unwrap();
+        self.core_transform(&transform, &inverse_transform)
+    }
 
     fn translate(self, v: Vector3) -> Self::Target {
         self.transform(Matrix4::from_translation(v))
@@ -141,14 +74,14 @@ pub trait Transformable: Intersectable + Sized {
     }
 }
 
-pub trait DefaultTransformable: Intersectable {}
+pub trait DefaultTransformable {}
 
-pub struct Transformed<P: Intersectable> {
+pub struct Transformed<P> {
     primitive: P,
     transform: StaticTransform,
 }
 
-impl<P: Intersectable + Clone> Clone for Transformed<P> {
+impl<P: Clone> Clone for Transformed<P> {
     fn clone(&self) -> Self {
         Self {
             primitive: self.primitive.clone(),
@@ -157,40 +90,42 @@ impl<P: Intersectable + Clone> Clone for Transformed<P> {
     }
 }
 
-impl<P: Intersectable> Intersectable for Transformed<P> {
-    type Result = P::Result;
+impl<R: IntersectResult + Transformable, P: Intersectable<Result = R>> Intersectable
+    for Transformed<P>
+where
+    <R as Transformable>::Target: IntersectResult,
+{
+    type Result = <R as Transformable>::Target;
 
     fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
         let instant = self.transform.transform_at_t(ray.time);
-        let transformed_ray = instant.transform_ray(ray);
+        let transformed_ray = ray.core_transform(&instant.transform, &instant.inverse);
 
         self.primitive
             .intersect(&transformed_ray, t_min, t_max)
-            .map(|hit_result| instant.transform_hit_result(ray, hit_result))
+            .map(|hit_result| hit_result.core_transform(&instant.transform, &instant.inverse))
     }
 }
 
-impl<P: Intersectable + TimeDependentBounded> TimeDependentBounded for Transformed<P> {
+impl<P: TimeDependentBounded> TimeDependentBounded for Transformed<P> {
     fn time_dependent_bounding_box(&self, t0: FloatType, t1: FloatType) -> BoundingBox {
         let primitive_box = self.primitive.time_dependent_bounding_box(t0, t1);
 
-        let box0 = self
-            .transform
-            .transform_at_t(t0)
-            .transform_bounding_box(primitive_box);
-        let box1 = self
-            .transform
-            .transform_at_t(t1)
-            .transform_bounding_box(primitive_box);
-
-        BoundingBox::surrounding_box(&box0, &box1)
+        [t0, t1]
+            .iter()
+            .flat_map(|t| {
+                primitive_box
+                    .transform(self.transform.transform_at_t(*t).transform)
+                    .all_corners()
+            })
+            .collect()
     }
 }
 
-impl<P: Intersectable + Skinnable> Transformable for Transformed<P> {
+impl<P> Transformable for Transformed<P> {
     type Target = Self;
 
-    fn transform(self, transform: Matrix4) -> Self::Target {
+    fn core_transform(self, transform: &Matrix4, _inverse_transform: &Matrix4) -> Self::Target {
         Self::Target {
             transform: self.transform.concat(transform),
             primitive: self.primitive,
@@ -198,12 +133,12 @@ impl<P: Intersectable + Skinnable> Transformable for Transformed<P> {
     }
 }
 
-impl<P: Intersectable + Skinnable> Skinnable for Transformed<P> {
+impl<P: Skinnable> Skinnable for Transformed<P> {
     type Target = Transformed<P::Target>;
 
-    fn apply_material<M: 'static + crate::BaseMaterial>(self, material: M) -> Self::Target {
+    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target {
         Transformed {
-            primitive: self.primitive.apply_material(material),
+            primitive: self.primitive.apply_shared_material(material),
             transform: self.transform,
         }
     }
@@ -259,12 +194,12 @@ impl<P: 'static + Intersectable<Result = SkinnedHitResult> + TimeDependentBounde
     }
 }
 
-pub struct TransformableIterator<P: Intersectable, I: Iterator<Item = P>> {
+pub struct TransformableIterator<P, I: Iterator<Item = P>> {
     iter: I,
     transform: StaticTransform,
 }
 
-impl<P: Intersectable, I: Iterator<Item = P>> Iterator for TransformableIterator<P, I> {
+impl<P, I: Iterator<Item = P>> Iterator for TransformableIterator<P, I> {
     type Item = Transformed<P>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -275,7 +210,7 @@ impl<P: Intersectable, I: Iterator<Item = P>> Iterator for TransformableIterator
     }
 }
 
-impl<P: Intersectable, I: IntoIterator<Item = P> + Intersectable> IntoIterator for Transformed<I> {
+impl<P, I: IntoIterator<Item = P>> IntoIterator for Transformed<I> {
     type Item = Transformed<P>;
     type IntoIter = TransformableIterator<P, I::IntoIter>;
 
@@ -290,10 +225,13 @@ impl<P: Intersectable, I: IntoIterator<Item = P> + Intersectable> IntoIterator f
 impl<DT: DefaultTransformable + Skinnable> Transformable for DT {
     type Target = Transformed<DT>;
 
-    fn transform(self, transform: Matrix4) -> Self::Target {
+    fn core_transform(self, transform: &Matrix4, inverse_transform: &Matrix4) -> Self::Target {
         Self::Target {
             primitive: self,
-            transform: StaticTransform::new(transform),
+            transform: StaticTransform {
+                transform: *transform,
+                inverse: *inverse_transform,
+            },
         }
     }
 }

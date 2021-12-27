@@ -15,9 +15,7 @@ impl<T: Texture + Clone> Clone for BumpMapper<T> {
 }
 
 impl<T: Texture> SurfaceMapper for BumpMapper<T> {
-    fn process_hit_result(&self, hit_result: &dyn IntersectResult) -> GeometryHitResult {
-        let mut hit_result = hit_result.as_geometry_hit_result();
-
+    fn process_hit_result(&self, mut hit_result: GeometryHitResult) -> GeometryHitResult {
         let t = hit_result.tangent();
         let b = hit_result.bitangent();
         let n = hit_result.surface_normal();
@@ -28,7 +26,7 @@ impl<T: Texture> SurfaceMapper for BumpMapper<T> {
             - vec3(1.0, 1.0, 1.0);
         let normal = (tbn * normal).normalize();
 
-        hit_result.set_surface_normal(normal);
+        hit_result.surface_normal = normal;
         hit_result
     }
 }
@@ -37,7 +35,7 @@ impl<T: Texture> SurfaceMapper for BumpMapper<T> {
 pub struct SurfaceNormalDebugMaterial();
 
 impl Material for SurfaceNormalDebugMaterial {
-    fn scatter(&self, ray_in: &Ray, hit_record: &dyn IntersectResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: GeometryHitResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point() + hit_record.surface_normal() + random_unit_vector();
         let color = (hit_record.surface_normal() * 2.0) + vec3(1.0, 1.0, 1.0);
         let color: Color = color.extend(1.0).try_into().unwrap();

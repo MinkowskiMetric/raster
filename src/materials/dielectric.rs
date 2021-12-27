@@ -1,7 +1,7 @@
 use super::utils::*;
 use super::{Material, PartialScatterResult, ScatterResult};
-use crate::math::*;
 use crate::utils::*;
+use crate::{math::*, GeometryHitResult};
 use crate::{IntersectResult, Ray};
 
 #[derive(Clone, Debug)]
@@ -18,7 +18,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray_in: &Ray, hit_record: &dyn IntersectResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: GeometryHitResult) -> Option<ScatterResult> {
         let etai_over_etat = if hit_record.front_face() {
             1.0 / self.refractive_index()
         } else {

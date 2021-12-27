@@ -1,7 +1,6 @@
 use std::iter::FromIterator;
 
-use crate::math::*;
-use crate::ray_scanner::Ray;
+use crate::{math::*, Ray, Transformable};
 
 #[derive(Clone, Copy, Debug)]
 pub struct BoundingBox {
@@ -9,26 +8,95 @@ pub struct BoundingBox {
     pt_max: Point3,
 }
 
-fn test_axis(
-    pt_min: FloatType,
-    pt_max: FloatType,
-    ray_origin: FloatType,
-    ray_direction: FloatType,
-    t_min: &mut FloatType,
-    t_max: &mut FloatType,
-) -> bool {
-    let inverse_direction = 1.0 / ray_direction;
-    let mut t0 = (pt_min - ray_origin) * inverse_direction;
-    let mut t1 = (pt_max - ray_origin) * inverse_direction;
+pub struct BoundingBoxIntersectionTester {
+    ray_origin: Point3,
+    ray_inv_dir_x: FloatType,
+    ray_inv_dir_y: FloatType,
+    ray_inv_dir_z: FloatType,
+}
 
-    if inverse_direction < 0.0 {
-        std::mem::swap(&mut t0, &mut t1);
+impl BoundingBoxIntersectionTester {
+    pub fn new(ray: &Ray) -> Self {
+        Self {
+            ray_origin: ray.origin,
+            ray_inv_dir_x: 1.0 / ray.direction.x,
+            ray_inv_dir_y: 1.0 / ray.direction.y,
+            ray_inv_dir_z: 1.0 / ray.direction.z,
+        }
     }
 
-    *t_min = t0.max(*t_min);
-    *t_max = t1.min(*t_max);
+    pub fn intersect(
+        &self,
+        bounding_box: &BoundingBox,
+        mut t_min: FloatType,
+        mut t_max: FloatType,
+    ) -> bool {
+        let (t0, t1) = if self.ray_inv_dir_x < 0.0 {
+            (
+                (bounding_box.pt_max.x - self.ray_origin.x) * self.ray_inv_dir_x,
+                (bounding_box.pt_min.x - self.ray_origin.x) * self.ray_inv_dir_x,
+            )
+        } else {
+            (
+                (bounding_box.pt_min.x - self.ray_origin.x) * self.ray_inv_dir_x,
+                (bounding_box.pt_max.x - self.ray_origin.x) * self.ray_inv_dir_x,
+            )
+        };
 
-    t_max > t_min
+        t_min = t0.max(t_min);
+        t_max = t1.min(t_max);
+
+        if t_min > t_max {
+            return false;
+        }
+
+        let (t0, t1) = if self.ray_inv_dir_y < 0.0 {
+            (
+                (bounding_box.pt_max.y - self.ray_origin.y) * self.ray_inv_dir_y,
+                (bounding_box.pt_min.y - self.ray_origin.y) * self.ray_inv_dir_y,
+            )
+        } else {
+            (
+                (bounding_box.pt_min.y - self.ray_origin.y) * self.ray_inv_dir_y,
+                (bounding_box.pt_max.y - self.ray_origin.y) * self.ray_inv_dir_y,
+            )
+        };
+
+        t_min = t0.max(t_min);
+        t_max = t1.min(t_max);
+
+        if t_min > t_max {
+            return false;
+        }
+
+        let (t0, t1) = if self.ray_inv_dir_z < 0.0 {
+            (
+                (bounding_box.pt_max.z - self.ray_origin.z) * self.ray_inv_dir_z,
+                (bounding_box.pt_min.z - self.ray_origin.z) * self.ray_inv_dir_z,
+            )
+        } else {
+            (
+                (bounding_box.pt_min.z - self.ray_origin.z) * self.ray_inv_dir_z,
+                (bounding_box.pt_max.z - self.ray_origin.z) * self.ray_inv_dir_z,
+            )
+        };
+
+        t_min = t0.max(t_min);
+        t_max = t1.min(t_max);
+
+        t_max > t_min
+    }
+}
+
+impl Transformable for BoundingBox {
+    type Target = BoundingBox;
+
+    fn core_transform(self, transform: &Matrix4, _inverse_transform: &Matrix4) -> Self::Target {
+        self.all_corners()
+            .iter()
+            .map(|p| transform.transform_point(*p))
+            .collect()
+    }
 }
 
 /// # Safety
@@ -124,34 +192,17 @@ impl BoundingBox {
         ]
     }
 
-    #[inline]
-    pub fn intersect(&self, ray: &Ray, mut t_min: FloatType, mut t_max: FloatType) -> bool {
-        /*if is_x86_feature_detected!("avx") {
-            unsafe { self.intersect_avx(ray, t_min, t_max) }
-        } else {*/
-        test_axis(
-            self.pt_min.x,
-            self.pt_max.x,
-            ray.origin.x,
-            ray.direction.x,
-            &mut t_min,
-            &mut t_max,
-        ) && test_axis(
-            self.pt_min.y,
-            self.pt_max.y,
-            ray.origin.y,
-            ray.direction.y,
-            &mut t_min,
-            &mut t_max,
-        ) && test_axis(
-            self.pt_min.z,
-            self.pt_max.z,
-            ray.origin.z,
-            ray.direction.z,
-            &mut t_min,
-            &mut t_max,
-        )
-        //}
+    pub fn intersect_with_tester(
+        &self,
+        tester: &BoundingBoxIntersectionTester,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> bool {
+        tester.intersect(self, t_min, t_max)
+    }
+
+    pub fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> bool {
+        self.intersect_with_tester(&BoundingBoxIntersectionTester::new(ray), t_min, t_max)
     }
 
     /*/// # Safety

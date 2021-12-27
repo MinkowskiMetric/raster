@@ -11,12 +11,12 @@ edition = "2018"
 "num" = "0.4"
 "cgmath" = "0.18"
 "image" = "0.23"
-"rand" = "0.8"
 "clap" = { version = "2", features = ["yaml"] }
 "futures" = { version= "0.3" }
 "tokio" = { version="0.2", features = ["full"] }
 "num-traits" = "0.2"
 "obj" = "0.10"
+"random-fast-rng" = "0.1"
 
 [profile.release]
 debug = 2

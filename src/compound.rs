@@ -3,6 +3,7 @@ use crate::{
     Intersectable, Ray, SkinnedHitResult, TimeDependentBounded,
 };
 use core::iter::FromIterator;
+use std::sync::Arc;
 
 #[macro_export]
 macro_rules! compound_visible [
@@ -100,6 +101,55 @@ impl Primitive for DynPrimitive {
 }
 
 impl DefaultTransformable for DynPrimitive {}
+
+#[derive(Clone)]
+pub struct SharedPrimitive(Arc<dyn Primitive>);
+
+impl SharedPrimitive {
+    pub(crate) fn new<P: 'static + Primitive>(p: P) -> Self {
+        Self(Arc::new(p))
+    }
+}
+
+impl Intersectable for SharedPrimitive {
+    type Result = GeometryHitResult;
+
+    fn intersect(
+        &self,
+        ray: &crate::Ray,
+        t_min: crate::math::FloatType,
+        t_max: crate::math::FloatType,
+    ) -> Option<Self::Result> {
+        self.0.intersect(ray, t_min, t_max)
+    }
+}
+
+impl TimeDependentBounded for SharedPrimitive {
+    fn time_dependent_bounding_box(
+        &self,
+        t0: crate::math::FloatType,
+        t1: crate::math::FloatType,
+    ) -> crate::BoundingBox {
+        self.0.time_dependent_bounding_box(t0, t1)
+    }
+}
+
+impl Primitive for SharedPrimitive {
+    fn to_dyn_primitive(self) -> DynPrimitive {
+        DynPrimitive::new(self)
+    }
+
+    fn decompose_box(self: Box<Self>) -> CompoundPrimitive {
+        (*self).decompose()
+    }
+
+    fn decompose(self) -> CompoundPrimitive {
+        compound_primitive![self.to_dyn_primitive()]
+    }
+}
+
+impl DefaultTransformable for SharedPrimitive {}
+impl DefaultSkinnable for SharedPrimitive {}
 
 pub trait Visible: Intersectable<Result = SkinnedHitResult> + TimeDependentBounded {
     fn to_dyn_visible(self) -> DynVisible;

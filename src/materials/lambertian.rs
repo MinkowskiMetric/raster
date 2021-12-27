@@ -1,5 +1,5 @@
 use super::{Material, PartialScatterResult, ScatterResult};
-use crate::utils::*;
+use crate::{utils::*, GeometryHitResult};
 use crate::{IntersectResult, Ray, Texture};
 
 #[derive(Clone, Debug)]
@@ -16,7 +16,7 @@ impl<T: 'static + Texture + Clone> Lambertian<T> {
 }
 
 impl<T: 'static + Texture + Clone> Material for Lambertian<T> {
-    fn scatter(&self, ray_in: &Ray, hit_record: &dyn IntersectResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: GeometryHitResult) -> Option<ScatterResult> {
         let target = hit_record.hit_point() + hit_record.surface_normal() + random_unit_vector();
         let color = self.albedo().value(hit_record.hit_point(), hit_record.uv());
         Some(ScatterResult {

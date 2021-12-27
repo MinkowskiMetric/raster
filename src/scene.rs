@@ -1,8 +1,8 @@
-use crate::camera::{Camera, PreparedCamera};
-use crate::ray_scanner::Ray;
+use crate::Ray;
 use crate::{
     math::*, sky::Sky, BoundingBox, Intersectable, Octree, SkinnedHitResult, TimeDependentBounded,
 };
+use crate::{Camera, PreparedCamera};
 use crate::{CompoundVisible, DynVisible, Visible};
 
 pub struct Scene {

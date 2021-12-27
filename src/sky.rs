@@ -1,7 +1,4 @@
-use crate::color::Color;
-use crate::constants;
-use crate::math::*;
-use crate::ray_scanner::Ray;
+use crate::{constants, math::*, Color, Ray};
 use std::convert::TryInto;
 
 #[derive(Debug, Clone)]

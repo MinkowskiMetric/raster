@@ -1,7 +1,7 @@
 use super::utils::*;
 use super::{Material, PartialScatterResult, ScatterResult};
-use crate::math::*;
 use crate::utils::*;
+use crate::{math::*, GeometryHitResult};
 use crate::{Color, IntersectResult, Ray, Texture};
 
 #[derive(Debug)]
@@ -28,7 +28,7 @@ impl<T: Texture + Clone> Clone for Metal<T> {
 }
 
 impl<T: Texture> Material for Metal<T> {
-    fn scatter(&self, ray_in: &Ray, hit_record: &dyn IntersectResult) -> Option<ScatterResult> {
+    fn scatter(&self, ray_in: &Ray, hit_record: GeometryHitResult) -> Option<ScatterResult> {
         let reflected = reflect(ray_in.direction.normalize(), hit_record.surface_normal())
             + self.fuzz() * random_in_unit_sphere();
         let color = self

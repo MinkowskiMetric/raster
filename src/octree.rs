@@ -1,7 +1,8 @@
 use crate::{
-    math::*, Bounded, BoundingBox, CompoundPrimitive, CompoundVisible, DefaultSkinnable,
-    DefaultTransformable, DynPrimitive, DynVisible, GeometryHitResult, IntersectResultIteratorOps,
-    Intersectable, Primitive, Ray, TimeDependentBounded,
+    math::*, Bounded, BoundingBox, BoundingBoxIntersectionTester, CompoundPrimitive,
+    CompoundVisible, DefaultSkinnable, DefaultTransformable, DynPrimitive, DynVisible,
+    GeometryHitResult, IntersectResultIteratorOps, Intersectable, Primitive, Ray,
+    TimeDependentBounded,
 };
 use core::ops::Range;
 // How do we want the octree to work. Octree is only concerned with bounding. It does not require that it's contents be intersectable
@@ -147,7 +148,7 @@ fn sort_and_divide<P: TimeDependentBounded>(
 pub struct OctreeBlockIntersectIterator<'a, P: TimeDependentBounded> {
     items: &'a [P],
     work_stack: Vec<&'a OctreeEntry>,
-    ray: &'a Ray,
+    intersection_tester: BoundingBoxIntersectionTester,
     t_min: FloatType,
     t_max: FloatType,
 }
@@ -160,7 +161,13 @@ impl<'a, P: TimeDependentBounded> OctreeBlockIntersectIterator<'a, P> {
         t_min: FloatType,
         t_max: FloatType,
     ) -> Self {
-        let mut work_stack = Vec::new();
+        // Pre-allocating some space in the octree work stack allows us to
+        // avoid allocating during the octree walk, which speeds things up a bit
+        // in the general case. We can compute the worst case depth
+        // anyway. We add two to the log so that we round up and include the root node
+        let maximum_stack_depth = ((items.len() as f64).log2() + 2.0) as usize;
+
+        let mut work_stack = Vec::with_capacity(maximum_stack_depth);
 
         if let Some(root) = root {
             work_stack.push(root);
@@ -169,7 +176,7 @@ impl<'a, P: TimeDependentBounded> OctreeBlockIntersectIterator<'a, P> {
         Self {
             items,
             work_stack,
-            ray,
+            intersection_tester: BoundingBoxIntersectionTester::new(ray),
             t_min,
             t_max,
         }
@@ -182,7 +189,11 @@ impl<'a, P: TimeDependentBounded> Iterator for OctreeBlockIntersectIterator<'a, 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(top) = self.work_stack.pop() {
             // Check if the ray intersects the node
-            if top.bounding_box.intersect(self.ray, self.t_min, self.t_max) {
+            if top.bounding_box.intersect_with_tester(
+                &self.intersection_tester,
+                self.t_min,
+                self.t_max,
+            ) {
                 if let Some((left, right)) = top.children.as_deref() {
                     // This is a branch node, so push its children
                     self.work_stack.push(right);

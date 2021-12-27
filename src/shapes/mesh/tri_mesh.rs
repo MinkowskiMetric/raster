@@ -199,8 +199,6 @@ impl Intersectable for TriangleMesh {
                 let u = hit_result.u;
                 let v = hit_result.v;
 
-                let hit_point = ray.origin + (t * ray.direction);
-
                 // surface normal
                 let outward_normal = (1.0 - u - v) * normal0;
                 let outward_normal = outward_normal + (u * normal1);
@@ -226,15 +224,7 @@ impl Intersectable for TriangleMesh {
                 let uv = uv.add_element_wise(u * uv1);
                 let uv = uv.add_element_wise(v * uv2);
 
-                GeometryHitResult::new(
-                    t,
-                    hit_point,
-                    surface_normal,
-                    tangent,
-                    bitangent,
-                    front_face,
-                    uv,
-                )
+                GeometryHitResult::new(ray, t, surface_normal, tangent, bitangent, front_face, uv)
             })
     }
 }

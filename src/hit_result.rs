@@ -1,28 +1,54 @@
-use crate::{math::*, BaseMaterial};
-use std::sync::Arc;
+use crate::{math::*, DefaultSkinnable, Ray, Skinnable, Transformable};
 
 pub trait IntersectResult {
+    fn ray_origin(&self) -> Point3;
     fn distance(&self) -> FloatType;
-    fn set_distance(&mut self, distance: FloatType);
-
     fn hit_point(&self) -> Point3;
-    fn set_hit_point(&mut self, hit_point: Point3);
-
     fn surface_normal(&self) -> Vector3;
-    fn set_surface_normal(&mut self, surface_normal: Vector3);
-
     fn tangent(&self) -> Vector3;
-    fn set_tangent(&mut self, tangent: Vector3);
-
     fn bitangent(&self) -> Vector3;
-    fn set_bitangent(&mut self, bitangent: Vector3);
-
     fn front_face(&self) -> bool;
-    fn set_front_face(&mut self, front_face: bool);
-
     fn uv(&self) -> Point2;
+}
 
-    fn as_geometry_hit_result(&self) -> GeometryHitResult;
+pub trait WrappedIntersectResult {
+    type Wrapped: IntersectResult;
+
+    fn intersect_result(&self) -> &Self::Wrapped;
+}
+
+impl<I: WrappedIntersectResult> IntersectResult for I {
+    fn ray_origin(&self) -> Point3 {
+        self.intersect_result().ray_origin()
+    }
+
+    fn distance(&self) -> FloatType {
+        self.intersect_result().distance()
+    }
+
+    fn hit_point(&self) -> Point3 {
+        self.intersect_result().hit_point()
+    }
+
+    fn surface_normal(&self) -> Vector3 {
+        self.intersect_result().surface_normal()
+    }
+
+    fn tangent(&self) -> Vector3 {
+        self.intersect_result().tangent()
+    }
+
+    fn bitangent(&self) -> Vector3 {
+        self.intersect_result().bitangent()
+    }
+
+    fn front_face(&self) -> bool {
+        self.intersect_result().front_face()
+    }
+
+    fn uv(&self) -> Point2 {
+        self.intersect_result().uv()
+    }
 }
 
 pub trait IntersectResultIteratorOps {
@@ -48,19 +74,21 @@ impl<'a, I: IntersectResult, Iter: Iterator<Item = I>> IntersectResultIteratorOp
 
 #[derive(Debug, Clone)]
 pub struct GeometryHitResult {
-    distance: FloatType,
-    hit_point: Point3,
-    surface_normal: Vector3,
-    tangent: Vector3,
-    bitangent: Vector3,
-    front_face: bool,
-    uv: Point2,
+    pub ray_origin: Point3,
+    pub ray_direction: Vector3,
+    pub distance: FloatType,
+    pub hit_point: Point3,
+    pub surface_normal: Vector3,
+    pub tangent: Vector3,
+    pub bitangent: Vector3,
+    pub front_face: bool,
+    pub uv: Point2,
 }
 
 impl GeometryHitResult {
     pub fn new(
+        ray: &Ray,
         distance: FloatType,
-        hit_point: Point3,
         surface_normal: Vector3,
         tangent: Vector3,
         bitangent: Vector3,
@@ -68,8 +96,10 @@ impl GeometryHitResult {
         uv: Point2,
     ) -> Self {
         Self {
+            ray_origin: ray.origin,
+            ray_direction: ray.direction,
+            hit_point: ray.origin + (distance * ray.direction),
             distance,
-            hit_point,
             surface_normal,
             tangent,
             bitangent,
@@ -80,147 +110,55 @@ impl GeometryHitResult {
 }
 
 impl IntersectResult for GeometryHitResult {
-    fn distance(&self) -> FloatType {
-        self.distance
+    fn ray_origin(&self) -> Point3 {
+        self.ray_origin
     }
 
-    fn set_distance(&mut self, distance: FloatType) {
-        self.distance = distance
+    fn distance(&self) -> FloatType {
+        self.distance
     }
 
     fn hit_point(&self) -> Point3 {
         self.hit_point
     }
 
-    fn set_hit_point(&mut self, hit_point: Point3) {
-        self.hit_point = hit_point
-    }
-
     fn surface_normal(&self) -> Vector3 {
         self.surface_normal
-    }
-
-    fn set_surface_normal(&mut self, surface_normal: Vector3) {
-        self.surface_normal = surface_normal
     }
 
     fn tangent(&self) -> Vector3 {
         self.tangent
     }
 
-    fn set_tangent(&mut self, tangent: Vector3) {
-        self.tangent = tangent
-    }
-
     fn bitangent(&self) -> Vector3 {
         self.bitangent
-    }
-
-    fn set_bitangent(&mut self, bitangent: Vector3) {
-        self.bitangent = bitangent
     }
 
     fn front_face(&self) -> bool {
         self.front_face
     }
 
-    fn set_front_face(&mut self, front_face: bool) {
-        self.front_face = front_face
-    }
-
     fn uv(&self) -> Point2 {
         self.uv
     }
+}
 
-    fn as_geometry_hit_result(&self) -> GeometryHitResult {
-        self.clone()
+impl Transformable for GeometryHitResult {
+    type Target = Self;
+
+    fn core_transform(mut self, transform: &Matrix4, _inverse_transform: &Matrix4) -> Self::Target {
+        self.ray_origin = transform.transform_point(self.ray_origin);
+        self.ray_direction = transform.transform_vector(self.ray_direction);
+        self.hit_point = transform.transform_point(self.hit_point);
+        self.distance = (self.hit_point - self.ray_origin).magnitude();
+        self.surface_normal = transform.transform_vector(self.surface_normal).normalize();
+        self.tangent = transform.transform_vector(self.tangent).normalize();
+        self.bitangent = transform.transform_vector(self.bitangent).normalize();
+
+        self
     }
 }
 
-pub struct SkinnedHitResult {
-    hit_result: GeometryHitResult,
-    material: Arc<dyn BaseMaterial>,
-}
+impl DefaultSkinnable for GeometryHitResult {}
 
-impl SkinnedHitResult {
-    pub fn new(hit_result: GeometryHitResult, material: Arc<dyn BaseMaterial>) -> Self {
-        Self {
-            hit_result,
-            material,
-        }
-    }
-
-    pub fn hit_result(&self) -> &GeometryHitResult {
-        &self.hit_result
-    }
-
-    pub fn hit_result_mut(&mut self) -> &mut GeometryHitResult {
-        &mut self.hit_result
-    }
-
-    pub fn material(&self) -> &dyn BaseMaterial {
-        self.material.as_ref()
-    }
-
-    pub fn split(self) -> (GeometryHitResult, Arc<dyn BaseMaterial>) {
-        (self.hit_result, self.material)
-    }
-}
-
-impl IntersectResult for SkinnedHitResult {
-    fn distance(&self) -> FloatType {
-        self.hit_result().distance
-    }
-
-    fn set_distance(&mut self, distance: FloatType) {
-        self.hit_result_mut().distance = distance
-    }
-
-    fn hit_point(&self) -> Point3 {
-        self.hit_result().hit_point
-    }
-
-    fn set_hit_point(&mut self, hit_point: Point3) {
-        self.hit_result_mut().hit_point = hit_point
-    }
-
-    fn surface_normal(&self) -> Vector3 {
-        self.hit_result().surface_normal
-    }
-
-    fn set_surface_normal(&mut self, surface_normal: Vector3) {
-        self.hit_result_mut().surface_normal = surface_normal
-    }
-
-    fn tangent(&self) -> Vector3 {
-        self.hit_result().tangent
-    }
-
-    fn set_tangent(&mut self, tangent: Vector3) {
-        self.hit_result_mut().tangent = tangent
-    }
-
-    fn bitangent(&self) -> Vector3 {
-        self.hit_result().bitangent
-    }
-
-    fn set_bitangent(&mut self, bitangent: Vector3) {
-        self.hit_result_mut().bitangent = bitangent
-    }
-
-    fn front_face(&self) -> bool {
-        self.hit_result().front_face
-    }
-
-    fn set_front_face(&mut self, front_face: bool) {
-        self.hit_result_mut().front_face = front_face
-    }
-
-    fn uv(&self) -> Point2 {
-        self.hit_result().uv
-    }
-
-    fn as_geometry_hit_result(&self) -> GeometryHitResult {
-        self.hit_result.clone()
-    }
-}
+pub type SkinnedHitResult = <GeometryHitResult as Skinnable>::Target;
