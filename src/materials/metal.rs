@@ -29,7 +29,7 @@ impl<T: Texture + Clone> Clone for Metal<T> {
 
 impl<T: Texture> Material for Metal<T> {
     fn scatter(&self, ray_in: &Ray, hit_record: GeometryHitResult) -> Option<ScatterResult> {
-        let reflected = reflect(ray_in.direction.normalize(), hit_record.surface_normal())
+        let reflected = reflect(ray_in.direction().normalize(), hit_record.surface_normal())
             + self.fuzz() * random_in_unit_sphere();
         let color = self
             .texture()
@@ -39,7 +39,7 @@ impl<T: Texture> Material for Metal<T> {
                 partial: PartialScatterResult {
                     attenuation: cgmath::Vector4::from(color).truncate(),
                 },
-                scattered: Ray::new(hit_record.hit_point(), reflected.normalize(), ray_in.time),
+                scattered: Ray::new(hit_record.hit_point(), reflected.normalize(), ray_in.time()),
             })
         } else {
             None

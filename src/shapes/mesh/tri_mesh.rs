@@ -2,7 +2,7 @@ use super::arch::mesh::*;
 use super::TriangleVertex;
 use crate::{
     math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
-    GeometryHitResult, Intersectable, Octree, Ray,
+    GeometryHitResult, Intersectable, KDTree, Ray,
 };
 use anyhow::{anyhow, Result};
 use std::iter::FromIterator;
@@ -16,7 +16,7 @@ pub struct VertexTuple {
 }
 
 pub struct TriangleMesh {
-    intersect_triangles: Octree<IntersectTriangle>,
+    intersect_triangles: KDTree<IntersectTriangle>,
     triangles: Vec<VertexTuple>,
     vertices: Vec<Point3>,
     uvs: Vec<Point2>,
@@ -45,7 +45,7 @@ impl TriangleMesh {
             })
             .collect();
 
-        let intersect_triangles = Octree::snapshot_into_groups(
+        let intersect_triangles = KDTree::snapshot_into_groups(
             intersect_triangles,
             TRIANGLE_MESH_GROUP_SIZE,
             -constants::INFINITY,
@@ -211,7 +211,7 @@ impl Intersectable for TriangleMesh {
                 let tangent = tangent + (v * tangent2);
                 let tangent = tangent.normalize();
 
-                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let front_face = ray.direction().dot(outward_normal) < 0.0;
                 let surface_normal = if front_face {
                     outward_normal
                 } else {
@@ -309,9 +309,9 @@ mod test {
             .expect("Valid single triangle");
 
         let bounding = one_tri.bounding_box();
-        assert_eq!(*bounding.min_point(), point3(-0.0001, -0.0001, -0.0001));
+        assert_eq!(bounding.min_point(), point3(-0.0001, -0.0001, -0.0001));
         assert_eq!(
-            *bounding.max_point(),
+            bounding.max_point(),
             point3(2.0 + 0.0001, 2.0 + 0.0001, 0.0001)
         );
 
@@ -344,9 +344,9 @@ mod test {
             .expect("Valid single triangle");
 
         let bounding = one_tri.bounding_box();
-        assert_eq!(*bounding.min_point(), point3(-0.0001, -0.0001, -0.0001));
+        assert_eq!(bounding.min_point(), point3(-0.0001, -0.0001, -0.0001));
         assert_eq!(
-            *bounding.max_point(),
+            bounding.max_point(),
             point3(2.0 + 0.0001, 2.0 + 0.0001, 0.0001)
         );
 

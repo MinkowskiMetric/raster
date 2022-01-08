@@ -216,13 +216,8 @@ impl Visible for DynVisible {
 }
 
 // Now we need a compound of each of those
+#[derive(Default)]
 pub struct CompoundPrimitive(Vec<DynPrimitive>);
-
-impl Default for CompoundPrimitive {
-    fn default() -> Self {
-        Self(Vec::new())
-    }
-}
 
 impl From<Vec<DynPrimitive>> for CompoundPrimitive {
     fn from(v: Vec<DynPrimitive>) -> Self {
@@ -302,13 +297,8 @@ impl<P: Primitive> FromIterator<P> for CompoundPrimitive {
     }
 }
 
+#[derive(Default)]
 pub struct CompoundVisible(Vec<DynVisible>);
-
-impl Default for CompoundVisible {
-    fn default() -> Self {
-        Self(Vec::new())
-    }
-}
 
 impl From<Vec<DynVisible>> for CompoundVisible {
     fn from(v: Vec<DynVisible>) -> Self {

@@ -137,21 +137,21 @@ impl Intersectable for Sphere {
         t_min: FloatType,
         t_max: FloatType,
     ) -> Option<GeometryHitResult> {
-        let ray_origin = ray.origin;
+        let ray_origin = ray.origin();
         let oc = ray_origin - self.center;
-        let a = ray.direction.dot(ray.direction);
-        let b = oc.dot(ray.direction);
+        let a = ray.direction().dot(ray.direction());
+        let b = oc.dot(ray.direction());
         let c = oc.dot(oc) - (self.radius * self.radius);
         let discriminant = (b * b) - (a * c);
         if discriminant > 0.0 {
             let temp = (-b - discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray.origin() + (temp * ray.direction());
                 let outward_normal = (hit_point - self.center) / self.radius;
                 let tangent = vec3(0.0, 1.0, 0.0)
                     .cross(hit_point - self.center)
                     .normalize();
-                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let front_face = ray.direction().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal
@@ -175,12 +175,12 @@ impl Intersectable for Sphere {
 
             let temp = (-b + discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray.origin() + (temp * ray.direction());
                 let outward_normal = (hit_point - self.center) / self.radius;
                 let tangent = vec3(0.0, 1.0, 0.0)
                     .cross(hit_point - self.center)
                     .normalize();
-                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let front_face = ray.direction().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal
@@ -383,20 +383,20 @@ impl Intersectable for MovingSphere {
         t_min: FloatType,
         t_max: FloatType,
     ) -> Option<GeometryHitResult> {
-        let center = self.center(ray.time);
-        let ray_origin = ray.origin;
+        let center = self.center(ray.time());
+        let ray_origin = ray.origin();
         let oc = ray_origin - center;
-        let a = ray.direction.dot(ray.direction);
-        let b = oc.dot(ray.direction);
+        let a = ray.direction().dot(ray.direction());
+        let b = oc.dot(ray.direction());
         let c = oc.dot(oc) - (self.radius * self.radius);
         let discriminant = (b * b) - (a * c);
         if discriminant > 0.0 {
             let temp = (-b - discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray.origin() + (temp * ray.direction());
                 let outward_normal = (hit_point - center) / self.radius;
                 let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
-                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let front_face = ray.direction().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal
@@ -420,10 +420,10 @@ impl Intersectable for MovingSphere {
 
             let temp = (-b + discriminant.sqrt()) / a;
             if temp < t_max && temp > t_min {
-                let hit_point = ray.origin + (temp * ray.direction);
+                let hit_point = ray.origin() + (temp * ray.direction());
                 let outward_normal = (hit_point - center) / self.radius;
                 let tangent = vec3(0.0, 1.0, 0.0).cross(hit_point - center).normalize();
-                let front_face = ray.direction.dot(outward_normal) < 0.0;
+                let front_face = ray.direction().dot(outward_normal) < 0.0;
 
                 let surface_normal = if front_face {
                     outward_normal

@@ -96,9 +96,9 @@ impl GeometryHitResult {
         uv: Point2,
     ) -> Self {
         Self {
-            ray_origin: ray.origin,
-            ray_direction: ray.direction,
-            hit_point: ray.origin + (distance * ray.direction),
+            ray_origin: ray.origin(),
+            ray_direction: ray.direction(),
+            hit_point: ray.origin() + (distance * ray.direction()),
             distance,
             surface_normal,
             tangent,

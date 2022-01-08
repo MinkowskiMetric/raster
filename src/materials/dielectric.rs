@@ -24,7 +24,7 @@ impl Material for Dielectric {
         } else {
             self.refractive_index()
         };
-        let unit_ray_direction = ray_in.direction.normalize();
+        let unit_ray_direction = ray_in.direction().normalize();
 
         let cos_theta = -unit_ray_direction.dot(hit_record.surface_normal()).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
@@ -37,7 +37,7 @@ impl Material for Dielectric {
                 partial: PartialScatterResult {
                     attenuation: vec3(1.0, 1.0, 1.0),
                 },
-                scattered: Ray::new(hit_record.hit_point(), reflected, ray_in.time),
+                scattered: Ray::new(hit_record.hit_point(), reflected, ray_in.time()),
             })
         } else {
             let refracted = refract(
@@ -50,7 +50,7 @@ impl Material for Dielectric {
                 partial: PartialScatterResult {
                     attenuation: vec3(1.0, 1.0, 1.0),
                 },
-                scattered: Ray::new(hit_record.hit_point(), refracted, ray_in.time),
+                scattered: Ray::new(hit_record.hit_point(), refracted, ray_in.time()),
             })
         }
     }

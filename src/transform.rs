@@ -98,7 +98,7 @@ where
     type Result = <R as Transformable>::Target;
 
     fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
-        let instant = self.transform.transform_at_t(ray.time);
+        let instant = self.transform.transform_at_t(ray.time());
         let transformed_ray = ray.core_transform(&instant.transform, &instant.inverse);
 
         self.primitive

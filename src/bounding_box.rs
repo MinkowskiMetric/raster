@@ -1,90 +1,59 @@
-use std::iter::FromIterator;
+use std::{
+    iter::FromIterator,
+    simd::{f32x4, mask32x4, simd_swizzle, Simd, Which::*},
+};
 
 use crate::{math::*, Ray, Transformable};
 
 #[derive(Clone, Copy, Debug)]
 pub struct BoundingBox {
-    pt_min: Point3,
-    pt_max: Point3,
+    pt_min: f32x4,
+    pt_max: f32x4,
 }
 
 pub struct BoundingBoxIntersectionTester {
-    ray_origin: Point3,
-    ray_inv_dir_x: FloatType,
-    ray_inv_dir_y: FloatType,
-    ray_inv_dir_z: FloatType,
+    ray_origin: f32x4,
+    ray_inv_dir: f32x4,
+    ray_dir_sign: mask32x4,
 }
 
 impl BoundingBoxIntersectionTester {
     pub fn new(ray: &Ray) -> Self {
+        let ray_origin = ray.origin_v();
+        let ray_inv_dir = ray.direction_v().recip();
+        let ray_dir_sign = ray_inv_dir.is_sign_positive();
+
         Self {
-            ray_origin: ray.origin,
-            ray_inv_dir_x: 1.0 / ray.direction.x,
-            ray_inv_dir_y: 1.0 / ray.direction.y,
-            ray_inv_dir_z: 1.0 / ray.direction.z,
+            ray_origin,
+            ray_inv_dir,
+            ray_dir_sign,
         }
     }
 
     pub fn intersect(
         &self,
         bounding_box: &BoundingBox,
-        mut t_min: FloatType,
-        mut t_max: FloatType,
+        t_min: FloatType,
+        t_max: FloatType,
     ) -> bool {
-        let (t0, t1) = if self.ray_inv_dir_x < 0.0 {
-            (
-                (bounding_box.pt_max.x - self.ray_origin.x) * self.ray_inv_dir_x,
-                (bounding_box.pt_min.x - self.ray_origin.x) * self.ray_inv_dir_x,
-            )
-        } else {
-            (
-                (bounding_box.pt_min.x - self.ray_origin.x) * self.ray_inv_dir_x,
-                (bounding_box.pt_max.x - self.ray_origin.x) * self.ray_inv_dir_x,
-            )
-        };
+        let t0 = simd_swizzle!(
+            (bounding_box.pt_min - self.ray_origin) * self.ray_inv_dir,
+            Simd::splat(t_min),
+            [First(0), First(1), First(2), Second(0)]
+        );
+        let t1 = simd_swizzle!(
+            (bounding_box.pt_max - self.ray_origin) * self.ray_inv_dir,
+            Simd::splat(t_max),
+            [First(0), First(1), First(2), Second(0)]
+        );
 
-        t_min = t0.max(t_min);
-        t_max = t1.min(t_max);
+        let t_min = self.ray_dir_sign.select(t0, t1);
+        let t_max = self.ray_dir_sign.select(t1, t0);
 
-        if t_min > t_max {
-            return false;
-        }
+        let t_min = t_min.horizontal_max();
+        let t_max = t_max.horizontal_min();
 
-        let (t0, t1) = if self.ray_inv_dir_y < 0.0 {
-            (
-                (bounding_box.pt_max.y - self.ray_origin.y) * self.ray_inv_dir_y,
-                (bounding_box.pt_min.y - self.ray_origin.y) * self.ray_inv_dir_y,
-            )
-        } else {
-            (
-                (bounding_box.pt_min.y - self.ray_origin.y) * self.ray_inv_dir_y,
-                (bounding_box.pt_max.y - self.ray_origin.y) * self.ray_inv_dir_y,
-            )
-        };
-
-        t_min = t0.max(t_min);
-        t_max = t1.min(t_max);
-
-        if t_min > t_max {
-            return false;
-        }
-
-        let (t0, t1) = if self.ray_inv_dir_z < 0.0 {
-            (
-                (bounding_box.pt_max.z - self.ray_origin.z) * self.ray_inv_dir_z,
-                (bounding_box.pt_min.z - self.ray_origin.z) * self.ray_inv_dir_z,
-            )
-        } else {
-            (
-                (bounding_box.pt_min.z - self.ray_origin.z) * self.ray_inv_dir_z,
-                (bounding_box.pt_max.z - self.ray_origin.z) * self.ray_inv_dir_z,
-            )
-        };
-
-        t_min = t0.max(t_min);
-        t_max = t1.min(t_max);
-
-        t_max > t_min
+        t_min < t_max
     }
 }
 
@@ -99,60 +68,28 @@ impl Transformable for BoundingBox {
     }
 }
 
-/// # Safety
-///
-/// only call this if the CPU supports AVX
-/*#[inline]
-#[target_feature(enable = "avx")]
-unsafe fn max_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
-    use std::arch::x86_64::*;
-
-    let x = _mm256_extractf128_pd(v, 0); // extract v[0], and v[1]
-    let y = _mm256_extractf128_pd(v, 1); // extract v[2], and v[3]
-    let m1 = _mm_max_pd(x, y); // m1[0] = max(v[0], v[2]), m1[1] = max(v[1], v[3])
-    let m2 = _mm_permute_pd(m1, 1); // m2[0] = m1[1], m2[1] = m1[0]
-    _mm_max_pd(m1, m2)
-}
-
-/// # Safety
-///
-/// only call this if the CPU supports AVX
-#[inline]
-#[target_feature(enable = "avx")]
-unsafe fn min_v(v: std::arch::x86_64::__m256d) -> std::arch::x86_64::__m128d {
-    use std::arch::x86_64::*;
-
-    let x = _mm256_extractf128_pd(v, 0); // extract v[0], and v[1]
-    let y = _mm256_extractf128_pd(v, 1); // extract v[2], and v[3]
-    let m1 = _mm_min_pd(x, y); // m1[0] = min(v[0], v[2]), m1[1] = min(v[1], v[3])
-    let m2 = _mm_permute_pd(m1, 1); // m2[0] = m1[1], m2[1] = m1[0]
-    _mm_min_pd(m1, m2)
-}*/
-
 impl BoundingBox {
     pub fn new(pt1: Point3, pt2: Point3) -> Self {
-        BoundingBox {
-            pt_min: Point3::new(pt1.x.min(pt2.x), pt1.y.min(pt2.y), pt1.z.min(pt2.z)),
-            pt_max: Point3::new(pt1.x.max(pt2.x), pt1.y.max(pt2.y), pt1.z.max(pt2.z)),
-        }
+        let pt1 = f32x4::from_array([pt1.x, pt1.y, pt1.z, 1.0]);
+        let pt2 = f32x4::from_array([pt2.x, pt2.y, pt2.z, 1.0]);
+
+        let pt_max = pt1.max(pt2);
+        let pt_min = pt1.min(pt2);
+
+        BoundingBox { pt_min, pt_max }
     }
 
     pub fn empty_box() -> Self {
         let zero_point = Point3::new(0.0, 0.0, 0.0);
-        BoundingBox {
-            pt_min: zero_point,
-            pt_max: zero_point,
-        }
+        Self::new(zero_point, zero_point)
     }
 
     pub fn containing_point(pt: Point3) -> Self {
         let epsilon_offset: Vector3 = vec3(0.0001, 0.0001, 0.0001);
-        Self {
-            pt_min: pt - epsilon_offset,
-            pt_max: pt + epsilon_offset,
-        }
+        Self::new(pt - epsilon_offset, pt + epsilon_offset)
     }
 
+    #[must_use]
     pub fn combine(self, other: Self) -> Self {
         Self::surrounding_box(&self, &other)
     }
@@ -171,12 +108,14 @@ impl BoundingBox {
         Self::new(pt_min, pt_max)
     }
 
-    pub fn min_point(&self) -> &Point3 {
-        &self.pt_min
+    pub fn min_point(&self) -> Point3 {
+        let pt_min_arr = self.pt_min.to_array();
+        point3(pt_min_arr[0], pt_min_arr[1], pt_min_arr[2])
     }
 
-    pub fn max_point(&self) -> &Point3 {
-        &self.pt_max
+    pub fn max_point(&self) -> Point3 {
+        let pt_max_arr = self.pt_max.to_array();
+        point3(pt_max_arr[0], pt_max_arr[1], pt_max_arr[2])
     }
 
     pub fn all_corners(&self) -> [Point3; 8] {
@@ -204,41 +143,6 @@ impl BoundingBox {
     pub fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> bool {
         self.intersect_with_tester(&BoundingBoxIntersectionTester::new(ray), t_min, t_max)
     }
-
-    /*/// # Safety
-    ///
-    /// only call this if the CPU supports AVX
-    #[inline]
-    #[target_feature(enable = "avx")]
-    pub unsafe fn intersect_avx(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> bool {
-        use std::arch::x86_64::*;
-
-        // We can probably do better than this if we improve the way these are stored
-        let ray_origin = ray.origin.load_v();
-        let ray_inv_direction = ray.inv_direction.load_v();
-        let dir_sign = _mm256_cmp_pd(ray_inv_direction, _mm256_setzero_pd(), _CMP_LT_OQ);
-        let pt_min = self.pt_min.load_v();
-        let pt_max = self.pt_max.load_v();
-
-        // Add t_min and t_max into the fourth value in the vector
-        let t0 = _mm256_mul_pd(_mm256_sub_pd(pt_min, ray_origin), ray_inv_direction);
-        let t0 = _mm256_blend_pd(_mm256_set1_pd(t_min), t0, 0xe);
-        let t1 = _mm256_mul_pd(_mm256_sub_pd(pt_max, ray_origin), ray_inv_direction);
-        let t1 = _mm256_blend_pd(_mm256_set1_pd(t_max), t1, 0xe);
-
-        // Swizzle the values to get the min and max values the right way round according to
-        // the direction and select the min and max values
-        let t_min_l = _mm256_and_pd(dir_sign, t1);
-        let t_min_r = _mm256_andnot_pd(dir_sign, t0);
-        let t_min_f = _mm256_or_pd(t_min_l, t_min_r);
-        let t_min = max_v(t_min_f);
-        let t_max_l = _mm256_and_pd(dir_sign, t0);
-        let t_max_r = _mm256_andnot_pd(dir_sign, t1);
-        let t_max_f = _mm256_or_pd(t_max_l, t_max_r);
-        let t_max = min_v(t_max_f);
-
-        0 != _mm_comilt_sd(t_min, t_max)
-    }*/
 }
 
 impl Default for BoundingBox {
