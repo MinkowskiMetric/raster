@@ -50,8 +50,8 @@ impl<Density: 'static + MediumDensity, Phase: 'static + Material, Child: Primiti
             let distance_2 = hit_result_2.distance().min(t_max);
 
             if distance_1 < distance_2 {
-                let internal_ray_origin = ray.origin + (ray.direction * distance_1);
-                let internal_ray = Ray::new(internal_ray_origin, ray.direction, ray.time);
+                let internal_ray_origin = ray.origin() + (ray.direction() * distance_1);
+                let internal_ray = Ray::new(internal_ray_origin, ray.direction(), ray.time());
                 let internal_ray_length = distance_2 - distance_1;
 
                 self.density
@@ -126,7 +126,11 @@ impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {
 
         Some(ScatterResult {
             partial: PartialScatterResult { attenuation },
-            scattered: Ray::new(hit_record.hit_point(), random_in_unit_sphere(), ray_in.time),
+            scattered: Ray::new(
+                hit_record.hit_point(),
+                random_in_unit_sphere(),
+                ray_in.time(),
+            ),
         })
     }
 }

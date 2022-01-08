@@ -61,7 +61,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["-w", "320", "-h", "240", "--scene=teapot", "--min-passes=100", "output/teapot.png"],
+            "args": ["-w", "320", "-h", "240", "--scene=teapot", "--min-passes=10", "--threads=1", "output/teapot.png"],
             "cwd": "${workspaceFolder}"
         },
         {

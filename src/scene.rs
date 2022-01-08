@@ -1,6 +1,6 @@
 use crate::Ray;
 use crate::{
-    math::*, sky::Sky, BoundingBox, Intersectable, Octree, SkinnedHitResult, TimeDependentBounded,
+    math::*, sky::Sky, BoundingBox, Intersectable, KDTree, SkinnedHitResult, TimeDependentBounded,
 };
 use crate::{Camera, PreparedCamera};
 use crate::{CompoundVisible, DynVisible, Visible};
@@ -24,7 +24,7 @@ impl Scene {
 pub struct PreparedScene {
     camera: PreparedCamera,
     sky: Sky,
-    root_volume: Octree<DynVisible>,
+    root_volume: KDTree<DynVisible>,
 }
 
 impl PreparedScene {
@@ -32,7 +32,7 @@ impl PreparedScene {
         Self {
             camera: PreparedCamera::make(scene.camera, t0, t1),
             sky: scene.sky,
-            root_volume: Octree::snapshot(scene.shapes, t0, t1),
+            root_volume: KDTree::snapshot(scene.shapes, t0, t1),
         }
     }
 

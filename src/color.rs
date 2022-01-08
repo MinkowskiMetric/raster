@@ -20,6 +20,7 @@ impl Color {
         self.0[3]
     }
 
+    #[must_use]
     pub fn gamma(self, power: FloatType) -> Self {
         Self([
             self.0[0].powf(1.0 / power),
@@ -29,6 +30,7 @@ impl Color {
         ])
     }
 
+    #[must_use]
     pub fn attenuate(self, attenuation: FloatType) -> Self {
         Self([
             self.0[0] * attenuation,

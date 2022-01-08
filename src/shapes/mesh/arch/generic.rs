@@ -53,7 +53,7 @@ pub mod mesh {
         triangles
             .iter()
             .filter_map(|triangle| {
-                let pvec = ray.direction.cross(triangle.v0v2);
+                let pvec = ray.direction().cross(triangle.v0v2);
                 let det = triangle.v0v1.dot(pvec);
 
                 if det.abs() < constants::EPSILON {
@@ -61,14 +61,14 @@ pub mod mesh {
                 }
 
                 let inv_det = 1.0 / det;
-                let tvec = ray.origin - triangle.v0;
+                let tvec = ray.origin() - triangle.v0;
                 let u = tvec.dot(pvec) * inv_det;
                 if !(0.0..=1.0).contains(&u) {
                     return None;
                 }
 
                 let qvec = tvec.cross(triangle.v0v1);
-                let v = ray.direction.dot(qvec) * inv_det;
+                let v = ray.direction().dot(qvec) * inv_det;
                 if v < 0.0 || u + v > 1.0 {
                     return None;
                 }

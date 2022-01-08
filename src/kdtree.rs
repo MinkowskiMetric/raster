@@ -5,17 +5,18 @@ use crate::{
     TimeDependentBounded,
 };
 use core::ops::Range;
-// How do we want the octree to work. Octree is only concerned with bounding. It does not require that it's contents be intersectable
+use std::mem::MaybeUninit;
+// How do we want the kd tree to work. KDTree is only concerned with bounding. It does not require that it's contents be intersectable
 
-// Octree snapshots the times when it is created and as such does not implement TimeDependentBounded. If you want to be time dependent
+// KDTree snapshots the times when it is created and as such does not implement TimeDependentBounded. If you want to be time dependent
 // then you can create a new snapshot.
-pub trait OctreeItemSource {
+pub trait KDTreeItemSource {
     type Item: TimeDependentBounded;
 
     fn into_boxed_slice(self) -> Box<[Self::Item]>;
 }
 
-impl<P: TimeDependentBounded> OctreeItemSource for Vec<P> {
+impl<P: TimeDependentBounded> KDTreeItemSource for Vec<P> {
     type Item = P;
 
     fn into_boxed_slice(self) -> Box<[Self::Item]> {
@@ -23,7 +24,7 @@ impl<P: TimeDependentBounded> OctreeItemSource for Vec<P> {
     }
 }
 
-impl OctreeItemSource for CompoundPrimitive {
+impl KDTreeItemSource for CompoundPrimitive {
     type Item = DynPrimitive;
 
     fn into_boxed_slice(self) -> Box<[Self::Item]> {
@@ -31,7 +32,7 @@ impl OctreeItemSource for CompoundPrimitive {
     }
 }
 
-impl OctreeItemSource for CompoundVisible {
+impl KDTreeItemSource for CompoundVisible {
     type Item = DynVisible;
 
     fn into_boxed_slice(self) -> Box<[Self::Item]> {
@@ -39,7 +40,7 @@ impl OctreeItemSource for CompoundVisible {
     }
 }
 
-impl<P: TimeDependentBounded> OctreeItemSource for Octree<P> {
+impl<P: TimeDependentBounded> KDTreeItemSource for KDTree<P> {
     type Item = P;
 
     fn into_boxed_slice(self) -> Box<[Self::Item]> {
@@ -55,7 +56,7 @@ enum SortAxis {
 }
 
 impl SortAxis {
-    pub fn read_axis(&self, p: &Point3) -> FloatType {
+    pub fn read_axis(&self, p: Point3) -> FloatType {
         match *self {
             SortAxis::X => p.x,
             SortAxis::Y => p.y,
@@ -82,10 +83,10 @@ impl SortAxis {
     }
 }
 
-struct OctreeEntry {
+struct KDTreeEntry {
     bounding_box: BoundingBox,
     range: std::ops::Range<usize>,
-    children: Option<Box<(OctreeEntry, OctreeEntry)>>,
+    children: Option<Box<(KDTreeEntry, KDTreeEntry)>>,
 }
 
 fn sort_and_divide<P: TimeDependentBounded>(
@@ -95,7 +96,7 @@ fn sort_and_divide<P: TimeDependentBounded>(
     group_size_hint: usize,
     t0: FloatType,
     t1: FloatType,
-) -> OctreeEntry {
+) -> KDTreeEntry {
     // Start by sorting the range
     items[range.clone()].sort_by(|l, r| {
         let l = l.time_dependent_bounding_box(t0, t1);
@@ -138,56 +139,87 @@ fn sort_and_divide<P: TimeDependentBounded>(
         Some(Box::new((left, right)))
     };
 
-    OctreeEntry {
+    KDTreeEntry {
         bounding_box,
         range: range.clone(),
         children,
     }
 }
 
-pub struct OctreeBlockIntersectIterator<'a, P: TimeDependentBounded> {
+// Since the KDTree is always perfectly balanced, a limit of 32 deep is enough
+// for 4 billion objects. This should be big enough, and avoids the need to allocate
+// on every ray intersection. If we exceed the size of this stack, we will panic
+const KDTREE_MAX_DEPTH: usize = 32;
+
+pub struct KDTreeBlockIntersectIterator<'a, P: TimeDependentBounded> {
     items: &'a [P],
-    work_stack: Vec<&'a OctreeEntry>,
+    work_stack: [MaybeUninit<&'a KDTreeEntry>; KDTREE_MAX_DEPTH],
+    work_stack_top: usize,
     intersection_tester: BoundingBoxIntersectionTester,
     t_min: FloatType,
     t_max: FloatType,
 }
 
-impl<'a, P: TimeDependentBounded> OctreeBlockIntersectIterator<'a, P> {
+impl<'a, P: TimeDependentBounded> KDTreeBlockIntersectIterator<'a, P> {
     fn new(
         items: &'a [P],
-        root: Option<&'a OctreeEntry>,
+        root: Option<&'a KDTreeEntry>,
         ray: &'a Ray,
         t_min: FloatType,
         t_max: FloatType,
     ) -> Self {
-        // Pre-allocating some space in the octree work stack allows us to
-        // avoid allocating during the octree walk, which speeds things up a bit
-        // in the general case. We can compute the worst case depth
-        // anyway. We add two to the log so that we round up and include the root node
-        let maximum_stack_depth = ((items.len() as f64).log2() + 2.0) as usize;
-
-        let mut work_stack = Vec::with_capacity(maximum_stack_depth);
+        let mut work_stack = MaybeUninit::uninit_array();
+        let mut work_stack_top = 0;
 
         if let Some(root) = root {
-            work_stack.push(root);
+            work_stack[0].write(root);
+            work_stack_top = 1;
         }
 
         Self {
             items,
             work_stack,
+            work_stack_top,
             intersection_tester: BoundingBoxIntersectionTester::new(ray),
             t_min,
             t_max,
         }
     }
+
+    fn push_work_stack(&mut self, entry: &'a KDTreeEntry) {
+        assert!(
+            self.work_stack_top < self.work_stack.len(),
+            "Work stack exceeds depth of {}",
+            KDTREE_MAX_DEPTH
+        );
+
+        self.work_stack[self.work_stack_top].write(entry);
+        self.work_stack_top += 1;
+    }
+
+    fn pop_work_stack(&mut self) -> Option<&'a KDTreeEntry> {
+        if self.work_stack_top > 0 {
+            self.work_stack_top -= 1;
+            Some(unsafe { self.work_stack[self.work_stack_top].assume_init() })
+        } else {
+            None
+        }
+    }
 }
 
-impl<'a, P: TimeDependentBounded> Iterator for OctreeBlockIntersectIterator<'a, P> {
+impl<'a, P: TimeDependentBounded> Drop for KDTreeBlockIntersectIterator<'a, P> {
+    fn drop(&mut self) {
+        for idx in 0..self.work_stack_top {
+            unsafe { self.work_stack[idx].assume_init_drop() };
+        }
+    }
+}
+
+impl<'a, P: TimeDependentBounded> Iterator for KDTreeBlockIntersectIterator<'a, P> {
     type Item = &'a [P];
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(top) = self.work_stack.pop() {
+        while let Some(top) = self.pop_work_stack() {
             // Check if the ray intersects the node
             if top.bounding_box.intersect_with_tester(
                 &self.intersection_tester,
@@ -196,8 +228,8 @@ impl<'a, P: TimeDependentBounded> Iterator for OctreeBlockIntersectIterator<'a, 
             ) {
                 if let Some((left, right)) = top.children.as_deref() {
                     // This is a branch node, so push its children
-                    self.work_stack.push(right);
-                    self.work_stack.push(left);
+                    self.push_work_stack(right);
+                    self.push_work_stack(left);
                 } else {
                     // This is a leaf node, so return it
                     return Some(&self.items[top.range.clone()]);
@@ -210,21 +242,21 @@ impl<'a, P: TimeDependentBounded> Iterator for OctreeBlockIntersectIterator<'a, 
     }
 }
 
-pub struct Octree<P: TimeDependentBounded> {
+pub struct KDTree<P: TimeDependentBounded> {
     items: Box<[P]>,
     time_range: (FloatType, FloatType),
-    octree: Option<OctreeEntry>,
+    kdtree: Option<KDTreeEntry>,
 }
 
-impl<P: TimeDependentBounded> Octree<P> {
-    pub fn snapshot_into_groups<Items: OctreeItemSource<Item = P>>(
+impl<P: TimeDependentBounded> KDTree<P> {
+    pub fn snapshot_into_groups<Items: KDTreeItemSource<Item = P>>(
         items: Items,
         group_size_hint: usize,
         t0: FloatType,
         t1: FloatType,
     ) -> Self {
         let mut items = items.into_boxed_slice();
-        let octree = if items.is_empty() {
+        let kdtree = if items.is_empty() {
             None
         } else {
             let range = 0..items.len();
@@ -241,10 +273,10 @@ impl<P: TimeDependentBounded> Octree<P> {
         Self {
             items,
             time_range: (t0, t1),
-            octree,
+            kdtree,
         }
     }
-    pub fn snapshot<Items: OctreeItemSource<Item = P>>(
+    pub fn snapshot<Items: KDTreeItemSource<Item = P>>(
         items: Items,
         t0: FloatType,
         t1: FloatType,
@@ -261,32 +293,32 @@ impl<P: TimeDependentBounded> Octree<P> {
     }
 }
 
-// We do not implement TimeDependentBounded for Octree. If you want a different time then you can always snapshot again
-impl<P: TimeDependentBounded> Bounded for Octree<P> {
+// We do not implement TimeDependentBounded for KDTree. If you want a different time then you can always snapshot again
+impl<P: TimeDependentBounded> Bounded for KDTree<P> {
     fn bounding_box(&self) -> BoundingBox {
-        self.octree
+        self.kdtree
             .as_ref()
             .map(|o| o.bounding_box)
             .unwrap_or_else(BoundingBox::empty_box)
     }
 }
 
-impl<P: TimeDependentBounded> Octree<P> {
+impl<P: TimeDependentBounded> KDTree<P> {
     pub fn intersecting_blocks<'a>(
         &'a self,
         ray: &'a Ray,
         t_min: FloatType,
         t_max: FloatType,
-    ) -> OctreeBlockIntersectIterator<'a, P> {
+    ) -> KDTreeBlockIntersectIterator<'a, P> {
         // If the ray time is out of range then we panic
         assert!(
-            ray.time >= self.min_time() && ray.time <= self.max_time(),
-            "Ray time is out of range for octree"
+            ray.time() >= self.min_time() && ray.time() <= self.max_time(),
+            "Ray time is out of range for kdtree"
         );
 
-        OctreeBlockIntersectIterator::new(
+        KDTreeBlockIntersectIterator::new(
             self.items.as_ref(),
-            self.octree.as_ref(),
+            self.kdtree.as_ref(),
             ray,
             t_min,
             t_max,
@@ -294,7 +326,7 @@ impl<P: TimeDependentBounded> Octree<P> {
     }
 }
 
-impl<P: TimeDependentBounded + Intersectable> Intersectable for Octree<P> {
+impl<P: TimeDependentBounded + Intersectable> Intersectable for KDTree<P> {
     type Result = P::Result;
 
     fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
@@ -305,11 +337,11 @@ impl<P: TimeDependentBounded + Intersectable> Intersectable for Octree<P> {
     }
 }
 
-impl<P: TimeDependentBounded + Intersectable> DefaultTransformable for Octree<P> {}
-impl<P: TimeDependentBounded + Intersectable> DefaultSkinnable for Octree<P> {}
+impl<P: TimeDependentBounded + Intersectable> DefaultTransformable for KDTree<P> {}
+impl<P: TimeDependentBounded + Intersectable> DefaultSkinnable for KDTree<P> {}
 
 impl<P: 'static + TimeDependentBounded + Intersectable<Result = GeometryHitResult> + Primitive>
-    Primitive for Octree<P>
+    Primitive for KDTree<P>
 {
     fn to_dyn_primitive(self) -> DynPrimitive {
         DynPrimitive::new(self)

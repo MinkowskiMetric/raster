@@ -26,7 +26,7 @@ impl<T: 'static + Texture + Clone> Material for Lambertian<T> {
             scattered: Ray::new(
                 hit_record.hit_point(),
                 target - hit_record.hit_point(),
-                ray_in.time,
+                ray_in.time(),
             ),
         })
     }

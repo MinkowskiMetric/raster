@@ -7,7 +7,10 @@ use crate::{
     ScatterResult, TracingStats,
 };
 use futures::future::join_all;
-use std::slice::{Chunks, ChunksMut};
+use std::{
+    mem::MaybeUninit,
+    slice::{Chunks, ChunksMut},
+};
 
 use std::convert::TryInto;
 use std::sync::{Arc, RwLock};
@@ -224,21 +227,22 @@ fn collapse_color_stack(mut stack: FixedSizeAttenuationStack<'_>, input_color: C
 }
 
 pub fn trace(ray: &Ray, scene: &PreparedScene) -> Color {
-    let mut attenuation_stack_data = [None; MAX_DEPTH];
+    let mut attenuation_stack_data: [_; MAX_DEPTH] = MaybeUninit::uninit_array();
     let mut attenuation_stack = FixedSizeAttenuationStack::new(&mut attenuation_stack_data);
 
     let mut current_ray = *ray;
 
     loop {
-        if attenuation_stack.len() >= MAX_DEPTH {
-            // We cannot recurse any further, there is no point doing another hit test
-            return collapse_color_stack(attenuation_stack, constants::BLACK);
-        } else if let Some(hit_result) = scene.intersect(&current_ray, 0.001, constants::INFINITY) {
+        if let Some(hit_result) = scene.intersect(&current_ray, 0.001, constants::INFINITY) {
             let (hit_result, material) = hit_result.split();
             let (emitted, scatter) = material.base_scatter(&current_ray, hit_result).split();
 
             if let Some(ScatterResult { partial, scattered }) = scatter {
-                attenuation_stack.push(ScatterStackRecord { partial, emitted });
+                if !attenuation_stack.try_push(ScatterStackRecord { partial, emitted }) {
+                    // We cannot recurse any further, so stop here and return black
+                    return collapse_color_stack(attenuation_stack, constants::BLACK);
+                }
+
                 current_ray = scattered;
             } else {
                 return collapse_color_stack(attenuation_stack, emitted);

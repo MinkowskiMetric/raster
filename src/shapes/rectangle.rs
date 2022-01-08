@@ -27,8 +27,8 @@ impl Intersectable for UnitXyRectangle {
         t_min: FloatType,
         t_max: FloatType,
     ) -> Option<GeometryHitResult> {
-        let ray_origin = ray.origin;
-        let ray_direction = ray.direction;
+        let ray_origin = ray.origin();
+        let ray_direction = ray.direction();
 
         let t = -ray_origin.z / ray_direction.z;
         if t < t_min || t > t_max {

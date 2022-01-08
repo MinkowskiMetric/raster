@@ -1,3 +1,6 @@
+#![feature(maybe_uninit_extra, maybe_uninit_uninit_array)]
+#![feature(portable_simd)]
+
 mod bounded;
 mod bounding_box;
 mod camera;
@@ -7,8 +10,8 @@ mod compound;
 mod fixed_size_stack;
 mod hit_result;
 mod intersectable;
+mod kdtree;
 mod materials;
-mod octree;
 mod perlin;
 mod ray;
 mod ray_scanner;
@@ -38,8 +41,8 @@ pub use hit_result::{
     WrappedIntersectResult,
 };
 pub use intersectable::{Intersectable, IntersectableIteratorOps};
+pub use kdtree::KDTree;
 pub use materials::{BaseMaterial, Material, PartialScatterResult, ScatterResult, SurfaceMapper};
-pub use octree::Octree;
 pub use ray::Ray;
 pub use ray_scanner::scan;
 pub use scene::Scene;
