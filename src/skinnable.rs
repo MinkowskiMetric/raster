@@ -1,6 +1,7 @@
 use crate::{
-    math::*, BaseMaterial, CompoundVisible, DynVisible, GeometryHitResult, IntersectResult,
-    Intersectable, Primitive, TimeDependentBounded, Transformable, Visible, WrappedIntersectResult,
+    math::*, BaseMaterial, CompoundVisible, DynVisible, IntersectResult, Primitive,
+    PrimitiveIntersection, SkinnedHitResult, TimeDependentBounded, Transformable, Visible,
+    VisibleIntersection, WrappedIntersectResult,
 };
 use std::sync::Arc;
 
@@ -11,7 +12,8 @@ pub trait Skinnable: Sized {
         self.apply_shared_material(Arc::new(material))
     }
 
-    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target;
+    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>)
+        -> Self::Target;
 }
 
 pub trait DefaultSkinnable {}
@@ -19,7 +21,10 @@ pub trait DefaultSkinnable {}
 impl<S: DefaultSkinnable> Skinnable for S {
     type Target = Skinned<S>;
 
-    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target {
+    fn apply_shared_material(
+        self,
+        material: Arc<(dyn BaseMaterial + Send + Sync)>,
+    ) -> Self::Target {
         Skinned::new(self, material)
     }
 }
@@ -46,20 +51,18 @@ impl<P> Skinned<P> {
         }
     }
 
-    pub fn split(self) -> (P, Arc<dyn BaseMaterial>) {
+    pub fn split(self) -> (P, Arc<(dyn BaseMaterial + Send + Sync)>) {
         (self.primitive, self.material)
     }
 }
 
-impl<P: Intersectable<Result = GeometryHitResult>> Intersectable for Skinned<P> {
-    type Result = <GeometryHitResult as Skinnable>::Target;
-
+impl<P: PrimitiveIntersection> VisibleIntersection for Skinned<P> {
     fn intersect(
         &self,
         ray: &crate::Ray,
         t_min: crate::math::FloatType,
         t_max: crate::math::FloatType,
-    ) -> Option<Self::Result> {
+    ) -> Option<SkinnedHitResult> {
         self.primitive
             .intersect(ray, t_min, t_max)
             .map(|hit_result| hit_result.apply_shared_material(self.material.clone()))
@@ -90,7 +93,10 @@ impl<P: Transformable> Transformable for Skinned<P> {
 impl<P> Skinnable for Skinned<P> {
     type Target = Self;
 
-    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target {
+    fn apply_shared_material(
+        self,
+        material: Arc<(dyn BaseMaterial + Send + Sync)>,
+    ) -> Self::Target {
         Self {
             primitive: self.primitive,
             material,
@@ -106,7 +112,9 @@ impl<P: IntersectResult> WrappedIntersectResult for Skinned<P> {
     }
 }
 
-impl<P: 'static + Intersectable + TimeDependentBounded + Primitive + Send + Sync> Visible for Skinned<P> {
+impl<P: 'static + PrimitiveIntersection + TimeDependentBounded + Primitive + Send + Sync> Visible
+    for Skinned<P>
+{
     fn to_dyn_visible(self) -> DynVisible {
         DynVisible::new(self)
     }

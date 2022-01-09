@@ -3,8 +3,8 @@ use crate::{
     math::*,
     scene::{PreparedScene, Scene},
     utils::*,
-    Color, Intersectable, PartialScatterResult, Ray, RenderStatsAccumulator, RenderStatsCollector,
-    ScatterResult, TracingStats,
+    Color, PartialScatterResult, Ray, RenderStatsAccumulator, RenderStatsCollector, ScatterResult,
+    TracingStats, VisibleIntersection,
 };
 use futures::future::join_all;
 use std::{

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::{
     math::*, BaseMaterial, BoundingBox, CompoundPrimitive, CompoundVisible, DynPrimitive,
-    DynVisible, GeometryHitResult, IntersectResult, Intersectable, Primitive, Ray, Skinnable,
-    SkinnedHitResult, TimeDependentBounded, Visible,
+    DynVisible, GeometryHitResult, Primitive, PrimitiveIntersection, Ray, Skinnable,
+    SkinnedHitResult, TimeDependentBounded, Visible, VisibleIntersection,
 };
 
 trait GeometryTransform {
@@ -90,20 +90,34 @@ impl<P: Clone> Clone for Transformed<P> {
     }
 }
 
-impl<R: IntersectResult + Transformable, P: Intersectable<Result = R>> Intersectable
-    for Transformed<P>
-where
-    <R as Transformable>::Target: IntersectResult,
-{
-    type Result = <R as Transformable>::Target;
-
-    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
+impl<P: PrimitiveIntersection> PrimitiveIntersection for Transformed<P> {
+    fn intersect(
+        &self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> Option<GeometryHitResult> {
         let instant = self.transform.transform_at_t(ray.time());
         let transformed_ray = ray.core_transform(&instant.transform, &instant.inverse);
 
         self.primitive
             .intersect(&transformed_ray, t_min, t_max)
             .map(|hit_result| hit_result.core_transform(&instant.transform, &instant.inverse))
+    }
+}
+
+impl<P: VisibleIntersection> VisibleIntersection for Transformed<P> {
+    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<SkinnedHitResult> {
+        let instant = self.transform.transform_at_t(ray.time());
+        let transformed_ray = ray.core_transform(&instant.transform, &instant.inverse);
+
+        self.primitive
+            .intersect(&transformed_ray, t_min, t_max)
+            .map(|hit_result| {
+                let (hit_result, material) = hit_result.split();
+                let hit_result = hit_result.core_transform(&instant.transform, &instant.inverse);
+                SkinnedHitResult::new(hit_result, material)
+            })
     }
 }
 
@@ -136,7 +150,10 @@ impl<P> Transformable for Transformed<P> {
 impl<P: Skinnable> Skinnable for Transformed<P> {
     type Target = Transformed<P::Target>;
 
-    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target {
+    fn apply_shared_material(
+        self,
+        material: Arc<(dyn BaseMaterial + Send + Sync)>,
+    ) -> Self::Target {
         Transformed {
             primitive: self.primitive.apply_shared_material(material),
             transform: self.transform,
@@ -144,8 +161,8 @@ impl<P: Skinnable> Skinnable for Transformed<P> {
     }
 }
 
-impl<P: 'static + Intersectable<Result = GeometryHitResult> + TimeDependentBounded + Primitive>
-    Primitive for Transformed<P>
+impl<P: 'static + PrimitiveIntersection + TimeDependentBounded + Primitive> Primitive
+    for Transformed<P>
 {
     fn to_dyn_primitive(self) -> DynPrimitive {
         DynPrimitive::new(self)
@@ -169,9 +186,7 @@ impl<P: 'static + Intersectable<Result = GeometryHitResult> + TimeDependentBound
     }
 }
 
-impl<P: 'static + Intersectable<Result = SkinnedHitResult> + TimeDependentBounded + Visible> Visible
-    for Transformed<P>
-{
+impl<P: 'static + VisibleIntersection + TimeDependentBounded + Visible> Visible for Transformed<P> {
     fn to_dyn_visible(self) -> DynVisible {
         DynVisible::new(self)
     }

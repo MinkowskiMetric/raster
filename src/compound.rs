@@ -1,6 +1,6 @@
 use crate::{
     math::*, DefaultSkinnable, DefaultTransformable, GeometryHitResult, IntersectResultIteratorOps,
-    Intersectable, Ray, SkinnedHitResult, TimeDependentBounded,
+    PrimitiveIntersection, Ray, SkinnedHitResult, TimeDependentBounded, VisibleIntersection,
 };
 use core::iter::FromIterator;
 use std::sync::Arc;
@@ -24,19 +24,13 @@ macro_rules! compound_primitive [
 ];
 
 // Start off by defining dynamic types for primitives and visible objects
-pub trait Primitive: Intersectable<Result = GeometryHitResult> + TimeDependentBounded + Send + Sync {
+pub trait Primitive: PrimitiveIntersection + TimeDependentBounded + Send + Sync {
     fn to_dyn_primitive(self) -> DynPrimitive;
     fn decompose_box(self: Box<Self>) -> CompoundPrimitive;
     fn decompose(self) -> CompoundPrimitive;
 }
 
-impl<
-        P: 'static
-            + Intersectable<Result = GeometryHitResult>
-            + TimeDependentBounded
-            + DefaultPrimitive,
-    > Primitive for P
-{
+impl<P: 'static + PrimitiveIntersection + TimeDependentBounded + DefaultPrimitive> Primitive for P {
     fn to_dyn_primitive(self) -> DynPrimitive {
         DynPrimitive::new(self)
     }
@@ -50,10 +44,7 @@ impl<
     }
 }
 
-pub trait DefaultPrimitive:
-    Intersectable<Result = GeometryHitResult> + TimeDependentBounded + Send + Sync
-{
-}
+pub trait DefaultPrimitive: PrimitiveIntersection + TimeDependentBounded + Send + Sync {}
 
 pub struct DynPrimitive(Box<dyn Primitive>);
 
@@ -63,15 +54,13 @@ impl DynPrimitive {
     }
 }
 
-impl Intersectable for DynPrimitive {
-    type Result = GeometryHitResult;
-
+impl PrimitiveIntersection for DynPrimitive {
     fn intersect(
         &self,
-        ray: &crate::Ray,
-        t_min: crate::math::FloatType,
-        t_max: crate::math::FloatType,
-    ) -> Option<Self::Result> {
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> Option<GeometryHitResult> {
         self.0.as_ref().intersect(ray, t_min, t_max)
     }
 }
@@ -111,15 +100,13 @@ impl SharedPrimitive {
     }
 }
 
-impl Intersectable for SharedPrimitive {
-    type Result = GeometryHitResult;
-
+impl PrimitiveIntersection for SharedPrimitive {
     fn intersect(
         &self,
-        ray: &crate::Ray,
-        t_min: crate::math::FloatType,
-        t_max: crate::math::FloatType,
-    ) -> Option<Self::Result> {
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> Option<GeometryHitResult> {
         self.0.intersect(ray, t_min, t_max)
     }
 }
@@ -151,13 +138,13 @@ impl Primitive for SharedPrimitive {
 impl DefaultTransformable for SharedPrimitive {}
 impl DefaultSkinnable for SharedPrimitive {}
 
-pub trait Visible: Intersectable<Result = SkinnedHitResult> + TimeDependentBounded + Send + Sync {
+pub trait Visible: VisibleIntersection + TimeDependentBounded + Send + Sync {
     fn to_dyn_visible(self) -> DynVisible;
     fn decompose_box(self: Box<Self>) -> CompoundVisible;
     fn decompose(self) -> CompoundVisible;
 }
 
-pub trait DefaultVisible: Intersectable<Result = SkinnedHitResult> + TimeDependentBounded + Send + Sync {}
+pub trait DefaultVisible: VisibleIntersection + TimeDependentBounded + Send + Sync {}
 
 pub struct DynVisible(Box<dyn Visible>);
 
@@ -167,10 +154,7 @@ impl DynVisible {
     }
 }
 
-impl<
-        P: 'static + Intersectable<Result = SkinnedHitResult> + TimeDependentBounded + DefaultVisible,
-    > Visible for P
-{
+impl<P: 'static + VisibleIntersection + TimeDependentBounded + DefaultVisible> Visible for P {
     fn to_dyn_visible(self) -> DynVisible {
         DynVisible::new(self)
     }
@@ -184,11 +168,9 @@ impl<
     }
 }
 
-impl Intersectable for DynVisible {
-    type Result = SkinnedHitResult;
-
-    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
-        self.0.as_ref().intersect(ray, t_min, t_max)
+impl VisibleIntersection for DynVisible {
+    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<SkinnedHitResult> {
+        self.0.intersect(ray, t_min, t_max)
     }
 }
 
@@ -239,10 +221,13 @@ impl CompoundPrimitive {
     }
 }
 
-impl Intersectable for CompoundPrimitive {
-    type Result = GeometryHitResult;
-
-    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
+impl PrimitiveIntersection for CompoundPrimitive {
+    fn intersect(
+        &self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> Option<GeometryHitResult> {
         self.iter()
             .filter_map(|i| i.intersect(ray, t_min, t_max))
             .nearest()
@@ -324,10 +309,8 @@ impl CompoundVisible {
     }
 }
 
-impl Intersectable for CompoundVisible {
-    type Result = SkinnedHitResult;
-
-    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
+impl VisibleIntersection for CompoundVisible {
+    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<SkinnedHitResult> {
         self.iter()
             .filter_map(|i| i.intersect(ray, t_min, t_max))
             .nearest()

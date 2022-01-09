@@ -1,7 +1,7 @@
 use crate::{
-    math::*, utils::*, BoundingBox, DefaultVisible, GeometryHitResult, IntersectResult,
-    Intersectable, Material, PartialScatterResult, Primitive, Ray, ScatterResult, SkinnedHitResult,
-    Texture, TimeDependentBounded,
+    math::*, utils::*, BoundingBox, DefaultVisible, GeometryHitResult, IntersectResult, Material,
+    PartialScatterResult, Primitive, Ray, ScatterResult, SkinnedHitResult, Texture,
+    TimeDependentBounded, VisibleIntersection,
 };
 use std::sync::Arc;
 
@@ -39,11 +39,12 @@ impl<Density: MediumDensity, Phase: Material, Child: Primitive> Medium<Density, 
     }
 }
 
-impl<Density: 'static + MediumDensity, Phase: 'static + Material + Send + Sync, Child: Primitive> Intersectable
-    for Medium<Density, Phase, Child>
+impl<
+        Density: 'static + MediumDensity,
+        Phase: 'static + Material + Send + Sync,
+        Child: Primitive,
+    > VisibleIntersection for Medium<Density, Phase, Child>
 {
-    type Result = SkinnedHitResult;
-
     fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<SkinnedHitResult> {
         if let Some((hit_result_1, hit_result_2)) = self.double_intersect(ray) {
             let distance_1 = hit_result_1.distance().max(t_min).max(0.0);
@@ -86,8 +87,11 @@ impl<Density: 'static + MediumDensity, Phase: 'static + Material, Child: Primiti
     }
 }
 
-impl<Density: 'static + MediumDensity + Send + Sync, Phase: 'static + Material + Send + Sync, Child: Primitive> DefaultVisible
-    for Medium<Density, Phase, Child>
+impl<
+        Density: 'static + MediumDensity + Send + Sync,
+        Phase: 'static + Material + Send + Sync,
+        Child: Primitive,
+    > DefaultVisible for Medium<Density, Phase, Child>
 {
 }
 

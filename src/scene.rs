@@ -1,9 +1,7 @@
-use crate::Ray;
-use crate::{
-    math::*, sky::Sky, BoundingBox, Intersectable, KDTree, SkinnedHitResult, TimeDependentBounded,
-};
+use crate::{math::*, sky::Sky, BoundingBox, KDTree, SkinnedHitResult, TimeDependentBounded};
 use crate::{Camera, PreparedCamera};
 use crate::{CompoundVisible, DynVisible, Visible};
+use crate::{Ray, VisibleIntersection};
 
 pub struct Scene {
     camera: Camera,
@@ -45,9 +43,7 @@ impl PreparedScene {
     }
 }
 
-impl Intersectable for PreparedScene {
-    type Result = SkinnedHitResult;
-
+impl VisibleIntersection for PreparedScene {
     fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<SkinnedHitResult> {
         self.root_volume.intersect(ray, t_min, t_max)
     }

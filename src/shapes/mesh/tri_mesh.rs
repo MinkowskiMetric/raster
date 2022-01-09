@@ -1,7 +1,7 @@
 use super::TriangleVertex;
 use crate::{
     math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
-    GeometryHitResult, Intersectable, KDTree, Ray,
+    GeometryHitResult, KDTree, PrimitiveIntersection, Ray,
 };
 use anyhow::{anyhow, Result};
 use std::iter::FromIterator;
@@ -243,9 +243,7 @@ impl TriangleMesh {
     }
 }
 
-impl Intersectable for TriangleMesh {
-    type Result = GeometryHitResult;
-
+impl PrimitiveIntersection for TriangleMesh {
     fn intersect(
         &self,
         ray: &Ray,

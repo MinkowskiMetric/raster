@@ -1,6 +1,6 @@
 use crate::{
     math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
-    GeometryHitResult, Intersectable, Ray,
+    GeometryHitResult, PrimitiveIntersection, Ray,
 };
 
 #[derive(Debug, Clone)]
@@ -10,9 +10,7 @@ pub struct ParabolaXY {
     pr: FloatType,
 }
 
-impl Intersectable for ParabolaXY {
-    type Result = GeometryHitResult;
-
+impl PrimitiveIntersection for ParabolaXY {
     fn intersect(
         &self,
         ray: &Ray,

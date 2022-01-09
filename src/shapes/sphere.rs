@@ -1,6 +1,6 @@
 use crate::{
     math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
-    GeometryHitResult, Intersectable, Ray, TimeDependentBounded,
+    GeometryHitResult, PrimitiveIntersection, Ray, TimeDependentBounded,
 };
 
 fn get_sphere_uv(p: Vector3) -> Point2 {
@@ -124,9 +124,7 @@ impl Sphere {
     }*/
 }
 
-impl Intersectable for Sphere {
-    type Result = GeometryHitResult;
-
+impl PrimitiveIntersection for Sphere {
     fn intersect(
         &self,
         ray: &Ray,
@@ -362,9 +360,7 @@ impl MovingSphere {
     }*/
 }
 
-impl Intersectable for MovingSphere {
-    type Result = GeometryHitResult;
-
+impl PrimitiveIntersection for MovingSphere {
     fn intersect(
         &self,
         ray: &Ray,

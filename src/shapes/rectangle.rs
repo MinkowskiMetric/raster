@@ -1,6 +1,6 @@
 use crate::{
     math::*, Bounded, BoundingBox, DefaultPrimitive, DefaultSkinnable, DefaultTransformable,
-    GeometryHitResult, Intersectable, Ray, Transformable,
+    GeometryHitResult, PrimitiveIntersection, Ray, Transformable,
 };
 
 #[derive(Debug, Clone)]
@@ -18,9 +18,7 @@ impl Default for UnitXyRectangle {
     }
 }
 
-impl Intersectable for UnitXyRectangle {
-    type Result = GeometryHitResult;
-
+impl PrimitiveIntersection for UnitXyRectangle {
     fn intersect(
         &self,
         ray: &Ray,

@@ -1,8 +1,8 @@
 use crate::{
     math::*, Bounded, BoundingBox, BoundingBoxIntersectionTester, CompoundPrimitive,
     CompoundVisible, DefaultSkinnable, DefaultTransformable, DynPrimitive, DynVisible,
-    GeometryHitResult, IntersectResultIteratorOps, Intersectable, Primitive, Ray,
-    TimeDependentBounded,
+    GeometryHitResult, IntersectResultIteratorOps, Primitive, PrimitiveIntersection, Ray,
+    SkinnedHitResult, TimeDependentBounded, VisibleIntersection,
 };
 use core::ops::Range;
 use std::mem::MaybeUninit;
@@ -326,10 +326,13 @@ impl<P: TimeDependentBounded> KDTree<P> {
     }
 }
 
-impl<P: TimeDependentBounded + Intersectable> Intersectable for KDTree<P> {
-    type Result = P::Result;
-
-    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result> {
+impl<P: TimeDependentBounded + PrimitiveIntersection> PrimitiveIntersection for KDTree<P> {
+    fn intersect(
+        &self,
+        ray: &Ray,
+        t_min: FloatType,
+        t_max: FloatType,
+    ) -> Option<GeometryHitResult> {
         self.intersecting_blocks(ray, t_min, t_max)
             .flat_map(|f| f.iter())
             .filter_map(|i| i.intersect(ray, t_min, t_max))
@@ -337,11 +340,20 @@ impl<P: TimeDependentBounded + Intersectable> Intersectable for KDTree<P> {
     }
 }
 
-impl<P: TimeDependentBounded + Intersectable> DefaultTransformable for KDTree<P> {}
-impl<P: TimeDependentBounded + Intersectable> DefaultSkinnable for KDTree<P> {}
+impl<P: TimeDependentBounded + VisibleIntersection> VisibleIntersection for KDTree<P> {
+    fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<SkinnedHitResult> {
+        self.intersecting_blocks(ray, t_min, t_max)
+            .flat_map(|f| f.iter())
+            .filter_map(|i| i.intersect(ray, t_min, t_max))
+            .nearest()
+    }
+}
 
-impl<P: 'static + TimeDependentBounded + Intersectable<Result = GeometryHitResult> + Primitive>
-    Primitive for KDTree<P>
+impl<P: TimeDependentBounded + PrimitiveIntersection> DefaultTransformable for KDTree<P> {}
+impl<P: TimeDependentBounded + PrimitiveIntersection> DefaultSkinnable for KDTree<P> {}
+
+impl<P: 'static + TimeDependentBounded + PrimitiveIntersection + Primitive> Primitive
+    for KDTree<P>
 {
     fn to_dyn_primitive(self) -> DynPrimitive {
         DynPrimitive::new(self)

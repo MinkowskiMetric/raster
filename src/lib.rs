@@ -40,7 +40,7 @@ pub use hit_result::{
     GeometryHitResult, IntersectResult, IntersectResultIteratorOps, SkinnedHitResult,
     WrappedIntersectResult,
 };
-pub use intersectable::{Intersectable, IntersectableIteratorOps};
+pub use intersectable::{PrimitiveIntersection, VisibleIntersection};
 pub use kdtree::KDTree;
 pub use materials::{BaseMaterial, Material, PartialScatterResult, ScatterResult, SurfaceMapper};
 pub use ray::Ray;
