@@ -1,6 +1,6 @@
 use crate::{math::*, IntersectResult, IntersectResultIteratorOps, Ray};
 
-pub trait Intersectable: Send + Sync {
+pub trait Intersectable {
     type Result: IntersectResult;
 
     fn intersect(&self, ray: &Ray, t_min: FloatType, t_max: FloatType) -> Option<Self::Result>;

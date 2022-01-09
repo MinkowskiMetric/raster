@@ -136,7 +136,7 @@ impl<P> Transformable for Transformed<P> {
 impl<P: Skinnable> Skinnable for Transformed<P> {
     type Target = Transformed<P::Target>;
 
-    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target {
+    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target {
         Transformed {
             primitive: self.primitive.apply_shared_material(material),
             transform: self.transform,

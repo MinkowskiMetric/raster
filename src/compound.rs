@@ -24,7 +24,7 @@ macro_rules! compound_primitive [
 ];
 
 // Start off by defining dynamic types for primitives and visible objects
-pub trait Primitive: Intersectable<Result = GeometryHitResult> + TimeDependentBounded {
+pub trait Primitive: Intersectable<Result = GeometryHitResult> + TimeDependentBounded + Send + Sync {
     fn to_dyn_primitive(self) -> DynPrimitive;
     fn decompose_box(self: Box<Self>) -> CompoundPrimitive;
     fn decompose(self) -> CompoundPrimitive;
@@ -51,7 +51,7 @@ impl<
 }
 
 pub trait DefaultPrimitive:
-    Intersectable<Result = GeometryHitResult> + TimeDependentBounded
+    Intersectable<Result = GeometryHitResult> + TimeDependentBounded + Send + Sync
 {
 }
 
@@ -151,13 +151,13 @@ impl Primitive for SharedPrimitive {
 impl DefaultTransformable for SharedPrimitive {}
 impl DefaultSkinnable for SharedPrimitive {}
 
-pub trait Visible: Intersectable<Result = SkinnedHitResult> + TimeDependentBounded {
+pub trait Visible: Intersectable<Result = SkinnedHitResult> + TimeDependentBounded + Send + Sync {
     fn to_dyn_visible(self) -> DynVisible;
     fn decompose_box(self: Box<Self>) -> CompoundVisible;
     fn decompose(self) -> CompoundVisible;
 }
 
-pub trait DefaultVisible: Intersectable<Result = SkinnedHitResult> + TimeDependentBounded {}
+pub trait DefaultVisible: Intersectable<Result = SkinnedHitResult> + TimeDependentBounded + Send + Sync {}
 
 pub struct DynVisible(Box<dyn Visible>);
 

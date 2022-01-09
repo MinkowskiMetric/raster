@@ -23,7 +23,7 @@ impl BaseMaterialScatterResult {
     }
 }
 
-pub trait BaseMaterial: Sync + Send + std::fmt::Debug {
+pub trait BaseMaterial {
     fn base_scatter(
         &self,
         ray_in: &Ray,
@@ -31,7 +31,7 @@ pub trait BaseMaterial: Sync + Send + std::fmt::Debug {
     ) -> BaseMaterialScatterResult;
 }
 
-pub trait Material: Sync + Send + std::fmt::Debug {
+pub trait Material {
     fn scatter(&self, ray_in: &Ray, hit_record: GeometryHitResult) -> Option<ScatterResult>;
 
     fn emitted(&self, _p: Point3, _uv: Point2) -> Color {

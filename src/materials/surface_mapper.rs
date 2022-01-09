@@ -1,6 +1,6 @@
 use crate::{math::*, Color, GeometryHitResult, Material, Ray, ScatterResult};
 
-pub trait SurfaceMapper: Send + Sync + std::fmt::Debug {
+pub trait SurfaceMapper {
     fn process_hit_result(&self, hit_result: GeometryHitResult) -> GeometryHitResult;
     fn process_scatter_result(&self, scatter_result: ScatterResult) -> ScatterResult {
         scatter_result

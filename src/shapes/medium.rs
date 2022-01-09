@@ -5,7 +5,7 @@ use crate::{
 };
 use std::sync::Arc;
 
-pub trait MediumDensity: Send + Sync + std::fmt::Debug {
+pub trait MediumDensity {
     fn does_scatter(&self, ray: Ray, ray_length: FloatType) -> Option<FloatType>;
 }
 
@@ -39,7 +39,7 @@ impl<Density: MediumDensity, Phase: Material, Child: Primitive> Medium<Density, 
     }
 }
 
-impl<Density: 'static + MediumDensity, Phase: 'static + Material, Child: Primitive> Intersectable
+impl<Density: 'static + MediumDensity, Phase: 'static + Material + Send + Sync, Child: Primitive> Intersectable
     for Medium<Density, Phase, Child>
 {
     type Result = SkinnedHitResult;
@@ -86,7 +86,7 @@ impl<Density: 'static + MediumDensity, Phase: 'static + Material, Child: Primiti
     }
 }
 
-impl<Density: 'static + MediumDensity, Phase: 'static + Material, Child: Primitive> DefaultVisible
+impl<Density: 'static + MediumDensity + Send + Sync, Phase: 'static + Material + Send + Sync, Child: Primitive> DefaultVisible
     for Medium<Density, Phase, Child>
 {
 }
@@ -115,7 +115,6 @@ impl MediumDensity for ConstantDensity {
     }
 }
 
-#[derive(Debug)]
 pub struct Isotropic<Albedo: Texture>(Albedo);
 
 impl<Albedo: Texture + Clone> Material for Isotropic<Albedo> {

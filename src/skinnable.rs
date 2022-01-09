@@ -7,11 +7,11 @@ use std::sync::Arc;
 pub trait Skinnable: Sized {
     type Target;
 
-    fn apply_material<M: 'static + BaseMaterial>(self, material: M) -> Self::Target {
+    fn apply_material<M: 'static + BaseMaterial + Send + Sync>(self, material: M) -> Self::Target {
         self.apply_shared_material(Arc::new(material))
     }
 
-    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target;
+    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target;
 }
 
 pub trait DefaultSkinnable {}
@@ -19,14 +19,14 @@ pub trait DefaultSkinnable {}
 impl<S: DefaultSkinnable> Skinnable for S {
     type Target = Skinned<S>;
 
-    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target {
+    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target {
         Skinned::new(self, material)
     }
 }
 
 pub struct Skinned<P> {
     primitive: P,
-    material: Arc<dyn BaseMaterial>,
+    material: Arc<(dyn BaseMaterial + Send + Sync)>,
 }
 
 impl<P: Clone> Clone for Skinned<P> {
@@ -39,7 +39,7 @@ impl<P: Clone> Clone for Skinned<P> {
 }
 
 impl<P> Skinned<P> {
-    pub fn new(primitive: P, material: Arc<dyn BaseMaterial>) -> Self {
+    pub fn new(primitive: P, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self {
         Self {
             primitive,
             material,
@@ -90,7 +90,7 @@ impl<P: Transformable> Transformable for Skinned<P> {
 impl<P> Skinnable for Skinned<P> {
     type Target = Self;
 
-    fn apply_shared_material(self, material: Arc<dyn BaseMaterial>) -> Self::Target {
+    fn apply_shared_material(self, material: Arc<(dyn BaseMaterial + Send + Sync)>) -> Self::Target {
         Self {
             primitive: self.primitive,
             material,
@@ -106,7 +106,7 @@ impl<P: IntersectResult> WrappedIntersectResult for Skinned<P> {
     }
 }
 
-impl<P: 'static + Intersectable + TimeDependentBounded + Primitive> Visible for Skinned<P> {
+impl<P: 'static + Intersectable + TimeDependentBounded + Primitive + Send + Sync> Visible for Skinned<P> {
     fn to_dyn_visible(self) -> DynVisible {
         DynVisible::new(self)
     }
