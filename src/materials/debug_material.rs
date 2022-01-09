@@ -43,7 +43,7 @@ impl BaseMaterial for DebugMaterial {
             }
 
             Self::Bitangent => {
-                let bitangent = hit_record.bitangent();
+                let bitangent = hit_record.surface_normal().cross(hit_record.tangent());
                 Color([
                     (bitangent.x + 1.0) / 2.0,
                     (bitangent.y + 1.0) / 2.0,

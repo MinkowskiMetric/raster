@@ -54,14 +54,11 @@ impl Intersectable for UnitXyRectangle {
             -outward_normal
         };
 
-        let bitangent = surface_normal.cross(tangent);
-
         Some(GeometryHitResult::new(
             ray,
             t,
             surface_normal,
             tangent,
-            bitangent,
             front_face,
             point2(u, v),
         ))

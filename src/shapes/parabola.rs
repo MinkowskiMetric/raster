@@ -139,10 +139,7 @@ impl Intersectable for ParabolaXY {
             -outward_normal
         };
 
-        // We can work out the tangent from the bitangent, and we can get the bitangent from the axial vector and the normal
-        // because it is at right angles to them
         let tangent = (-radial_point).cross(outward_normal);
-        let bitangent = outward_normal.cross(tangent);
 
         let uv = point2(radial_point.magnitude() / self.pr, 0.0); // TODOTODOTODO - could use the angle
 
@@ -151,7 +148,6 @@ impl Intersectable for ParabolaXY {
             t,
             surface_normal,
             tangent,
-            bitangent,
             front_face,
             uv,
         ))

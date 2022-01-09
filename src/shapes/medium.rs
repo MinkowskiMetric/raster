@@ -63,7 +63,6 @@ impl<Density: 'static + MediumDensity, Phase: 'static + Material, Child: Primiti
                                 scatter_distance + distance_1,
                                 vec3(1.0, 0.0, 0.0), // arbitrary
                                 vec3(0.0, 1.0, 0.0), // arbitrary
-                                vec3(0.0, 0.0, 1.0), // arbitrary
                                 true,                // also arbitrary
                                 point2(0.0, 0.0),
                             ),

@@ -303,14 +303,13 @@ impl Intersectable for TriangleMesh {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 // texture coordinates
                 let uv = (1.0 - u - v) * uv0;
                 let uv = uv.add_element_wise(u * uv1);
                 let uv = uv.add_element_wise(v * uv2);
 
-                GeometryHitResult::new(ray, t, surface_normal, tangent, bitangent, front_face, uv)
+                GeometryHitResult::new(ray, t, surface_normal, tangent, front_face, uv)
             })
     }
 }
@@ -412,7 +411,6 @@ mod test {
         assert_eq!(intersection.hit_point(), point3(0.5, 0.5, 0.0));
         assert_eq!(intersection.surface_normal(), vec3(0.0, 0.0, -1.0));
         assert_eq!(intersection.tangent(), vec3(0.0, 1.0, 0.0));
-        assert_eq!(intersection.bitangent(), vec3(-1.0, 0.0, 0.0));
 
         let intersection = one_tri.intersect(
             &Ray::new(Point3::new(1.5, 1.5, -10.0), vec3(0.0, 0.0, 1.0), 0.0),
@@ -447,7 +445,6 @@ mod test {
         assert_eq!(intersection.hit_point(), point3(0.5, 0.5, 0.0));
         assert_eq!(intersection.surface_normal(), vec3(0.0, 0.0, -1.0));
         assert_eq!(intersection.tangent(), vec3(0.0, 1.0, 0.0));
-        assert_eq!(intersection.bitangent(), vec3(-1.0, 0.0, 0.0));
 
         let intersection = one_tri.intersect(
             &Ray::new(Point3::new(1.5, 0.5, -10.0), vec3(0.0, 0.0, 1.0), 0.0),

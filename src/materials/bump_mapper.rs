@@ -16,9 +16,9 @@ impl<T: Texture + Clone> Clone for BumpMapper<T> {
 
 impl<T: Texture> SurfaceMapper for BumpMapper<T> {
     fn process_hit_result(&self, mut hit_result: GeometryHitResult) -> GeometryHitResult {
-        let t = hit_result.tangent();
-        let b = hit_result.bitangent();
-        let n = hit_result.surface_normal();
+        let t = hit_result.tangent().normalize();
+        let n = hit_result.surface_normal().normalize();
+        let b = n.cross(t);
 
         let tbn = cgmath::Matrix3 { x: t, y: b, z: n };
 

@@ -80,7 +80,6 @@ impl Sphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -89,7 +88,6 @@ impl Sphere {
                     hit_point,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -108,7 +106,6 @@ impl Sphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -117,7 +114,6 @@ impl Sphere {
                     hit_point,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -158,7 +154,6 @@ impl Intersectable for Sphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - self.center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -167,7 +162,6 @@ impl Intersectable for Sphere {
                     temp,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -187,7 +181,6 @@ impl Intersectable for Sphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - self.center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -196,7 +189,6 @@ impl Intersectable for Sphere {
                     temp,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -326,7 +318,6 @@ impl MovingSphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -335,7 +326,6 @@ impl MovingSphere {
                     hit_point,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -354,7 +344,6 @@ impl MovingSphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -363,7 +352,6 @@ impl MovingSphere {
                     hit_point,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -403,7 +391,6 @@ impl Intersectable for MovingSphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -412,7 +399,6 @@ impl Intersectable for MovingSphere {
                     temp,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -430,7 +416,6 @@ impl Intersectable for MovingSphere {
                 } else {
                     -outward_normal
                 };
-                let bitangent = outward_normal.cross(tangent).normalize();
 
                 let normalized_hitpoint = (hit_point - center) / self.radius;
                 let uv = get_sphere_uv(normalized_hitpoint);
@@ -439,7 +424,6 @@ impl Intersectable for MovingSphere {
                     temp,
                     surface_normal,
                     tangent,
-                    bitangent,
                     front_face,
                     uv,
                 ));
@@ -526,6 +510,5 @@ mod test {
         assert_eq!(result.hit_point(), Point3::new(0.0, 0.0, -1.0));
         assert_eq!(result.surface_normal(), vec3(0.0, 0.0, -1.0));
         assert_eq!(result.tangent(), vec3(-1.0, 0.0, 0.0));
-        assert_eq!(result.bitangent(), vec3(0.0, 1.0, 0.0));
     }
 }

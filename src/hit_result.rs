@@ -6,7 +6,6 @@ pub trait IntersectResult {
     fn hit_point(&self) -> Point3;
     fn surface_normal(&self) -> Vector3;
     fn tangent(&self) -> Vector3;
-    fn bitangent(&self) -> Vector3;
     fn front_face(&self) -> bool;
     fn uv(&self) -> Point2;
 }
@@ -36,10 +35,6 @@ impl<I: WrappedIntersectResult> IntersectResult for I {
 
     fn tangent(&self) -> Vector3 {
         self.intersect_result().tangent()
-    }
-
-    fn bitangent(&self) -> Vector3 {
-        self.intersect_result().bitangent()
     }
 
     fn front_face(&self) -> bool {
@@ -80,7 +75,6 @@ pub struct GeometryHitResult {
     pub hit_point: Point3,
     pub surface_normal: Vector3,
     pub tangent: Vector3,
-    pub bitangent: Vector3,
     pub front_face: bool,
     pub uv: Point2,
 }
@@ -91,7 +85,6 @@ impl GeometryHitResult {
         distance: FloatType,
         surface_normal: Vector3,
         tangent: Vector3,
-        bitangent: Vector3,
         front_face: bool,
         uv: Point2,
     ) -> Self {
@@ -102,7 +95,6 @@ impl GeometryHitResult {
             distance,
             surface_normal,
             tangent,
-            bitangent,
             front_face,
             uv,
         }
@@ -130,10 +122,6 @@ impl IntersectResult for GeometryHitResult {
         self.tangent
     }
 
-    fn bitangent(&self) -> Vector3 {
-        self.bitangent
-    }
-
     fn front_face(&self) -> bool {
         self.front_face
     }
@@ -153,7 +141,6 @@ impl Transformable for GeometryHitResult {
         self.distance = (self.hit_point - self.ray_origin).magnitude();
         self.surface_normal = transform.transform_vector(self.surface_normal).normalize();
         self.tangent = transform.transform_vector(self.tangent).normalize();
-        self.bitangent = transform.transform_vector(self.bitangent).normalize();
 
         self
     }
