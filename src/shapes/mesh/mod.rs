@@ -1,5 +1,3 @@
-mod arch;
-
 mod obj_file;
 mod tri_mesh;
 mod vertex;
